@@ -78,6 +78,74 @@ execute function public.update_station_location();
 GRANT USAGE ON SCHEMA gis TO service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA gis TO service_role;
 
+-- PostgreSQL cannot change the columns of RETURNS TABLE with CREATE OR REPLACE
+-- alone, so drop the previous signature before recreating the RPC idempotently.
+drop function if exists public.nearby_stations(
+  double precision,
+  double precision,
+  double precision,
+  integer
+);
+
+create or replace function public.nearby_stations(
+  user_lat double precision,
+  user_lng double precision,
+  radius_meters double precision default 15000,
+  result_limit integer default 20
+)
+returns table (
+  id bigint,
+  mimit_id bigint,
+  name text,
+  brand text,
+  address text,
+  city text,
+  province text,
+  latitude double precision,
+  longitude double precision,
+  distance_meters double precision,
+  fuel_price numeric,
+  communicated_at timestamptz
+)
+language sql
+stable
+set search_path = public, gis
+as $$
+  with user_position as (
+    select gis.st_setsrid(
+      gis.st_makepoint(user_lng, user_lat),
+      4326
+    )::gis.geography as location
+  )
+  select
+    stations.id,
+    stations.mimit_id,
+    stations.name,
+    stations.brand,
+    stations.address,
+    stations.city,
+    stations.province,
+    stations.latitude,
+    stations.longitude,
+    gis.st_distance(stations.location, user_position.location) as distance_meters,
+    fuel_prices.price as fuel_price,
+    fuel_prices.communicated_at
+  from public.stations
+  cross join user_position
+  left join public.fuel_prices
+    on fuel_prices.station_id = stations.id
+    and fuel_prices.fuel_type = 'Benzina'
+    and fuel_prices.is_self = true
+  where stations.location is not null
+    and gis.st_dwithin(
+      stations.location,
+      user_position.location,
+      radius_meters
+    )
+  order by distance_meters
+  limit result_limit;
+$$;
+
 -- Speeds up joins and lookups of all prices belonging to one station.
 create index if not exists fuel_prices_station_id_idx
 on public.fuel_prices(station_id);

@@ -13,6 +13,8 @@ export interface NearbyStation {
   latitude: number
   longitude: number
   distanceMeters: number
+  fuelPrice: number | null
+  communicatedAt: string | null
 }
 
 interface NearbyStationDatabaseRow {
@@ -26,6 +28,8 @@ interface NearbyStationDatabaseRow {
   latitude: number
   longitude: number
   distance_meters: number
+  fuel_price: number | null
+  communicated_at: string | null
 }
 
 export async function getNearbyStations(
@@ -57,5 +61,7 @@ export async function getNearbyStations(
     latitude: station.latitude,
     longitude: station.longitude,
     distanceMeters: station.distance_meters,
+    fuelPrice: station.fuel_price,
+    communicatedAt: station.communicated_at,
   }))
 }

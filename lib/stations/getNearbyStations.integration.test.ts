@@ -19,6 +19,19 @@ describe.skipIf(process.env.RUN_SUPABASE_INTEGRATION !== '1')(
 
       expect(distances.every((distance) => distance >= 0)).toBe(true)
       expect(distances).toEqual([...distances].sort((a, b) => a - b))
+      expect(
+        stations.every(
+          (station) =>
+            station.fuelPrice === null || typeof station.fuelPrice === 'number',
+        ),
+      ).toBe(true)
+      expect(
+        stations.every(
+          (station) =>
+            station.communicatedAt === null ||
+            typeof station.communicatedAt === 'string',
+        ),
+      ).toBe(true)
 
       console.log('Primi 3 distributori:', stations.slice(0, 3))
     })
