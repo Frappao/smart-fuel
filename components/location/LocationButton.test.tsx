@@ -91,7 +91,7 @@ describe('LocationButton', () => {
     expect(button.disabled).toBe(false)
   })
 
-  it('shows nearby stations and their distance in kilometers', async () => {
+  it('shows nearby stations with distance and available prices', async () => {
     vi.mocked(getCurrentPosition).mockResolvedValue({
       latitude: 45.4642,
       longitude: 9.19,
@@ -102,14 +102,30 @@ describe('LocationButton', () => {
         {
           id: 42,
           mimitId: 12_345,
-          name: null,
+          name: 'Stazione Centro',
           brand: 'Q8',
           address: 'Via Roma 1',
-          city: 'Milano',
-          province: 'MI',
+          city: 'Monza',
+          province: 'MB',
           latitude: 45.47,
           longitude: 9.2,
           distanceMeters: 1_400,
+          fuelPrice: 1.769,
+          communicatedAt: '2026-08-11T08:30:00+00:00',
+        },
+        {
+          id: 43,
+          mimitId: 12_346,
+          name: null,
+          brand: 'IP',
+          address: 'Corso Italia 2',
+          city: 'Milano',
+          province: 'MI',
+          latitude: 45.48,
+          longitude: 9.21,
+          distanceMeters: 2_000,
+          fuelPrice: null,
+          communicatedAt: null,
         },
       ],
     })
@@ -119,9 +135,16 @@ describe('LocationButton', () => {
       screen.getByRole('button', { name: 'Usa la mia posizione' }),
     )
 
-    expect(await screen.findByText('Q8 - 1,4 km')).toBeTruthy()
+    expect(
+      await screen.findByText('Stazione Centro - 1,4 km'),
+    ).toBeTruthy()
+    expect(screen.getByText('Q8')).toBeTruthy()
     expect(screen.getByText('Via Roma 1')).toBeTruthy()
     expect(screen.getByText('Milano')).toBeTruthy()
+    expect(screen.getByText('1,769 €/L')).toBeTruthy()
+    expect(screen.getByText('IP - 2,0 km')).toBeTruthy()
+    expect(screen.getByText('Monza')).toBeTruthy()
+    expect(screen.getByText('Prezzo non disponibile')).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20',
     )

@@ -14,6 +14,7 @@ interface NearbyStation {
   address: string | null
   city: string | null
   distanceMeters: number
+  fuelPrice: number | null
 }
 
 interface NearbyStationsResponse {
@@ -23,6 +24,11 @@ interface NearbyStationsResponse {
 const distanceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+})
+
+const priceFormatter = new Intl.NumberFormat('it-IT', {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
 })
 
 function isNearbyStationsResponse(
@@ -131,6 +137,11 @@ export default function LocationButton() {
                 ) : null}
                 {station.address ? <p>{station.address}</p> : null}
                 {station.city ? <p>{station.city}</p> : null}
+                <p>
+                  {station.fuelPrice === null
+                    ? 'Prezzo non disponibile'
+                    : `${priceFormatter.format(station.fuelPrice)} €/L`}
+                </p>
               </li>
             )
           })}
