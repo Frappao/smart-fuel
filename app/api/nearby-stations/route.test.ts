@@ -79,6 +79,8 @@ describe('GET /api/nearby-stations', () => {
         latitude: 45.4642,
         longitude: 9.19,
         distanceMeters: 1_250.5,
+        fuelPrice: 1.829,
+        communicatedAt: '2026-08-11T08:30:00+00:00',
       },
     ]
     vi.mocked(getNearbyStations).mockResolvedValue(stations)
