@@ -34,9 +34,49 @@ create table if not exists public.fuel_prices (
   unique (station_id, fuel_type, is_self)
 );
 
+-- PostGIS is installed in the dedicated gis schema in the Supabase project.
+-- ADD COLUMN IF NOT EXISTS also upgrades databases created from an older copy
+-- of this file without disturbing their existing stations.
+alter table public.stations
+add column if not exists location gis.geography(Point, 4326);
+
 -- Supports the future geographic pre-filter by latitude and longitude.
 create index if not exists stations_coordinates_idx
 on public.stations(latitude, longitude);
+
+-- Supports efficient proximity searches using the PostGIS geography column.
+create index if not exists stations_location_gix
+on public.stations using gist(location);
+
+-- Keeps the derived geography point aligned with the MIMIT coordinates.
+create or replace function public.update_station_location()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.latitude is null or new.longitude is null then
+    new.location := null;
+  else
+    new.location := gis.st_setsrid(
+      gis.st_makepoint(new.longitude, new.latitude),
+      4326
+    )::gis.geography;
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace trigger stations_update_location
+before insert or update of latitude, longitude on public.stations
+for each row
+execute function public.update_station_location();
+
+-- The server-side MIMIT importer writes stations as service_role, so its
+-- upserts execute the location trigger under that role. Because PostGIS lives
+-- in gis, the importer needs schema access and permission to call its routines.
+GRANT USAGE ON SCHEMA gis TO service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA gis TO service_role;
 
 -- Speeds up joins and lookups of all prices belonging to one station.
 create index if not exists fuel_prices_station_id_idx
