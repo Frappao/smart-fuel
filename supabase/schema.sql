@@ -133,7 +133,7 @@ as $$
     fuel_prices.communicated_at
   from public.stations
   cross join user_position
-  left join public.fuel_prices
+  join public.fuel_prices
     on fuel_prices.station_id = stations.id
     and fuel_prices.fuel_type = requested_fuel_type
     and fuel_prices.is_self = true
