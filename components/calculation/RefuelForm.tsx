@@ -2,9 +2,17 @@
 
 import { useState, type FormEvent } from 'react'
 
+import {
+  isSupportedFuelType,
+  SUPPORTED_FUEL_TYPE_LABELS,
+  SUPPORTED_FUEL_TYPES,
+  type SupportedFuelType,
+} from '../../lib/fuels/supportedFuelTypes'
+
 export interface RefuelCalculationInput {
   refuelAmount: number
   consumptionLitersPer100Km: number
+  fuelType: SupportedFuelType
 }
 
 interface RefuelFormProps {
@@ -29,6 +37,7 @@ function parsePositiveNumber(value: string): number | null {
 export default function RefuelForm({ onCalculate }: RefuelFormProps) {
   const [refuelAmount, setRefuelAmount] = useState('')
   const [consumption, setConsumption] = useState('')
+  const [fuelType, setFuelType] = useState<SupportedFuelType>('Benzina')
   const [errors, setErrors] = useState<FormErrors>({})
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -56,6 +65,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
     onCalculate({
       refuelAmount: parsedRefuelAmount,
       consumptionLitersPer100Km: parsedConsumption,
+      fuelType,
     })
   }
 
@@ -65,6 +75,28 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
       noValidate
       onSubmit={handleSubmit}
     >
+      <div className="flex min-w-0 flex-col gap-2">
+        <label className="text-sm font-medium" htmlFor="fuel-type">
+          Carburante
+        </label>
+        <select
+          id="fuel-type"
+          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
+          value={fuelType}
+          onChange={(event) => {
+            if (isSupportedFuelType(event.target.value)) {
+              setFuelType(event.target.value)
+            }
+          }}
+        >
+          {SUPPORTED_FUEL_TYPES.map((supportedFuelType) => (
+            <option key={supportedFuelType} value={supportedFuelType}>
+              {SUPPORTED_FUEL_TYPE_LABELS[supportedFuelType]}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex min-w-0 flex-col gap-2">
         <label className="text-sm font-medium" htmlFor="refuel-amount">
           Importo rifornimento in euro

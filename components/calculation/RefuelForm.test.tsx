@@ -10,9 +10,12 @@ describe('RefuelForm', () => {
     cleanup()
   })
 
-  it('renders both numeric fields', () => {
+  it('renders both numeric fields with Benzina selected by default', () => {
     render(<RefuelForm onCalculate={vi.fn()} />)
 
+    const fuelTypeSelect = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Carburante',
+    })
     const refuelAmountInput = screen.getByRole<HTMLInputElement>('spinbutton', {
       name: 'Importo rifornimento in euro',
     })
@@ -20,6 +23,7 @@ describe('RefuelForm', () => {
       name: 'Consumo medio auto in L/100 km',
     })
 
+    expect(fuelTypeSelect.value).toBe('Benzina')
     expect(refuelAmountInput.type).toBe('number')
     expect(refuelAmountInput.value).toBe('')
     expect(consumptionInput.type).toBe('number')
@@ -91,7 +95,41 @@ describe('RefuelForm', () => {
     expect(onCalculate).toHaveBeenCalledWith({
       refuelAmount: 50.5,
       consumptionLitersPer100Km: 6.2,
+      fuelType: 'Benzina',
     })
     expect(screen.queryByRole('alert')).toBeNull()
   })
+
+  it.each(['Gasolio', 'GPL'] as const)(
+    'submits the selected %s fuel type',
+    (fuelType) => {
+      const onCalculate = vi.fn()
+      render(<RefuelForm onCalculate={onCalculate} />)
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
+        target: { value: fuelType },
+      })
+      fireEvent.change(
+        screen.getByRole('spinbutton', {
+          name: 'Importo rifornimento in euro',
+        }),
+        { target: { value: '50' } },
+      )
+      fireEvent.change(
+        screen.getByRole('spinbutton', {
+          name: 'Consumo medio auto in L/100 km',
+        }),
+        { target: { value: '6.5' } },
+      )
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Calcola convenienza' }),
+      )
+
+      expect(onCalculate).toHaveBeenCalledWith({
+        refuelAmount: 50,
+        consumptionLitersPer100Km: 6.5,
+        fuelType,
+      })
+    },
+  )
 })
