@@ -51,6 +51,17 @@ describe('FuelSmartCalculator', () => {
     vi.unstubAllGlobals()
   })
 
+  it('shows a clear loading message while calculating', () => {
+    vi.mocked(getCurrentPosition).mockReturnValue(new Promise(() => {}))
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(
+      screen.getByText('Sto cercando i distributori più convenienti...'),
+    ).toBeTruthy()
+  })
+
   it('submits the form and ranks priced stations by net fuel liters', async () => {
     arrangeApiResponse({
       stations: [
@@ -206,7 +217,7 @@ describe('FuelSmartCalculator', () => {
     const alert = await screen.findByRole('alert')
 
     expect(alert.textContent).toBe(
-      'Non è stato possibile recuperare i distributori vicini. Riprova.',
+      'Non riesco a cercare i distributori in questo momento. Riprova tra poco.',
     )
   })
 
@@ -234,7 +245,7 @@ describe('FuelSmartCalculator', () => {
     const alert = await screen.findByRole('alert')
 
     expect(alert.textContent).toBe(
-      'Non è stato possibile recuperare le distanze stradali. Riprova.',
+      'Non riesco a calcolare le distanze stradali in questo momento. Riprova tra poco.',
     )
     expect(screen.queryByText(/PostGIS Candidate/)).toBeNull()
   })
@@ -261,9 +272,25 @@ describe('FuelSmartCalculator', () => {
     submitForm()
 
     expect(
-      await screen.findByText('Nessun distributore classificabile.'),
+      await screen.findByText(
+        'Ho trovato dei distributori, ma non posso confrontarli perché le distanze stradali non sono disponibili.',
+      ),
     ).toBeTruthy()
     expect(screen.queryByText(/Missing Route/)).toBeNull()
+  })
+
+  it('shows a clear empty state when no Benzina Self candidate is available', async () => {
+    arrangeApiResponse({ stations: [] })
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(
+      await screen.findByText(
+        'Non ho trovato distributori vicini con Benzina Self disponibile.',
+      ),
+    ).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('does not show a comparison when only one station is ranked', async () => {

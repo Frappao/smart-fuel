@@ -58,6 +58,15 @@ const litersFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 2,
 })
 
+const searchErrorMessage =
+  'Non riesco a cercare i distributori in questo momento. Riprova tra poco.'
+const routeDistanceErrorMessage =
+  'Non riesco a calcolare le distanze stradali in questo momento. Riprova tra poco.'
+const noCandidatesMessage =
+  'Non ho trovato distributori vicini con Benzina Self disponibile.'
+const noValidRoutesMessage =
+  'Ho trovato dei distributori, ma non posso confrontarli perché le distanze stradali non sono disponibili.'
+
 function isNearbyStationsResponse(
   value: unknown,
 ): value is NearbyStationsResponse {
@@ -119,6 +128,7 @@ export default function FuelSmartCalculator() {
   const [results, setResults] = useState<ConvenienceResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
   const winnerAdvantageLiters =
     results.length >= 2
       ? results[0].netFuelLiters - results[1].netFuelLiters
@@ -128,6 +138,7 @@ export default function FuelSmartCalculator() {
     setCalculationInput(values)
     setResults([])
     setError(null)
+    setEmptyStateMessage(null)
     setIsLoading(true)
 
     try {
@@ -143,15 +154,11 @@ export default function FuelSmartCalculator() {
       try {
         response = await fetch(`/api/nearby-stations?${searchParams}`)
       } catch {
-        throw new Error(
-          'Non è stato possibile contattare il servizio dei distributori.',
-        )
+        throw new Error(searchErrorMessage)
       }
 
       if (!response.ok) {
-        throw new Error(
-          'Non è stato possibile recuperare i distributori vicini. Riprova.',
-        )
+        throw new Error(searchErrorMessage)
       }
 
       let responseBody: unknown
@@ -159,11 +166,11 @@ export default function FuelSmartCalculator() {
       try {
         responseBody = await response.json()
       } catch {
-        throw new Error('La risposta del servizio dei distributori non è valida.')
+        throw new Error(searchErrorMessage)
       }
 
       if (!isNearbyStationsResponse(responseBody)) {
-        throw new Error('La risposta del servizio dei distributori non è valida.')
+        throw new Error(searchErrorMessage)
       }
 
       const candidateStations = responseBody.stations
@@ -190,15 +197,11 @@ export default function FuelSmartCalculator() {
             }),
           })
         } catch {
-          throw new Error(
-            'Non è stato possibile contattare il servizio delle distanze stradali.',
-          )
+          throw new Error(routeDistanceErrorMessage)
         }
 
         if (!routeMatrixResponse.ok) {
-          throw new Error(
-            'Non è stato possibile recuperare le distanze stradali. Riprova.',
-          )
+          throw new Error(routeDistanceErrorMessage)
         }
 
         let routeMatrixBody: unknown
@@ -206,14 +209,16 @@ export default function FuelSmartCalculator() {
         try {
           routeMatrixBody = await routeMatrixResponse.json()
         } catch {
-          throw new Error('La risposta del servizio delle distanze non è valida.')
+          throw new Error(routeDistanceErrorMessage)
         }
 
         if (!isRouteMatrixResponse(routeMatrixBody)) {
-          throw new Error('La risposta del servizio delle distanze non è valida.')
+          throw new Error(routeDistanceErrorMessage)
         }
 
         routeMatrixRoutes = routeMatrixBody.routes.filter(isRouteMatrixRoute)
+      } else {
+        setEmptyStateMessage(noCandidatesMessage)
       }
 
       const rankedResults = routeMatrixRoutes
@@ -245,6 +250,10 @@ export default function FuelSmartCalculator() {
         .sort((first, second) => second.netFuelLiters - first.netFuelLiters)
         .slice(0, 10)
 
+      if (candidateStations.length > 0 && rankedResults.length === 0) {
+        setEmptyStateMessage(noValidRoutesMessage)
+      }
+
       setResults(rankedResults)
     } catch (caughtError) {
       setError(
@@ -261,11 +270,31 @@ export default function FuelSmartCalculator() {
     <section className="flex flex-col gap-6">
       <RefuelForm onCalculate={handleCalculate} />
 
-      {isLoading ? <p aria-live="polite">Calcolo in corso...</p> : null}
-      {error ? <p role="alert">{error}</p> : null}
+      {isLoading ? (
+        <p
+          aria-live="polite"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+        >
+          Sto cercando i distributori più convenienti...
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
 
-      {!isLoading && !error && calculationInput && results.length === 0 ? (
-        <p>Nessun distributore classificabile.</p>
+      {!isLoading &&
+      !error &&
+      calculationInput &&
+      results.length === 0 &&
+      emptyStateMessage ? (
+        <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+          {emptyStateMessage}
+        </p>
       ) : null}
 
       {results.length > 0 ? (
