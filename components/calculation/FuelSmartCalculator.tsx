@@ -2,39 +2,24 @@
 
 import { useState } from 'react'
 
+import {
+  fetchNearbyStations,
+  fetchRouteMatrix,
+  type NearbyStation,
+} from '../../lib/api/rifornioApiClient'
 import { calculateConvenience } from '../../lib/calculation/calculateConvenience'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 
-interface NearbyStation {
-  id: number
-  name: string | null
-  brand: string | null
-  address: string | null
-  city: string | null
-  latitude: number
-  longitude: number
-  distanceMeters: number
-  fuelPrice: number | null
-}
-
 interface PricedNearbyStation extends NearbyStation {
   fuelPrice: number
-}
-
-interface NearbyStationsResponse {
-  stations: NearbyStation[]
 }
 
 interface RouteMatrixRoute {
   destinationIndex: number
   distanceMeters: number
-}
-
-interface RouteMatrixResponse {
-  routes: unknown[]
 }
 
 interface ConvenienceResult {
@@ -76,17 +61,6 @@ function getNoCandidatesMessage(
   return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} ${serviceModeLabel} disponibile.`
 }
 
-function isNearbyStationsResponse(
-  value: unknown,
-): value is NearbyStationsResponse {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'stations' in value &&
-    Array.isArray(value.stations)
-  )
-}
-
 function isRouteMatrixRoute(value: unknown): value is RouteMatrixRoute {
   if (typeof value !== 'object' || value === null) {
     return false
@@ -101,15 +75,6 @@ function isRouteMatrixRoute(value: unknown): value is RouteMatrixRoute {
     typeof value.distanceMeters === 'number' &&
     Number.isFinite(value.distanceMeters) &&
     value.distanceMeters >= 0
-  )
-}
-
-function isRouteMatrixResponse(value: unknown): value is RouteMatrixResponse {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'routes' in value &&
-    Array.isArray(value.routes)
   )
 }
 
@@ -292,82 +257,45 @@ export default function FuelSmartCalculator() {
 
     try {
       const position = await getCurrentPosition()
-      const searchParams = new URLSearchParams({
-        lat: String(position.latitude),
-        lng: String(position.longitude),
-        radius: '15000',
-        limit: '20',
-        fuelType: values.fuelType,
-        isSelf: String(values.isSelf),
-      })
-      let response: Response
+      let nearbyStationsResponse
 
       try {
-        response = await fetch(`/api/nearby-stations?${searchParams}`)
+        nearbyStationsResponse = await fetchNearbyStations({
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radius: 15_000,
+          limit: 20,
+          fuelType: values.fuelType,
+          isSelf: values.isSelf,
+        })
       } catch {
         throw new Error(searchErrorMessage)
       }
 
-      if (!response.ok) {
-        throw new Error(searchErrorMessage)
-      }
-
-      let responseBody: unknown
-
-      try {
-        responseBody = await response.json()
-      } catch {
-        throw new Error(searchErrorMessage)
-      }
-
-      if (!isNearbyStationsResponse(responseBody)) {
-        throw new Error(searchErrorMessage)
-      }
-
-      const candidateStations = responseBody.stations
+      const candidateStations = nearbyStationsResponse.stations
         .filter(isValidCandidate)
         .slice(0, 20)
       let routeMatrixRoutes: RouteMatrixRoute[] = []
 
       if (candidateStations.length > 0) {
-        let routeMatrixResponse: Response
+        let routeMatrixResponse
 
         try {
-          routeMatrixResponse = await fetch('/api/route-matrix', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              origin: {
-                latitude: position.latitude,
-                longitude: position.longitude,
-              },
-              destinations: candidateStations.map((station) => ({
-                latitude: station.latitude,
-                longitude: station.longitude,
-              })),
-            }),
+          routeMatrixResponse = await fetchRouteMatrix({
+            origin: {
+              latitude: position.latitude,
+              longitude: position.longitude,
+            },
+            destinations: candidateStations.map((station) => ({
+              latitude: station.latitude,
+              longitude: station.longitude,
+            })),
           })
         } catch {
           throw new Error(routeDistanceErrorMessage)
         }
 
-        if (!routeMatrixResponse.ok) {
-          throw new Error(routeDistanceErrorMessage)
-        }
-
-        let routeMatrixBody: unknown
-
-        try {
-          routeMatrixBody = await routeMatrixResponse.json()
-        } catch {
-          throw new Error(routeDistanceErrorMessage)
-        }
-
-        if (!isRouteMatrixResponse(routeMatrixBody)) {
-          throw new Error(routeDistanceErrorMessage)
-        }
-
-        routeMatrixRoutes = routeMatrixBody.routes.filter(isRouteMatrixRoute)
+        routeMatrixRoutes = routeMatrixResponse.routes.filter(isRouteMatrixRoute)
       } else {
         setEmptyStateMessage(
           getNoCandidatesMessage(values.fuelType, values.isSelf),
