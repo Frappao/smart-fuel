@@ -16,12 +16,12 @@ describe('GET /api/nearby-stations', () => {
     vi.resetAllMocks()
   })
 
-  it('passes valid coordinates, radius, and limit to getNearbyStations', async () => {
+  it('passes valid coordinates, limits, Gasolio, and Servito to getNearbyStations', async () => {
     vi.mocked(getNearbyStations).mockResolvedValue([])
 
     const response = await GET(
       createRequest(
-        'lat=45.4642&lng=9.19&radius=5000&limit=8&fuelType=Gasolio',
+        'lat=45.4642&lng=9.19&radius=5000&limit=8&fuelType=Gasolio&isSelf=false',
       ),
     )
 
@@ -31,11 +31,12 @@ describe('GET /api/nearby-stations', () => {
       5_000,
       8,
       'Gasolio',
+      false,
     )
     expect(response.status).toBe(200)
   })
 
-  it('uses the default radius, limit, and fuel type when they are absent', async () => {
+  it('uses the default radius, limit, fuel type, and Self mode when absent', async () => {
     vi.mocked(getNearbyStations).mockResolvedValue([])
 
     await GET(createRequest('lat=45.4642&lng=9.19'))
@@ -46,16 +47,22 @@ describe('GET /api/nearby-stations', () => {
       15_000,
       20,
       'Benzina',
+      true,
     )
   })
 
-  it.each(['Benzina', 'GPL'] as const)(
-    'accepts fuelType=%s',
-    async (fuelType) => {
+  it.each([
+    ['Benzina', 'true', true],
+    ['GPL', 'false', false],
+  ] as const)(
+    'accepts fuelType=%s with isSelf=%s',
+    async (fuelType, isSelfParam, isSelf) => {
       vi.mocked(getNearbyStations).mockResolvedValue([])
 
       const response = await GET(
-        createRequest(`lat=45.4642&lng=9.19&fuelType=${fuelType}`),
+        createRequest(
+          `lat=45.4642&lng=9.19&fuelType=${fuelType}&isSelf=${isSelfParam}`,
+        ),
       )
 
       expect(response.status).toBe(200)
@@ -65,6 +72,7 @@ describe('GET /api/nearby-stations', () => {
         15_000,
         20,
         fuelType,
+        isSelf,
       )
     },
   )
@@ -94,6 +102,21 @@ describe('GET /api/nearby-stations', () => {
       expect(response.status).toBe(400)
       await expect(response.json()).resolves.toEqual({
         error: expect.stringContaining('fuelType'),
+      })
+      expect(getNearbyStations).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['1', 'yes', ''])(
+    'returns 400 for invalid isSelf=%s',
+    async (isSelf) => {
+      const response = await GET(
+        createRequest(`lat=45.4642&lng=9.19&isSelf=${isSelf}`),
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: expect.stringContaining('isSelf must be true or false'),
       })
       expect(getNearbyStations).not.toHaveBeenCalled()
     },

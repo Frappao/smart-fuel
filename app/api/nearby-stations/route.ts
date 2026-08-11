@@ -15,16 +15,30 @@ function parseNumber(value: string | null): number | null {
   return Number.isFinite(parsedValue) ? parsedValue : null
 }
 
+function parseIsSelf(value: string): boolean | null {
+  if (value === 'true') {
+    return true
+  }
+
+  if (value === 'false') {
+    return false
+  }
+
+  return null
+}
+
 export async function GET(request: Request): Promise<Response> {
   const searchParams = new URL(request.url).searchParams
   const latitude = parseNumber(searchParams.get('lat'))
   const longitude = parseNumber(searchParams.get('lng'))
   const radiusParam = searchParams.get('radius')
   const limitParam = searchParams.get('limit')
+  const isSelfParam = searchParams.get('isSelf')
   const fuelType = searchParams.get('fuelType') ?? DEFAULT_FUEL_TYPE
   const radiusMeters =
     radiusParam === null ? DEFAULT_RADIUS_METERS : parseNumber(radiusParam)
   const limit = limitParam === null ? DEFAULT_LIMIT : parseNumber(limitParam)
+  const isSelf = isSelfParam === null ? true : parseIsSelf(isSelfParam)
 
   const hasInvalidInput =
     latitude === null ||
@@ -39,13 +53,14 @@ export async function GET(request: Request): Promise<Response> {
     !Number.isInteger(limit) ||
     limit < 1 ||
     limit > 100 ||
-    !isSupportedFuelType(fuelType)
+    !isSupportedFuelType(fuelType) ||
+    isSelf === null
 
   if (hasInvalidInput) {
     return Response.json(
       {
         error:
-          'Invalid query parameters. lat must be between -90 and 90, lng between -180 and 180, radius greater than 0, limit an integer between 1 and 100, and fuelType one of Benzina, Gasolio, or GPL.',
+          'Invalid query parameters. lat must be between -90 and 90, lng between -180 and 180, radius greater than 0, limit an integer between 1 and 100, fuelType one of Benzina, Gasolio, or GPL, and isSelf must be true or false.',
       },
       { status: 400 },
     )
@@ -58,6 +73,7 @@ export async function GET(request: Request): Promise<Response> {
       radiusMeters,
       limit,
       fuelType,
+      isSelf,
     )
 
     return Response.json({ stations })
