@@ -21,6 +21,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  openGraph: {
+    title: "Rifornio",
+    description: "Fai rifornimento dove conviene davvero.",
+    url: "https://rifornio.it",
+    siteName: "Rifornio",
+    locale: "it_IT",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
