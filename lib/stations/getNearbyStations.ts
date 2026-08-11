@@ -1,5 +1,6 @@
 import 'server-only'
 
+import type { SupportedFuelType } from '../fuels/supportedFuelTypes'
 import { createSupabaseServerClient } from '../supabase/server'
 
 export interface NearbyStation {
@@ -37,6 +38,7 @@ export async function getNearbyStations(
   longitude: number,
   radiusMeters = 15_000,
   limit = 20,
+  fuelType: SupportedFuelType = 'Benzina',
 ): Promise<NearbyStation[]> {
   const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.rpc('nearby_stations', {
@@ -44,6 +46,7 @@ export async function getNearbyStations(
     user_lng: longitude,
     radius_meters: radiusMeters,
     result_limit: limit,
+    requested_fuel_type: fuelType,
   })
 
   if (error) {

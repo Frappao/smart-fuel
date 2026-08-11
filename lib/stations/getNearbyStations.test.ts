@@ -63,7 +63,7 @@ describe('getNearbyStations', () => {
     })
 
     await expect(
-      getNearbyStations(45.4642, 9.19, 5_000, 8),
+      getNearbyStations(45.4642, 9.19, 5_000, 8, 'Gasolio'),
     ).resolves.toEqual([
       {
         id: 42,
@@ -100,10 +100,11 @@ describe('getNearbyStations', () => {
       user_lng: 9.19,
       radius_meters: 5_000,
       result_limit: 8,
+      requested_fuel_type: 'Gasolio',
     })
   })
 
-  it('uses the default radius and result limit', async () => {
+  it('uses the default radius, result limit, and fuel type', async () => {
     const rpc = arrangeSupabaseClient({ data: [], error: null })
 
     await getNearbyStations(41.9028, 12.4964)
@@ -113,6 +114,21 @@ describe('getNearbyStations', () => {
       user_lng: 12.4964,
       radius_meters: 15_000,
       result_limit: 20,
+      requested_fuel_type: 'Benzina',
+    })
+  })
+
+  it('passes GPL as the requested fuel type', async () => {
+    const rpc = arrangeSupabaseClient({ data: [], error: null })
+
+    await getNearbyStations(45.4642, 9.19, 15_000, 20, 'GPL')
+
+    expect(rpc).toHaveBeenCalledWith('nearby_stations', {
+      user_lat: 45.4642,
+      user_lng: 9.19,
+      radius_meters: 15_000,
+      result_limit: 20,
+      requested_fuel_type: 'GPL',
     })
   })
 
