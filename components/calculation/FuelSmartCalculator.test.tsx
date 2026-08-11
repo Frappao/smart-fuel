@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SupportedFuelType } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import FuelSmartCalculator from './FuelSmartCalculator'
 
@@ -19,7 +20,10 @@ function arrangeApiResponse(body: unknown, ok = true) {
   } as unknown as Response)
 }
 
-function submitForm() {
+function submitForm(fuelType: SupportedFuelType = 'Benzina') {
+  fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
+    target: { value: fuelType },
+  })
   fireEvent.change(
     screen.getByRole('spinbutton', {
       name: 'Importo rifornimento in euro',
@@ -154,7 +158,7 @@ describe('FuelSmartCalculator', () => {
     expect(getCurrentPosition).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      '/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20',
+      '/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=Benzina',
     )
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/route-matrix')
 
@@ -310,6 +314,26 @@ describe('FuelSmartCalculator', () => {
     ).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledOnce()
   })
+
+  it.each(['Gasolio', 'GPL'] as const)(
+    'searches %s and uses it in the empty state',
+    async (fuelType) => {
+      arrangeApiResponse({ stations: [] })
+      render(<FuelSmartCalculator />)
+
+      submitForm(fuelType)
+
+      expect(
+        await screen.findByText(
+          `Non ho trovato distributori vicini con ${fuelType} Self disponibile.`,
+        ),
+      ).toBeTruthy()
+      expect(fetchMock).toHaveBeenCalledWith(
+        `/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=${fuelType}`,
+      )
+      expect(fetchMock).toHaveBeenCalledOnce()
+    },
+  )
 
   it('does not show navigation when station coordinates are invalid', async () => {
     arrangeApiResponse({

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { calculateConvenience } from '../../lib/calculation/calculateConvenience'
+import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 
@@ -62,10 +63,14 @@ const searchErrorMessage =
   'Non riesco a cercare i distributori in questo momento. Riprova tra poco.'
 const routeDistanceErrorMessage =
   'Non riesco a calcolare le distanze stradali in questo momento. Riprova tra poco.'
-const noCandidatesMessage =
-  'Non ho trovato distributori vicini con Benzina Self disponibile.'
 const noValidRoutesMessage =
   'Ho trovato dei distributori, ma non posso confrontarli perché le distanze stradali non sono disponibili.'
+
+function getNoCandidatesMessage(
+  fuelType: RefuelCalculationInput['fuelType'],
+): string {
+  return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} Self disponibile.`
+}
 
 function isNearbyStationsResponse(
   value: unknown,
@@ -204,6 +209,7 @@ export default function FuelSmartCalculator() {
         lng: String(position.longitude),
         radius: '15000',
         limit: '20',
+        fuelType: values.fuelType,
       })
       let response: Response
 
@@ -274,7 +280,7 @@ export default function FuelSmartCalculator() {
 
         routeMatrixRoutes = routeMatrixBody.routes.filter(isRouteMatrixRoute)
       } else {
-        setEmptyStateMessage(noCandidatesMessage)
+        setEmptyStateMessage(getNoCandidatesMessage(values.fuelType))
       }
 
       const rankedResults = routeMatrixRoutes
