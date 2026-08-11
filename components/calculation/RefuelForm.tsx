@@ -13,6 +13,7 @@ export interface RefuelCalculationInput {
   refuelAmount: number
   consumptionLitersPer100Km: number
   fuelType: SupportedFuelType
+  isSelf: boolean
 }
 
 interface RefuelFormProps {
@@ -38,6 +39,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
   const [refuelAmount, setRefuelAmount] = useState('')
   const [consumption, setConsumption] = useState('')
   const [fuelType, setFuelType] = useState<SupportedFuelType>('Benzina')
+  const [isSelf, setIsSelf] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,6 +68,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
       refuelAmount: parsedRefuelAmount,
       consumptionLitersPer100Km: parsedConsumption,
       fuelType,
+      isSelf,
     })
   }
 
@@ -94,6 +97,27 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
               {SUPPORTED_FUEL_TYPE_LABELS[supportedFuelType]}
             </option>
           ))}
+        </select>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-2">
+        <label className="text-sm font-medium" htmlFor="service-mode">
+          Modalità di servizio
+        </label>
+        <select
+          id="service-mode"
+          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
+          value={String(isSelf)}
+          onChange={(event) => {
+            if (event.target.value === 'true') {
+              setIsSelf(true)
+            } else if (event.target.value === 'false') {
+              setIsSelf(false)
+            }
+          }}
+        >
+          <option value="true">Self</option>
+          <option value="false">Servito</option>
         </select>
       </div>
 
