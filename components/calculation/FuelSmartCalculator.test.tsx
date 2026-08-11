@@ -184,6 +184,11 @@ describe('FuelSmartCalculator', () => {
       'Distanza stradale stimata A/R: 40,0 km',
     )
     expect(secondResult?.textContent).toContain('Litri netti: 29,33 L')
+    expect(
+      screen.getByText(
+        'Hai circa 1,72 L netti in più rispetto al secondo classificato.',
+      ),
+    ).toBeTruthy()
     expect(screen.getAllByText('Ti conviene questo distributore')).toHaveLength(
       1,
     )
@@ -259,6 +264,41 @@ describe('FuelSmartCalculator', () => {
       await screen.findByText('Nessun distributore classificabile.'),
     ).toBeTruthy()
     expect(screen.queryByText(/Missing Route/)).toBeNull()
+  })
+
+  it('does not show a comparison when only one station is ranked', async () => {
+    arrangeApiResponse({
+      stations: [
+        {
+          id: 1,
+          name: 'Only Station',
+          brand: 'Brand A',
+          address: 'Via A',
+          city: 'Milano',
+          latitude: 45.47,
+          longitude: 9.18,
+          distanceMeters: 1_000,
+          fuelPrice: 1.6,
+        },
+      ],
+    })
+    arrangeApiResponse({
+      routes: [
+        {
+          destinationIndex: 0,
+          distanceMeters: 1_000,
+          durationSeconds: 300,
+        },
+      ],
+    })
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await screen.findByText('1. Only Station')).toBeTruthy()
+    expect(
+      screen.queryByText(/netti in più rispetto al secondo classificato/),
+    ).toBeNull()
   })
 
   it('shows a readable geolocation error without calling the API', async () => {

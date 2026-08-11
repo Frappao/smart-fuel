@@ -119,6 +119,10 @@ export default function FuelSmartCalculator() {
   const [results, setResults] = useState<ConvenienceResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const winnerAdvantageLiters =
+    results.length >= 2
+      ? results[0].netFuelLiters - results[1].netFuelLiters
+      : null
 
   async function handleCalculate(values: RefuelCalculationInput) {
     setCalculationInput(values)
@@ -319,6 +323,12 @@ export default function FuelSmartCalculator() {
                   >
                     Litri netti: {litersFormatter.format(result.netFuelLiters)} L
                   </p>
+                  {isBestResult && winnerAdvantageLiters !== null ? (
+                    <p className="mt-3 text-sm text-emerald-800 dark:text-emerald-200">
+                      Hai circa {litersFormatter.format(winnerAdvantageLiters)} L
+                      netti in più rispetto al secondo classificato.
+                    </p>
+                  ) : null}
                 </div>
               </li>
             )
