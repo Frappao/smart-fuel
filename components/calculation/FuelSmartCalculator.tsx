@@ -267,20 +267,20 @@ export default function FuelSmartCalculator() {
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="flex min-w-0 flex-col gap-6 sm:gap-8">
       <RefuelForm onCalculate={handleCalculate} />
 
       {isLoading ? (
         <p
           aria-live="polite"
-          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
         >
           Sto cercando i distributori più convenienti...
         </p>
       ) : null}
       {error ? (
         <p
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
           role="alert"
         >
           {error}
@@ -292,13 +292,13 @@ export default function FuelSmartCalculator() {
       calculationInput &&
       results.length === 0 &&
       emptyStateMessage ? (
-        <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+        <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
           {emptyStateMessage}
         </p>
       ) : null}
 
       {results.length > 0 ? (
-        <ol className="flex flex-col gap-4">
+        <ol className="flex min-w-0 flex-col gap-3 sm:gap-4">
           {results.map((result, index) => {
             const stationName =
               result.station.name ?? result.station.brand ?? 'Distributore'
@@ -310,13 +310,13 @@ export default function FuelSmartCalculator() {
               <li
                 className={
                   isBestResult
-                    ? 'rounded-xl border-2 border-emerald-600 bg-emerald-50 p-5 shadow-sm dark:border-emerald-400 dark:bg-emerald-950/30'
-                    : 'rounded-lg border border-zinc-200 p-4 dark:border-zinc-800'
+                    ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-sm sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/30'
+                    : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950/40'
                 }
                 key={result.station.id}
               >
                 {isBestResult ? (
-                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  <p className="text-sm font-semibold leading-5 text-emerald-700 dark:text-emerald-300">
                     Ti conviene questo distributore
                   </p>
                 ) : null}
@@ -327,7 +327,7 @@ export default function FuelSmartCalculator() {
                 >
                   {index + 1}. {stationName}
                 </h3>
-                <div className="mt-3 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+                <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
                   <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
                     Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
                   </p>
@@ -346,14 +346,14 @@ export default function FuelSmartCalculator() {
                   <p
                     className={
                       isBestResult
-                        ? 'mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100'
+                        ? 'mt-1 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 sm:col-span-2 dark:bg-emerald-900/50 dark:text-emerald-100'
                         : undefined
                     }
                   >
                     Litri netti: {litersFormatter.format(result.netFuelLiters)} L
                   </p>
                   {isBestResult && winnerAdvantageLiters !== null ? (
-                    <p className="mt-3 text-sm text-emerald-800 dark:text-emerald-200">
+                    <p className="mt-1 text-sm leading-6 text-emerald-800 sm:col-span-2 dark:text-emerald-200">
                       Hai circa {litersFormatter.format(winnerAdvantageLiters)} L
                       netti in più rispetto al secondo classificato.
                     </p>
