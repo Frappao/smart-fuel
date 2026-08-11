@@ -71,7 +71,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         </label>
         <input
           id="refuel-amount"
-          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           type="number"
           min="0"
           step="0.01"
@@ -97,7 +97,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         </label>
         <input
           id="average-consumption"
-          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-base outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           type="number"
           min="0"
           step="0.1"
