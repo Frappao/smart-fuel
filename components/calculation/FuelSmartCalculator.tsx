@@ -12,6 +12,8 @@ interface NearbyStation {
   brand: string | null
   address: string | null
   city: string | null
+  latitude: number
+  longitude: number
   distanceMeters: number
   fuelPrice: number | null
 }
@@ -24,8 +26,18 @@ interface NearbyStationsResponse {
   stations: NearbyStation[]
 }
 
+interface RouteMatrixRoute {
+  destinationIndex: number
+  distanceMeters: number
+}
+
+interface RouteMatrixResponse {
+  routes: unknown[]
+}
+
 interface ConvenienceResult {
   station: PricedNearbyStation
+  routeDistanceMeters: number
   litersPurchased: number
   travelFuelLiters: number
   netFuelLiters: number
@@ -57,8 +69,48 @@ function isNearbyStationsResponse(
   )
 }
 
-function hasFuelPrice(station: NearbyStation): station is PricedNearbyStation {
-  return station.fuelPrice !== null
+function isRouteMatrixRoute(value: unknown): value is RouteMatrixRoute {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+
+  return (
+    'destinationIndex' in value &&
+    typeof value.destinationIndex === 'number' &&
+    Number.isInteger(value.destinationIndex) &&
+    value.destinationIndex >= 0 &&
+    'distanceMeters' in value &&
+    typeof value.distanceMeters === 'number' &&
+    Number.isFinite(value.distanceMeters) &&
+    value.distanceMeters >= 0
+  )
+}
+
+function isRouteMatrixResponse(value: unknown): value is RouteMatrixResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'routes' in value &&
+    Array.isArray(value.routes)
+  )
+}
+
+function isValidCandidate(
+  station: NearbyStation,
+): station is PricedNearbyStation {
+  return (
+    typeof station.latitude === 'number' &&
+    Number.isFinite(station.latitude) &&
+    station.latitude >= -90 &&
+    station.latitude <= 90 &&
+    typeof station.longitude === 'number' &&
+    Number.isFinite(station.longitude) &&
+    station.longitude >= -180 &&
+    station.longitude <= 180 &&
+    typeof station.fuelPrice === 'number' &&
+    Number.isFinite(station.fuelPrice) &&
+    station.fuelPrice > 0
+  )
 }
 
 export default function FuelSmartCalculator() {
@@ -110,12 +162,67 @@ export default function FuelSmartCalculator() {
         throw new Error('La risposta del servizio dei distributori non è valida.')
       }
 
-      const rankedResults = responseBody.stations
-        .filter(hasFuelPrice)
-        .map((station) => {
-          // PostGIS currently provides straight-line, one-way distance. Doubling
-          // it is a temporary round-trip estimate until Google Routes replaces it.
-          const travelDistanceKm = (station.distanceMeters / 1_000) * 2
+      const candidateStations = responseBody.stations
+        .filter(isValidCandidate)
+        .slice(0, 20)
+      let routeMatrixRoutes: RouteMatrixRoute[] = []
+
+      if (candidateStations.length > 0) {
+        let routeMatrixResponse: Response
+
+        try {
+          routeMatrixResponse = await fetch('/api/route-matrix', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origin: {
+                latitude: position.latitude,
+                longitude: position.longitude,
+              },
+              destinations: candidateStations.map((station) => ({
+                latitude: station.latitude,
+                longitude: station.longitude,
+              })),
+            }),
+          })
+        } catch {
+          throw new Error(
+            'Non è stato possibile contattare il servizio delle distanze stradali.',
+          )
+        }
+
+        if (!routeMatrixResponse.ok) {
+          throw new Error(
+            'Non è stato possibile recuperare le distanze stradali. Riprova.',
+          )
+        }
+
+        let routeMatrixBody: unknown
+
+        try {
+          routeMatrixBody = await routeMatrixResponse.json()
+        } catch {
+          throw new Error('La risposta del servizio delle distanze non è valida.')
+        }
+
+        if (!isRouteMatrixResponse(routeMatrixBody)) {
+          throw new Error('La risposta del servizio delle distanze non è valida.')
+        }
+
+        routeMatrixRoutes = routeMatrixBody.routes.filter(isRouteMatrixRoute)
+      }
+
+      const rankedResults = routeMatrixRoutes
+        .flatMap((route): ConvenienceResult[] => {
+          const station = candidateStations[route.destinationIndex]
+
+          if (!station) {
+            return []
+          }
+
+          // Google Routes returns the estimated one-way driving distance. For
+          // this MVP, the round trip is approximated by doubling that distance.
+          const travelDistanceKm = (route.distanceMeters / 1_000) * 2
           const convenience = calculateConvenience({
             pricePerLiter: station.fuelPrice,
             refuelAmount: values.refuelAmount,
@@ -123,10 +230,13 @@ export default function FuelSmartCalculator() {
             consumptionLitersPer100Km: values.consumptionLitersPer100Km,
           })
 
-          return {
-            station,
-            ...convenience,
-          }
+          return [
+            {
+              station,
+              routeDistanceMeters: route.distanceMeters,
+              ...convenience,
+            },
+          ]
         })
         .sort((first, second) => second.netFuelLiters - first.netFuelLiters)
         .slice(0, 10)
@@ -151,7 +261,7 @@ export default function FuelSmartCalculator() {
       {error ? <p role="alert">{error}</p> : null}
 
       {!isLoading && !error && calculationInput && results.length === 0 ? (
-        <p>Nessun distributore con prezzo disponibile.</p>
+        <p>Nessun distributore classificabile.</p>
       ) : null}
 
       {results.length > 0 ? (
@@ -160,7 +270,7 @@ export default function FuelSmartCalculator() {
             const stationName =
               result.station.name ?? result.station.brand ?? 'Distributore'
             const travelDistanceKm =
-              (result.station.distanceMeters / 1_000) * 2
+              (result.routeDistanceMeters / 1_000) * 2
 
             return (
               <li className="rounded border border-zinc-200 p-4" key={result.station.id}>
@@ -172,7 +282,7 @@ export default function FuelSmartCalculator() {
                   Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
                 </p>
                 <p>
-                  Distanza stimata A/R:{' '}
+                  Distanza stradale stimata A/R:{' '}
                   {distanceFormatter.format(travelDistanceKm)} km
                 </p>
                 <p>
