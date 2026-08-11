@@ -20,14 +20,22 @@ describe('GET /api/nearby-stations', () => {
     vi.mocked(getNearbyStations).mockResolvedValue([])
 
     const response = await GET(
-      createRequest('lat=45.4642&lng=9.19&radius=5000&limit=8'),
+      createRequest(
+        'lat=45.4642&lng=9.19&radius=5000&limit=8&fuelType=Gasolio',
+      ),
     )
 
-    expect(getNearbyStations).toHaveBeenCalledWith(45.4642, 9.19, 5_000, 8)
+    expect(getNearbyStations).toHaveBeenCalledWith(
+      45.4642,
+      9.19,
+      5_000,
+      8,
+      'Gasolio',
+    )
     expect(response.status).toBe(200)
   })
 
-  it('uses the default radius and limit when they are absent', async () => {
+  it('uses the default radius, limit, and fuel type when they are absent', async () => {
     vi.mocked(getNearbyStations).mockResolvedValue([])
 
     await GET(createRequest('lat=45.4642&lng=9.19'))
@@ -37,12 +45,35 @@ describe('GET /api/nearby-stations', () => {
       9.19,
       15_000,
       20,
+      'Benzina',
     )
   })
+
+  it.each(['Benzina', 'GPL'] as const)(
+    'accepts fuelType=%s',
+    async (fuelType) => {
+      vi.mocked(getNearbyStations).mockResolvedValue([])
+
+      const response = await GET(
+        createRequest(`lat=45.4642&lng=9.19&fuelType=${fuelType}`),
+      )
+
+      expect(response.status).toBe(200)
+      expect(getNearbyStations).toHaveBeenCalledWith(
+        45.4642,
+        9.19,
+        15_000,
+        20,
+        fuelType,
+      )
+    },
+  )
 
   it.each([
     ['latitude', 'lat=91&lng=9.19'],
     ['longitude', 'lat=45.4642&lng=181'],
+    ['radius', 'lat=45.4642&lng=9.19&radius=0'],
+    ['limit', 'lat=45.4642&lng=9.19&limit=101'],
   ])('returns 400 for an invalid %s', async (_label, query) => {
     const response = await GET(createRequest(query))
 
@@ -52,6 +83,21 @@ describe('GET /api/nearby-stations', () => {
     })
     expect(getNearbyStations).not.toHaveBeenCalled()
   })
+
+  it.each(['Diesel', 'unknown'])(
+    'returns 400 for unsupported fuelType=%s',
+    async (fuelType) => {
+      const response = await GET(
+        createRequest(`lat=45.4642&lng=9.19&fuelType=${fuelType}`),
+      )
+
+      expect(response.status).toBe(400)
+      await expect(response.json()).resolves.toEqual({
+        error: expect.stringContaining('fuelType'),
+      })
+      expect(getNearbyStations).not.toHaveBeenCalled()
+    },
+  )
 
   it('returns a generic 500 response when getNearbyStations fails', async () => {
     vi.mocked(getNearbyStations).mockRejectedValue(

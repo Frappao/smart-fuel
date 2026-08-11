@@ -1,7 +1,9 @@
+import { isSupportedFuelType } from '../../../lib/fuels/supportedFuelTypes'
 import { getNearbyStations } from '../../../lib/stations/getNearbyStations'
 
 const DEFAULT_RADIUS_METERS = 15_000
 const DEFAULT_LIMIT = 20
+const DEFAULT_FUEL_TYPE = 'Benzina'
 
 function parseNumber(value: string | null): number | null {
   if (value === null || value.trim() === '') {
@@ -19,6 +21,7 @@ export async function GET(request: Request): Promise<Response> {
   const longitude = parseNumber(searchParams.get('lng'))
   const radiusParam = searchParams.get('radius')
   const limitParam = searchParams.get('limit')
+  const fuelType = searchParams.get('fuelType') ?? DEFAULT_FUEL_TYPE
   const radiusMeters =
     radiusParam === null ? DEFAULT_RADIUS_METERS : parseNumber(radiusParam)
   const limit = limitParam === null ? DEFAULT_LIMIT : parseNumber(limitParam)
@@ -35,13 +38,14 @@ export async function GET(request: Request): Promise<Response> {
     limit === null ||
     !Number.isInteger(limit) ||
     limit < 1 ||
-    limit > 100
+    limit > 100 ||
+    !isSupportedFuelType(fuelType)
 
   if (hasInvalidInput) {
     return Response.json(
       {
         error:
-          'Invalid query parameters. lat must be between -90 and 90, lng between -180 and 180, radius greater than 0, and limit an integer between 1 and 100.',
+          'Invalid query parameters. lat must be between -90 and 90, lng between -180 and 180, radius greater than 0, limit an integer between 1 and 100, and fuelType one of Benzina, Gasolio, or GPL.',
       },
       { status: 400 },
     )
@@ -53,6 +57,7 @@ export async function GET(request: Request): Promise<Response> {
       longitude,
       radiusMeters,
       limit,
+      fuelType,
     )
 
     return Response.json({ stations })
