@@ -78,8 +78,8 @@ execute function public.update_station_location();
 GRANT USAGE ON SCHEMA gis TO service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA gis TO service_role;
 
--- Adding a parameter creates a new PostgreSQL function signature, so drop the
--- previous four-argument version to avoid leaving an ambiguous overload.
+-- Adding parameters creates new PostgreSQL function signatures, so drop the
+-- previous versions to avoid leaving ambiguous overloads.
 drop function if exists public.nearby_stations(
   double precision,
   double precision,
@@ -87,12 +87,21 @@ drop function if exists public.nearby_stations(
   integer
 );
 
+drop function if exists public.nearby_stations(
+  double precision,
+  double precision,
+  double precision,
+  integer,
+  text
+);
+
 create or replace function public.nearby_stations(
   user_lat double precision,
   user_lng double precision,
   radius_meters double precision default 15000,
   result_limit integer default 20,
-  requested_fuel_type text default 'Benzina'
+  requested_fuel_type text default 'Benzina',
+  requested_is_self boolean default true
 )
 returns table (
   id bigint,
@@ -136,7 +145,7 @@ as $$
   join public.fuel_prices
     on fuel_prices.station_id = stations.id
     and fuel_prices.fuel_type = requested_fuel_type
-    and fuel_prices.is_self = true
+    and fuel_prices.is_self = requested_is_self
   where stations.location is not null
     and gis.st_dwithin(
       stations.location,
