@@ -39,6 +39,7 @@ export async function getNearbyStations(
   radiusMeters = 15_000,
   limit = 20,
   fuelType: SupportedFuelType = 'Benzina',
+  isSelf: boolean = true,
 ): Promise<NearbyStation[]> {
   const supabase = createSupabaseServerClient()
   const { data, error } = await supabase.rpc('nearby_stations', {
@@ -47,6 +48,7 @@ export async function getNearbyStations(
     radius_meters: radiusMeters,
     result_limit: limit,
     requested_fuel_type: fuelType,
+    requested_is_self: isSelf,
   })
 
   if (error) {
