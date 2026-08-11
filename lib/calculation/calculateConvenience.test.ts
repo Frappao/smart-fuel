@@ -27,4 +27,44 @@ describe('calculateConvenience', () => {
     expect(result.travelFuelLiters).toBe(0)
     expect(result.netFuelLiters).toBe(result.litersPurchased)
   })
+
+  it('premia la stazione vicina per un piccolo rifornimento e quella economica per uno grande', () => {
+    const consumptionLitersPer100Km = 6.5
+    const nearbyExpensiveStation = {
+      pricePerLiter: 1.8,
+      travelDistanceKm: 4,
+    }
+    const fartherCheaperStation = {
+      pricePerLiter: 1.7,
+      travelDistanceKm: 20,
+    }
+
+    const nearbyWithSmallRefuel = calculateConvenience({
+      ...nearbyExpensiveStation,
+      refuelAmount: 10,
+      consumptionLitersPer100Km,
+    })
+    const fartherWithSmallRefuel = calculateConvenience({
+      ...fartherCheaperStation,
+      refuelAmount: 10,
+      consumptionLitersPer100Km,
+    })
+    const nearbyWithLargeRefuel = calculateConvenience({
+      ...nearbyExpensiveStation,
+      refuelAmount: 100,
+      consumptionLitersPer100Km,
+    })
+    const fartherWithLargeRefuel = calculateConvenience({
+      ...fartherCheaperStation,
+      refuelAmount: 100,
+      consumptionLitersPer100Km,
+    })
+
+    expect(nearbyWithSmallRefuel.netFuelLiters).toBeGreaterThan(
+      fartherWithSmallRefuel.netFuelLiters,
+    )
+    expect(fartherWithLargeRefuel.netFuelLiters).toBeGreaterThan(
+      nearbyWithLargeRefuel.netFuelLiters,
+    )
+  })
 })
