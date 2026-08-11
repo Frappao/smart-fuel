@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { calculateConvenience } from '../../lib/calculation/calculateConvenience'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
+import AdSlot from '../ads/AdSlot'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 
 interface NearbyStation {
@@ -184,6 +185,90 @@ function getGoogleMapsNavigationUrl(
   navigationUrl.searchParams.set('dir_action', 'navigate')
 
   return navigationUrl.toString()
+}
+
+interface StationResultCardProps {
+  result: ConvenienceResult
+  index: number
+  winnerAdvantageLiters: number | null
+}
+
+function StationResultCard({
+  result,
+  index,
+  winnerAdvantageLiters,
+}: StationResultCardProps) {
+  const stationName = getStationDisplayName(result.station)
+  const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
+  const isBestResult = index === 0
+  const navigationUrl = getGoogleMapsNavigationUrl(
+    result.station.latitude,
+    result.station.longitude,
+  )
+
+  return (
+    <li
+      className={
+        isBestResult
+          ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-sm sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/30'
+          : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950/40'
+      }
+    >
+      {isBestResult ? (
+        <p className="text-sm font-semibold leading-5 text-emerald-700 dark:text-emerald-300">
+          Ti conviene questo distributore
+        </p>
+      ) : null}
+      <h3 className={isBestResult ? 'mt-1 text-xl font-semibold' : 'font-semibold'}>
+        {index + 1}. {stationName}
+      </h3>
+      <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
+        <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
+          Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
+        </p>
+        <p className={isBestResult ? 'font-semibold' : undefined}>
+          Distanza stradale stimata A/R:{' '}
+          {distanceFormatter.format(travelDistanceKm)} km
+        </p>
+        <p>
+          Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
+        </p>
+        <p>
+          Litri stimati consumati per il viaggio:{' '}
+          {litersFormatter.format(result.travelFuelLiters)} L
+        </p>
+        <p
+          className={
+            isBestResult
+              ? 'mt-1 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 sm:col-span-2 dark:bg-emerald-900/50 dark:text-emerald-100'
+              : undefined
+          }
+        >
+          Litri netti: {litersFormatter.format(result.netFuelLiters)} L
+        </p>
+        {isBestResult && winnerAdvantageLiters !== null ? (
+          <p className="mt-1 text-sm leading-6 text-emerald-800 sm:col-span-2 dark:text-emerald-200">
+            Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in
+            più rispetto al secondo classificato.
+          </p>
+        ) : null}
+      </div>
+      {navigationUrl ? (
+        <a
+          className={
+            isBestResult
+              ? 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/50 dark:focus:ring-emerald-500'
+              : 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-emerald-500'
+          }
+          href={navigationUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Apri nel navigatore
+        </a>
+      ) : null}
+    </li>
+  )
 }
 
 export default function FuelSmartCalculator() {
@@ -366,88 +451,30 @@ export default function FuelSmartCalculator() {
       ) : null}
 
       {results.length > 0 ? (
-        <ol className="flex min-w-0 flex-col gap-3 sm:gap-4">
-          {results.map((result, index) => {
-            const stationName = getStationDisplayName(result.station)
-            const travelDistanceKm =
-              (result.routeDistanceMeters / 1_000) * 2
-            const isBestResult = index === 0
-            const navigationUrl = getGoogleMapsNavigationUrl(
-              result.station.latitude,
-              result.station.longitude,
-            )
+        <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+          <ol>
+            <StationResultCard
+              index={0}
+              result={results[0]}
+              winnerAdvantageLiters={winnerAdvantageLiters}
+            />
+          </ol>
 
-            return (
-              <li
-                className={
-                  isBestResult
-                    ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-sm sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/30'
-                    : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950/40'
-                }
-                key={result.station.id}
-              >
-                {isBestResult ? (
-                  <p className="text-sm font-semibold leading-5 text-emerald-700 dark:text-emerald-300">
-                    Ti conviene questo distributore
-                  </p>
-                ) : null}
-                <h3
-                  className={
-                    isBestResult ? 'mt-1 text-xl font-semibold' : 'font-semibold'
-                  }
-                >
-                  {index + 1}. {stationName}
-                </h3>
-                <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-                  <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
-                    Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
-                  </p>
-                  <p className={isBestResult ? 'font-semibold' : undefined}>
-                    Distanza stradale stimata A/R:{' '}
-                    {distanceFormatter.format(travelDistanceKm)} km
-                  </p>
-                  <p>
-                    Litri acquistati:{' '}
-                    {litersFormatter.format(result.litersPurchased)} L
-                  </p>
-                  <p>
-                    Litri stimati consumati per il viaggio:{' '}
-                    {litersFormatter.format(result.travelFuelLiters)} L
-                  </p>
-                  <p
-                    className={
-                      isBestResult
-                        ? 'mt-1 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 sm:col-span-2 dark:bg-emerald-900/50 dark:text-emerald-100'
-                        : undefined
-                    }
-                  >
-                    Litri netti: {litersFormatter.format(result.netFuelLiters)} L
-                  </p>
-                  {isBestResult && winnerAdvantageLiters !== null ? (
-                    <p className="mt-1 text-sm leading-6 text-emerald-800 sm:col-span-2 dark:text-emerald-200">
-                      Hai circa {litersFormatter.format(winnerAdvantageLiters)} L
-                      netti in più rispetto al secondo classificato.
-                    </p>
-                  ) : null}
-                </div>
-                {navigationUrl ? (
-                  <a
-                    className={
-                      isBestResult
-                        ? 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/50 dark:focus:ring-emerald-500'
-                        : 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-emerald-500'
-                    }
-                    href={navigationUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Apri nel navigatore
-                  </a>
-                ) : null}
-              </li>
-            )
-          })}
-        </ol>
+          <AdSlot />
+
+          {results.length > 1 ? (
+            <ol className="flex min-w-0 flex-col gap-3 sm:gap-4" start={2}>
+              {results.slice(1).map((result, index) => (
+                <StationResultCard
+                  index={index + 1}
+                  key={result.station.id}
+                  result={result}
+                  winnerAdvantageLiters={winnerAdvantageLiters}
+                />
+              ))}
+            </ol>
+          ) : null}
+        </div>
       ) : null}
     </section>
   )

@@ -59,6 +59,7 @@ describe('FuelSmartCalculator', () => {
 
   afterEach(() => {
     cleanup()
+    vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
 
@@ -74,6 +75,7 @@ describe('FuelSmartCalculator', () => {
   })
 
   it('submits the form and ranks priced stations by net fuel liters', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ADS_ENABLED', 'true')
     arrangeApiResponse({
       stations: [
         {
@@ -191,7 +193,10 @@ describe('FuelSmartCalculator', () => {
 
     const firstResult = screen.getByText('1. Near Expensive').closest('li')
     const secondResult = screen.getByText('2. Cheap Fuel').closest('li')
+    const adSlot = screen.getByLabelText('Spazio pubblicitario')
 
+    expect(adSlot.previousElementSibling?.contains(firstResult)).toBe(true)
+    expect(adSlot.nextElementSibling?.contains(secondResult)).toBe(true)
     expect(firstResult?.textContent).toContain(
       'Ti conviene questo distributore',
     )
