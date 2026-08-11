@@ -13,10 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fuel Smart",
+  title: "Rifornio",
   description:
     "Trova il distributore più conveniente considerando prezzo del carburante, distanza e consumo dell'auto.",
-  applicationName: "Fuel Smart",
+  applicationName: "Rifornio",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
