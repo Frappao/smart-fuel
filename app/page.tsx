@@ -43,6 +43,14 @@ export default function Home() {
             .
           </p>
           <p>Rifornio è un servizio indipendente e non è affiliato al MIMIT.</p>
+          <nav aria-label="Informazioni legali">
+            <a
+              className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+              href="/privacy"
+            >
+              Privacy
+            </a>
+          </nav>
         </div>
       </footer>
     </div>
