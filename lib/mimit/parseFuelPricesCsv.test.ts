@@ -37,4 +37,14 @@ describe('parseFuelPricesCsv', () => {
       },
     ])
   })
+
+  it('preserva il valore GPL usato dal dataset MIMIT', () => {
+    const csv = [
+      'Estrazione del 2026-08-11',
+      'idImpianto|descCarburante|prezzo|isSelf|dtComu',
+      '3464|GPL|0.789|1|11/08/2026 08:00:00',
+    ].join('\n')
+
+    expect(parseFuelPricesCsv(csv)[0]?.fuelType).toBe('GPL')
+  })
 })
