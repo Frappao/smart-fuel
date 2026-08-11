@@ -68,8 +68,11 @@ const noValidRoutesMessage =
 
 function getNoCandidatesMessage(
   fuelType: RefuelCalculationInput['fuelType'],
+  isSelf: boolean,
 ): string {
-  return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} Self disponibile.`
+  const serviceModeLabel = isSelf ? 'Self' : 'Servito'
+
+  return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} ${serviceModeLabel} disponibile.`
 }
 
 function isNearbyStationsResponse(
@@ -210,6 +213,7 @@ export default function FuelSmartCalculator() {
         radius: '15000',
         limit: '20',
         fuelType: values.fuelType,
+        isSelf: String(values.isSelf),
       })
       let response: Response
 
@@ -280,7 +284,9 @@ export default function FuelSmartCalculator() {
 
         routeMatrixRoutes = routeMatrixBody.routes.filter(isRouteMatrixRoute)
       } else {
-        setEmptyStateMessage(getNoCandidatesMessage(values.fuelType))
+        setEmptyStateMessage(
+          getNoCandidatesMessage(values.fuelType, values.isSelf),
+        )
       }
 
       const rankedResults = routeMatrixRoutes

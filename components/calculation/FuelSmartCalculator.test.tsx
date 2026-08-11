@@ -20,10 +20,17 @@ function arrangeApiResponse(body: unknown, ok = true) {
   } as unknown as Response)
 }
 
-function submitForm(fuelType: SupportedFuelType = 'Benzina') {
+function submitForm(
+  fuelType: SupportedFuelType = 'Benzina',
+  isSelf = true,
+) {
   fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
     target: { value: fuelType },
   })
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'Modalità di servizio' }),
+    { target: { value: String(isSelf) } },
+  )
   fireEvent.change(
     screen.getByRole('spinbutton', {
       name: 'Importo rifornimento in euro',
@@ -158,7 +165,7 @@ describe('FuelSmartCalculator', () => {
     expect(getCurrentPosition).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      '/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=Benzina',
+      '/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=Benzina&isSelf=true',
     )
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/route-matrix')
 
@@ -315,21 +322,24 @@ describe('FuelSmartCalculator', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it.each(['Gasolio', 'GPL'] as const)(
-    'searches %s and uses it in the empty state',
-    async (fuelType) => {
+  it.each([
+    ['Gasolio', false],
+    ['GPL', false],
+  ] as const)(
+    'searches %s in Servito mode and uses it in the empty state',
+    async (fuelType, isSelf) => {
       arrangeApiResponse({ stations: [] })
       render(<FuelSmartCalculator />)
 
-      submitForm(fuelType)
+      submitForm(fuelType, isSelf)
 
       expect(
         await screen.findByText(
-          `Non ho trovato distributori vicini con ${fuelType} Self disponibile.`,
+          `Non ho trovato distributori vicini con ${fuelType} Servito disponibile.`,
         ),
       ).toBeTruthy()
       expect(fetchMock).toHaveBeenCalledWith(
-        `/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=${fuelType}`,
+        `/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=${fuelType}&isSelf=false`,
       )
       expect(fetchMock).toHaveBeenCalledOnce()
     },
