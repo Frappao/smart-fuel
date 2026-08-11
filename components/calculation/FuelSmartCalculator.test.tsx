@@ -170,7 +170,9 @@ describe('FuelSmartCalculator', () => {
     const firstResult = screen.getByText('1. Near Expensive').closest('li')
     const secondResult = screen.getByText('2. Cheap Fuel').closest('li')
 
-    expect(firstResult?.textContent).toContain('Più conveniente')
+    expect(firstResult?.textContent).toContain(
+      'Ti conviene questo distributore',
+    )
     expect(firstResult?.textContent).toContain(
       'Distanza stradale stimata A/R: 2,0 km',
     )
@@ -182,7 +184,9 @@ describe('FuelSmartCalculator', () => {
       'Distanza stradale stimata A/R: 40,0 km',
     )
     expect(secondResult?.textContent).toContain('Litri netti: 29,33 L')
-    expect(screen.getAllByText('Più conveniente')).toHaveLength(1)
+    expect(screen.getAllByText('Ti conviene questo distributore')).toHaveLength(
+      1,
+    )
     expect(screen.queryByText(/Middle Station/)).toBeNull()
     expect(screen.queryByText(/No Price/)).toBeNull()
     expect(screen.queryByText(/Invalid Coordinates/)).toBeNull()

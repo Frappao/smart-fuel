@@ -271,30 +271,55 @@ export default function FuelSmartCalculator() {
               result.station.name ?? result.station.brand ?? 'Distributore'
             const travelDistanceKm =
               (result.routeDistanceMeters / 1_000) * 2
+            const isBestResult = index === 0
 
             return (
-              <li className="rounded border border-zinc-200 p-4" key={result.station.id}>
-                <h3 className="font-semibold">
+              <li
+                className={
+                  isBestResult
+                    ? 'rounded-xl border-2 border-emerald-600 bg-emerald-50 p-5 shadow-sm dark:border-emerald-400 dark:bg-emerald-950/30'
+                    : 'rounded-lg border border-zinc-200 p-4 dark:border-zinc-800'
+                }
+                key={result.station.id}
+              >
+                {isBestResult ? (
+                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                    Ti conviene questo distributore
+                  </p>
+                ) : null}
+                <h3
+                  className={
+                    isBestResult ? 'mt-1 text-xl font-semibold' : 'font-semibold'
+                  }
+                >
                   {index + 1}. {stationName}
                 </h3>
-                {index === 0 ? <p>Più conveniente</p> : null}
-                <p>
-                  Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
-                </p>
-                <p>
-                  Distanza stradale stimata A/R:{' '}
-                  {distanceFormatter.format(travelDistanceKm)} km
-                </p>
-                <p>
-                  Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
-                </p>
-                <p>
-                  Litri stimati consumati per il viaggio:{' '}
-                  {litersFormatter.format(result.travelFuelLiters)} L
-                </p>
-                <p>
-                  Litri netti: {litersFormatter.format(result.netFuelLiters)} L
-                </p>
+                <div className="mt-3 space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
+                    Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
+                  </p>
+                  <p className={isBestResult ? 'font-semibold' : undefined}>
+                    Distanza stradale stimata A/R:{' '}
+                    {distanceFormatter.format(travelDistanceKm)} km
+                  </p>
+                  <p>
+                    Litri acquistati:{' '}
+                    {litersFormatter.format(result.litersPurchased)} L
+                  </p>
+                  <p>
+                    Litri stimati consumati per il viaggio:{' '}
+                    {litersFormatter.format(result.travelFuelLiters)} L
+                  </p>
+                  <p
+                    className={
+                      isBestResult
+                        ? 'mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100'
+                        : undefined
+                    }
+                  >
+                    Litri netti: {litersFormatter.format(result.netFuelLiters)} L
+                  </p>
+                </div>
               </li>
             )
           })}
