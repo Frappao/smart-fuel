@@ -13,10 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://rifornio.it"),
   title: "Rifornio",
   description:
     "Trova il distributore più conveniente considerando prezzo del carburante, distanza e consumo dell'auto.",
   applicationName: "Rifornio",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
