@@ -203,6 +203,24 @@ describe('FuelSmartCalculator', () => {
     expect(screen.getAllByText('Ti conviene questo distributore')).toHaveLength(
       1,
     )
+    const navigationLinks = screen.getAllByRole('link', {
+      name: 'Apri nel navigatore',
+    })
+    const winnerNavigationUrl = new URL(
+      navigationLinks[0].getAttribute('href') ?? '',
+    )
+
+    expect(navigationLinks).toHaveLength(2)
+    expect(winnerNavigationUrl.origin).toBe('https://www.google.com')
+    expect(winnerNavigationUrl.pathname).toBe('/maps/dir/')
+    expect(winnerNavigationUrl.searchParams.get('destination')).toBe(
+      '45.47,9.18',
+    )
+    expect(winnerNavigationUrl.searchParams.get('api')).toBe('1')
+    expect(winnerNavigationUrl.searchParams.get('travelmode')).toBe('driving')
+    expect(winnerNavigationUrl.searchParams.get('dir_action')).toBe('navigate')
+    expect(navigationLinks[0].getAttribute('target')).toBe('_blank')
+    expect(navigationLinks[0].getAttribute('rel')).toBe('noopener noreferrer')
     expect(screen.queryByText(/Middle Station/)).toBeNull()
     expect(screen.queryByText(/No Price/)).toBeNull()
     expect(screen.queryByText(/Invalid Coordinates/)).toBeNull()
@@ -290,6 +308,37 @@ describe('FuelSmartCalculator', () => {
         'Non ho trovato distributori vicini con Benzina Self disponibile.',
       ),
     ).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('does not show navigation when station coordinates are invalid', async () => {
+    arrangeApiResponse({
+      stations: [
+        {
+          id: 1,
+          name: 'Invalid Coordinates',
+          brand: 'Brand A',
+          address: 'Via A',
+          city: 'Milano',
+          latitude: null,
+          longitude: 9.18,
+          distanceMeters: 1_000,
+          fuelPrice: 1.6,
+        },
+      ],
+    })
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(
+      await screen.findByText(
+        'Non ho trovato distributori vicini con Benzina Self disponibile.',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('link', { name: 'Apri nel navigatore' }),
+    ).toBeNull()
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 

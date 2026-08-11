@@ -152,6 +152,32 @@ function getStationDisplayName(
   return city ? `Distributore a ${city}` : 'Distributore'
 }
 
+function getGoogleMapsNavigationUrl(
+  latitude: number,
+  longitude: number,
+): string | null {
+  if (
+    typeof latitude !== 'number' ||
+    !Number.isFinite(latitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    typeof longitude !== 'number' ||
+    !Number.isFinite(longitude) ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null
+  }
+
+  const navigationUrl = new URL('https://www.google.com/maps/dir/')
+  navigationUrl.searchParams.set('api', '1')
+  navigationUrl.searchParams.set('destination', `${latitude},${longitude}`)
+  navigationUrl.searchParams.set('travelmode', 'driving')
+  navigationUrl.searchParams.set('dir_action', 'navigate')
+
+  return navigationUrl.toString()
+}
+
 export default function FuelSmartCalculator() {
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
@@ -334,6 +360,10 @@ export default function FuelSmartCalculator() {
             const travelDistanceKm =
               (result.routeDistanceMeters / 1_000) * 2
             const isBestResult = index === 0
+            const navigationUrl = getGoogleMapsNavigationUrl(
+              result.station.latitude,
+              result.station.longitude,
+            )
 
             return (
               <li
@@ -388,6 +418,20 @@ export default function FuelSmartCalculator() {
                     </p>
                   ) : null}
                 </div>
+                {navigationUrl ? (
+                  <a
+                    className={
+                      isBestResult
+                        ? 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/50 dark:focus:ring-emerald-500'
+                        : 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-emerald-500'
+                    }
+                    href={navigationUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Apri nel navigatore
+                  </a>
+                ) : null}
               </li>
             )
           })}
