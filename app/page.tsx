@@ -1,4 +1,4 @@
-import LocationButton from "../components/location/LocationButton";
+import FuelSmartCalculator from "../components/calculation/FuelSmartCalculator";
 
 export default function Home() {
   return (
@@ -8,7 +8,7 @@ export default function Home() {
         Trova il distributore più conveniente considerando prezzo, distanza e
         consumo.
       </p>
-      <LocationButton />
+      <FuelSmartCalculator />
     </main>
   );
 }
