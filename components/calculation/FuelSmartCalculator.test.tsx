@@ -328,6 +328,57 @@ describe('FuelSmartCalculator', () => {
     ).toBeNull()
   })
 
+  it.each([
+    [
+      'a descriptive name',
+      { name: 'Stazione Centro', brand: 'Q8', city: 'Milano' },
+      '1. Stazione Centro',
+    ],
+    [
+      'the brand when the name is numeric',
+      { name: ' 7412 ', brand: 'Q8', city: 'Milano' },
+      '1. Q8',
+    ],
+    [
+      'the city fallback when the numeric name has no brand',
+      { name: '7412', brand: null, city: 'Milano' },
+      '1. Distributore a Milano',
+    ],
+    [
+      'the generic fallback when no descriptive data is available',
+      { name: '7412', brand: '   ', city: null },
+      '1. Distributore',
+    ],
+  ])('shows %s', async (_case, stationLabels, expectedHeading) => {
+    arrangeApiResponse({
+      stations: [
+        {
+          id: 1,
+          ...stationLabels,
+          address: 'Via A',
+          latitude: 45.47,
+          longitude: 9.18,
+          distanceMeters: 1_000,
+          fuelPrice: 1.6,
+        },
+      ],
+    })
+    arrangeApiResponse({
+      routes: [
+        {
+          destinationIndex: 0,
+          distanceMeters: 1_000,
+          durationSeconds: 300,
+        },
+      ],
+    })
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await screen.findByText(expectedHeading)).toBeTruthy()
+  })
+
   it('shows a readable geolocation error without calling the API', async () => {
     vi.mocked(getCurrentPosition).mockRejectedValue(
       new Error('Il permesso alla posizione è stato negato.'),

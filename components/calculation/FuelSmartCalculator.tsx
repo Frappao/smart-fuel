@@ -122,6 +122,36 @@ function isValidCandidate(
   )
 }
 
+function getDescriptiveLabel(value: string | null): string | null {
+  const normalizedValue = value?.trim()
+
+  if (!normalizedValue || /^[\d\s]+$/.test(normalizedValue)) {
+    return null
+  }
+
+  return normalizedValue
+}
+
+function getStationDisplayName(
+  station: Pick<NearbyStation, 'name' | 'brand' | 'city'>,
+): string {
+  const name = getDescriptiveLabel(station.name)
+
+  if (name) {
+    return name
+  }
+
+  const brand = getDescriptiveLabel(station.brand)
+
+  if (brand) {
+    return brand
+  }
+
+  const city = getDescriptiveLabel(station.city)
+
+  return city ? `Distributore a ${city}` : 'Distributore'
+}
+
 export default function FuelSmartCalculator() {
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
@@ -300,8 +330,7 @@ export default function FuelSmartCalculator() {
       {results.length > 0 ? (
         <ol className="flex min-w-0 flex-col gap-3 sm:gap-4">
           {results.map((result, index) => {
-            const stationName =
-              result.station.name ?? result.station.brand ?? 'Distributore'
+            const stationName = getStationDisplayName(result.station)
             const travelDistanceKm =
               (result.routeDistanceMeters / 1_000) * 2
             const isBestResult = index === 0
