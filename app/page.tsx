@@ -49,6 +49,12 @@ export default function Home() {
           >
             <a
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+              href="/come-funziona"
+            >
+              Come funziona
+            </a>
+            <a
+              className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/privacy"
             >
               Privacy
