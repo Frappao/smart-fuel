@@ -120,7 +120,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
       </div>
 
       <button
-        className="min-h-12 w-full rounded-lg bg-zinc-900 px-4 py-3 font-semibold text-white hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:focus:ring-offset-zinc-950"
+        className="min-h-12 w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 dark:focus:ring-emerald-500 dark:focus:ring-offset-zinc-950"
         type="submit"
       >
         Calcola convenienza
