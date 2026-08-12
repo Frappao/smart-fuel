@@ -1,0 +1,101 @@
+:root {
+  color: #18181b;
+  background: #ffffff;
+  font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.mobile-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.foundation-card {
+  width: min(100%, 30rem);
+  padding: 1.5rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.75rem, 8vw, 2.25rem);
+  line-height: 1.15;
+}
+
+p {
+  color: #52525b;
+  line-height: 1.6;
+}
+
+dl {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+}
+
+dl div {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #ecfdf5;
+}
+
+dt {
+  color: #52525b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f4f4f5;
+    background: #09090b;
+  }
+
+  .foundation-card {
+    border-color: #27272a;
+    background: #18181b;
+  }
+
+  .eyebrow {
+    color: #6ee7b7;
+  }
+
+  p,
+  dt {
+    color: #d4d4d8;
+  }
+
+  dl div {
+    background: rgb(6 78 59 / 45%);
+  }
+}
