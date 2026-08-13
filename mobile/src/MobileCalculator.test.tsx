@@ -5,9 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileCalculator from './MobileCalculator'
+import { openStationNavigation } from './navigation/openStationNavigation'
 
 vi.mock('./location/getMobileCurrentPosition', () => ({
   getMobileCurrentPosition: vi.fn(),
+}))
+
+vi.mock('./navigation/openStationNavigation', () => ({
+  openStationNavigation: vi.fn(),
 }))
 
 const fetchMock = vi.fn()
@@ -58,6 +63,7 @@ describe('MobileCalculator', () => {
       longitude: 12.4964,
       accuracy: 18,
     })
+    vi.mocked(openStationNavigation).mockResolvedValue()
   })
 
   afterEach(() => {
@@ -196,6 +202,36 @@ describe('MobileCalculator', () => {
     ).toBeTruthy()
     expect(screen.queryByText(/No Route/)).toBeNull()
     expect(screen.queryByText(/No Price/)).toBeNull()
+
+    const requestCountBeforeNavigation = fetchMock.mock.calls.length
+    const navigationButtons = screen.getAllByRole('button', {
+      name: 'Apri nel navigatore',
+    })
+
+    expect(navigationButtons).toHaveLength(2)
+    fireEvent.click(navigationButtons[0])
+
+    expect(openStationNavigation).toHaveBeenCalledWith({
+      latitude: 41.91,
+      longitude: 12.49,
+    })
+    expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledTimes(requestCountBeforeNavigation)
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map(({ textContent }) =>
+        textContent,
+      ),
+    ).toEqual(['1. Near Expensive', '2. Far Cheap'])
+
+    vi.mocked(openStationNavigation).mockRejectedValueOnce(
+      new Error('raw plugin error'),
+    )
+    fireEvent.click(navigationButtons[1])
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Non riesco ad aprire il navigatore. Riprova.',
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(requestCountBeforeNavigation)
   })
 
   it('uses the newly selected fuel type on consecutive submissions', async () => {

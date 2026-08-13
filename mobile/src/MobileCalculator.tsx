@@ -17,6 +17,7 @@ import {
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { RIFORNIO_API_BASE_URL } from './config'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
+import { openStationNavigation } from './navigation/openStationNavigation'
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -41,6 +42,8 @@ const routeErrorMessage =
   'Non riesco a calcolare le distanze stradali in questo momento. Riprova tra poco.'
 const noValidRoutesMessage =
   'Ho trovato dei distributori, ma non posso confrontarli perché le distanze stradali non sono disponibili.'
+const navigationErrorMessage =
+  'Non riesco ad aprire il navigatore. Riprova.'
 
 function getNoCandidatesMessage({
   fuelType,
@@ -61,12 +64,14 @@ interface MobileStationResultProps {
   result: RankedStationResult
   index: number
   winnerAdvantageLiters: number | null
+  onOpenNavigation: (latitude: number, longitude: number) => void
 }
 
 function MobileStationResult({
   result,
   index,
   winnerAdvantageLiters,
+  onOpenNavigation,
 }: MobileStationResultProps) {
   const isWinner = index === 0
   const roundTripDistanceKm = (result.routeDistanceMeters / 1_000) * 2
@@ -107,6 +112,15 @@ function MobileStationResult({
           più rispetto al secondo classificato.
         </p>
       ) : null}
+      <button
+        className="navigation-button"
+        type="button"
+        onClick={() =>
+          onOpenNavigation(result.station.latitude, result.station.longitude)
+        }
+      >
+        Apri nel navigatore
+      </button>
     </li>
   )
 }
@@ -116,15 +130,27 @@ export default function MobileCalculator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
+  const [navigationError, setNavigationError] = useState<string | null>(null)
   const winnerAdvantageLiters =
     results.length >= 2
       ? results[0].netFuelLiters - results[1].netFuelLiters
       : null
 
+  async function handleOpenNavigation(latitude: number, longitude: number) {
+    setNavigationError(null)
+
+    try {
+      await openStationNavigation({ latitude, longitude })
+    } catch {
+      setNavigationError(navigationErrorMessage)
+    }
+  }
+
   async function handleCalculate(values: RefuelCalculationInput) {
     setResults([])
     setError(null)
     setEmptyState(null)
+    setNavigationError(null)
     setIsLoading(true)
 
     try {
@@ -224,6 +250,11 @@ export default function MobileCalculator() {
           {error}
         </p>
       ) : null}
+      {navigationError ? (
+        <p className="status-message error-message" role="alert">
+          {navigationError}
+        </p>
+      ) : null}
       {!isLoading && !error && emptyState ? (
         <p className="status-message">{emptyState}</p>
       ) : null}
@@ -238,6 +269,7 @@ export default function MobileCalculator() {
                 key={result.station.id}
                 result={result}
                 winnerAdvantageLiters={winnerAdvantageLiters}
+                onOpenNavigation={handleOpenNavigation}
               />
             ))}
           </ol>

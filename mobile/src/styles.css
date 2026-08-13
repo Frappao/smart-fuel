@@ -214,6 +214,27 @@ p {
   font-weight: 600;
 }
 
+.navigation-button {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 1rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #059669;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #047857;
+  font-weight: 700;
+}
+
+.navigation-button:active {
+  background: #d1fae5;
+}
+
+.navigation-button:focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 2px;
+}
+
 @media (min-width: 40rem) {
   .mobile-shell {
     padding-inline: 1.5rem;
@@ -285,5 +306,14 @@ p {
 
   .winner-advantage {
     color: #a7f3d0;
+  }
+
+  .navigation-button {
+    border-color: #34d399;
+    color: #a7f3d0;
+  }
+
+  .navigation-button:active {
+    background: rgb(6 78 59 / 60%);
   }
 }
