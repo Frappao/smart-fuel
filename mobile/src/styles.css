@@ -1,6 +1,6 @@
 :root {
   color: #18181b;
-  background: #ffffff;
+  background: #fafafa;
   font-family:
     system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -17,27 +17,37 @@ body {
   margin: 0;
 }
 
+button,
+input,
+select {
+  font: inherit;
+}
+
 .mobile-shell {
-  display: grid;
+  width: min(100%, 42rem);
   min-height: 100vh;
-  place-items: center;
-  padding: 1.5rem;
+  margin: 0 auto;
+  padding: max(1.5rem, env(safe-area-inset-top)) 1rem
+    max(2rem, env(safe-area-inset-bottom));
 }
 
-.foundation-card {
-  width: min(100%, 30rem);
-  padding: 1.5rem;
-  border: 1px solid #e4e4e7;
-  border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+.mobile-header {
+  margin-bottom: 1.5rem;
 }
 
-.eyebrow {
+.eyebrow,
+.winner-label {
   margin: 0;
   color: #047857;
   font-size: 0.875rem;
   font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -46,33 +56,184 @@ h1 {
   line-height: 1.15;
 }
 
+h2 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin: 0.4rem 0 1rem;
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
 p {
   color: #52525b;
   line-height: 1.6;
 }
 
-dl {
+.test-position-notice {
+  width: fit-content;
+  margin: 1rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.65rem;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.calculator-form form {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.calculator-form form > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.calculator-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.calculator-form input,
+.calculator-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.5rem;
+  outline: none;
+  background: #ffffff;
+  color: #18181b;
+  font-size: 1rem;
+}
+
+.calculator-form input:focus,
+.calculator-form select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px #6ee7b7;
+}
+
+.calculator-form button {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #059669;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.calculator-form button:active {
+  background: #047857;
+}
+
+.calculator-form p[role="alert"] {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.status-message {
+  margin: 1.25rem 0 0;
+  padding: 1rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.error-message {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.results-section {
+  margin-top: 2rem;
+}
+
+.results-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-card {
+  padding: 1rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+
+.winner-card {
+  border-color: #34d399;
+  background: #ecfdf5;
+  box-shadow: 0 4px 12px rgb(6 95 70 / 10%);
+}
+
+.result-values {
   display: grid;
   gap: 0.75rem;
-  margin: 1.5rem 0 0;
+  margin: 0;
 }
 
-dl div {
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  background: #ecfdf5;
+.result-values div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e4e4e7;
 }
 
-dt {
+.result-values dt {
   color: #52525b;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 0.8rem;
 }
 
-dd {
-  margin: 0.25rem 0 0;
+.result-values dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 650;
+}
+
+.result-values .net-fuel-value dd {
+  color: #047857;
+  font-size: 1.125rem;
+}
+
+.winner-advantage {
+  margin: 1rem 0 0;
+  color: #065f46;
+  font-size: 0.875rem;
   font-weight: 600;
+}
+
+@media (min-width: 40rem) {
+  .mobile-shell {
+    padding-inline: 1.5rem;
+  }
+
+  .calculator-form form,
+  .result-card {
+    padding: 1.5rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -81,21 +242,60 @@ dd {
     background: #09090b;
   }
 
-  .foundation-card {
-    border-color: #27272a;
-    background: #18181b;
-  }
-
-  .eyebrow {
-    color: #6ee7b7;
-  }
-
   p,
-  dt {
+  .result-values dt {
     color: #d4d4d8;
   }
 
-  dl div {
+  .eyebrow,
+  .winner-label,
+  .result-values .net-fuel-value dd {
+    color: #6ee7b7;
+  }
+
+  .test-position-notice,
+  .winner-card {
     background: rgb(6 78 59 / 45%);
+    color: #a7f3d0;
+  }
+
+  .calculator-form form,
+  .status-message,
+  .result-card {
+    border-color: #3f3f46;
+    background: #18181b;
+  }
+
+  .winner-card {
+    border-color: #059669;
+  }
+
+  .calculator-form input,
+  .calculator-form select {
+    border-color: #3f3f46;
+    background: #27272a;
+    color: #f4f4f5;
+  }
+
+  .calculator-form button {
+    background: #34d399;
+    color: #022c22;
+  }
+
+  .calculator-form p[role="alert"],
+  .error-message {
+    color: #fca5a5;
+  }
+
+  .error-message {
+    border-color: #7f1d1d;
+  }
+
+  .result-values div {
+    border-color: #3f3f46;
+  }
+
+  .winner-advantage {
+    color: #a7f3d0;
   }
 }

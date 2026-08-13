@@ -5,30 +5,17 @@ import { useState } from 'react'
 import {
   fetchNearbyStations,
   fetchRouteMatrix,
-  type NearbyStation,
 } from '../../lib/api/rifornioApiClient'
-import { calculateConvenience } from '../../lib/calculation/calculateConvenience'
+import {
+  getStationDisplayName,
+  rankNearbyStations,
+  selectNearbyCandidates,
+  type RankedStationResult,
+} from '../../lib/calculation/rankNearbyStations'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
-
-interface PricedNearbyStation extends NearbyStation {
-  fuelPrice: number
-}
-
-interface RouteMatrixRoute {
-  destinationIndex: number
-  distanceMeters: number
-}
-
-interface ConvenienceResult {
-  station: PricedNearbyStation
-  routeDistanceMeters: number
-  litersPurchased: number
-  travelFuelLiters: number
-  netFuelLiters: number
-}
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -61,71 +48,6 @@ function getNoCandidatesMessage(
   return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} ${serviceModeLabel} disponibile.`
 }
 
-function isRouteMatrixRoute(value: unknown): value is RouteMatrixRoute {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  return (
-    'destinationIndex' in value &&
-    typeof value.destinationIndex === 'number' &&
-    Number.isInteger(value.destinationIndex) &&
-    value.destinationIndex >= 0 &&
-    'distanceMeters' in value &&
-    typeof value.distanceMeters === 'number' &&
-    Number.isFinite(value.distanceMeters) &&
-    value.distanceMeters >= 0
-  )
-}
-
-function isValidCandidate(
-  station: NearbyStation,
-): station is PricedNearbyStation {
-  return (
-    typeof station.latitude === 'number' &&
-    Number.isFinite(station.latitude) &&
-    station.latitude >= -90 &&
-    station.latitude <= 90 &&
-    typeof station.longitude === 'number' &&
-    Number.isFinite(station.longitude) &&
-    station.longitude >= -180 &&
-    station.longitude <= 180 &&
-    typeof station.fuelPrice === 'number' &&
-    Number.isFinite(station.fuelPrice) &&
-    station.fuelPrice > 0
-  )
-}
-
-function getDescriptiveLabel(value: string | null): string | null {
-  const normalizedValue = value?.trim()
-
-  if (!normalizedValue || /^[\d\s]+$/.test(normalizedValue)) {
-    return null
-  }
-
-  return normalizedValue
-}
-
-function getStationDisplayName(
-  station: Pick<NearbyStation, 'name' | 'brand' | 'city'>,
-): string {
-  const name = getDescriptiveLabel(station.name)
-
-  if (name) {
-    return name
-  }
-
-  const brand = getDescriptiveLabel(station.brand)
-
-  if (brand) {
-    return brand
-  }
-
-  const city = getDescriptiveLabel(station.city)
-
-  return city ? `Distributore a ${city}` : 'Distributore'
-}
-
 function getGoogleMapsNavigationUrl(
   latitude: number,
   longitude: number,
@@ -153,7 +75,7 @@ function getGoogleMapsNavigationUrl(
 }
 
 interface StationResultCardProps {
-  result: ConvenienceResult
+  result: RankedStationResult
   index: number
   winnerAdvantageLiters: number | null
 }
@@ -239,7 +161,7 @@ function StationResultCard({
 export default function FuelSmartCalculator() {
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
-  const [results, setResults] = useState<ConvenienceResult[]>([])
+  const [results, setResults] = useState<RankedStationResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
@@ -272,10 +194,10 @@ export default function FuelSmartCalculator() {
         throw new Error(searchErrorMessage)
       }
 
-      const candidateStations = nearbyStationsResponse.stations
-        .filter(isValidCandidate)
-        .slice(0, 20)
-      let routeMatrixRoutes: RouteMatrixRoute[] = []
+      const candidateStations = selectNearbyCandidates(
+        nearbyStationsResponse.stations,
+      )
+      let routeMatrixRoutes: unknown[] = []
 
       if (candidateStations.length > 0) {
         let routeMatrixResponse
@@ -295,41 +217,19 @@ export default function FuelSmartCalculator() {
           throw new Error(routeDistanceErrorMessage)
         }
 
-        routeMatrixRoutes = routeMatrixResponse.routes.filter(isRouteMatrixRoute)
+        routeMatrixRoutes = routeMatrixResponse.routes
       } else {
         setEmptyStateMessage(
           getNoCandidatesMessage(values.fuelType, values.isSelf),
         )
       }
 
-      const rankedResults = routeMatrixRoutes
-        .flatMap((route): ConvenienceResult[] => {
-          const station = candidateStations[route.destinationIndex]
-
-          if (!station) {
-            return []
-          }
-
-          // Google Routes returns the estimated one-way driving distance. For
-          // this MVP, the round trip is approximated by doubling that distance.
-          const travelDistanceKm = (route.distanceMeters / 1_000) * 2
-          const convenience = calculateConvenience({
-            pricePerLiter: station.fuelPrice,
-            refuelAmount: values.refuelAmount,
-            travelDistanceKm,
-            consumptionLitersPer100Km: values.consumptionLitersPer100Km,
-          })
-
-          return [
-            {
-              station,
-              routeDistanceMeters: route.distanceMeters,
-              ...convenience,
-            },
-          ]
-        })
-        .sort((first, second) => second.netFuelLiters - first.netFuelLiters)
-        .slice(0, 10)
+      const rankedResults = rankNearbyStations({
+        candidates: candidateStations,
+        routes: routeMatrixRoutes,
+        refuelAmount: values.refuelAmount,
+        consumptionLitersPer100Km: values.consumptionLitersPer100Km,
+      })
 
       if (candidateStations.length > 0 && rankedResults.length === 0) {
         setEmptyStateMessage(noValidRoutesMessage)

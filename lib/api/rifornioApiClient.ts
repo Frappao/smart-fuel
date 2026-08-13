@@ -42,6 +42,16 @@ export interface RouteMatrixResponse {
   routes: unknown[]
 }
 
+export class RifornioApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message)
+    this.name = 'RifornioApiError'
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -65,8 +75,9 @@ async function readResponseJson(
   requestName: string,
 ): Promise<unknown> {
   if (!response.ok) {
-    throw new Error(
+    throw new RifornioApiError(
       `${requestName} failed with HTTP status ${response.status}.`,
+      response.status,
     )
   }
 
