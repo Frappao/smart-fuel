@@ -15,7 +15,8 @@ import {
   type RankedStationResult,
 } from '../../lib/calculation/rankNearbyStations'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
-import { MOBILE_TEST_POSITION, RIFORNIO_API_BASE_URL } from './config'
+import { RIFORNIO_API_BASE_URL } from './config'
+import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -127,13 +128,14 @@ export default function MobileCalculator() {
     setIsLoading(true)
 
     try {
+      const currentPosition = await getMobileCurrentPosition()
       let nearbyResponse
 
       try {
         nearbyResponse = await fetchNearbyStations(
           {
-            latitude: MOBILE_TEST_POSITION.latitude,
-            longitude: MOBILE_TEST_POSITION.longitude,
+            latitude: currentPosition.latitude,
+            longitude: currentPosition.longitude,
             radius: 15_000,
             limit: 20,
             fuelType: values.fuelType,
@@ -159,7 +161,10 @@ export default function MobileCalculator() {
       try {
         routeResponse = await fetchRouteMatrix(
           {
-            origin: MOBILE_TEST_POSITION,
+            origin: {
+              latitude: currentPosition.latitude,
+              longitude: currentPosition.longitude,
+            },
             destinations: candidates.map(({ latitude, longitude }) => ({
               latitude,
               longitude,
@@ -202,9 +207,6 @@ export default function MobileCalculator() {
         <h1>Trova il rifornimento più conveniente</h1>
         <p>
           Confronta prezzo, distanza stradale e consumo della tua auto.
-        </p>
-        <p className="test-position-notice">
-          Posizione di test: Piazza del Duomo, Milano
         </p>
       </header>
 

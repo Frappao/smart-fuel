@@ -3,7 +3,12 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileCalculator from './MobileCalculator'
+
+vi.mock('./location/getMobileCurrentPosition', () => ({
+  getMobileCurrentPosition: vi.fn(),
+}))
 
 const fetchMock = vi.fn()
 
@@ -48,6 +53,11 @@ describe('MobileCalculator', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(getMobileCurrentPosition).mockResolvedValue({
+      latitude: 41.9028,
+      longitude: 12.4964,
+      accuracy: 18,
+    })
   })
 
   afterEach(() => {
@@ -55,22 +65,20 @@ describe('MobileCalculator', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shows the temporary test position and a loading state on submit', () => {
-    fetchMock.mockReturnValue(new Promise(() => {}))
+  it('requests location only after submit and shows a loading state', () => {
+    vi.mocked(getMobileCurrentPosition).mockReturnValue(new Promise(() => {}))
     render(<MobileCalculator />)
 
-    expect(
-      screen.getByText('Posizione di test: Piazza del Duomo, Milano'),
-    ).toBeTruthy()
+    expect(getMobileCurrentPosition).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Posizione di test/)).toBeNull()
 
     submitForm()
 
+    expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
     expect(
       screen.getByText('Sto cercando i distributori più convenienti...'),
     ).toBeTruthy()
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://rifornio.it/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=Benzina&isSelf=true',
-    )
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('uses Gasolio Servito and ranks routes by destinationIndex and net liters', async () => {
@@ -84,8 +92,8 @@ describe('MobileCalculator', () => {
           address: 'Via A',
           city: 'Milano',
           province: 'MI',
-          latitude: 45.47,
-          longitude: 9.18,
+          latitude: 41.91,
+          longitude: 12.49,
           distanceMeters: 14_000,
           fuelPrice: 1.6,
           communicatedAt: null,
@@ -98,8 +106,8 @@ describe('MobileCalculator', () => {
           address: 'Via B',
           city: 'Milano',
           province: 'MI',
-          latitude: 45.45,
-          longitude: 9.21,
+          latitude: 41.89,
+          longitude: 12.51,
           distanceMeters: 100,
           fuelPrice: 1.5,
           communicatedAt: null,
@@ -112,8 +120,8 @@ describe('MobileCalculator', () => {
           address: 'Via C',
           city: 'Milano',
           province: 'MI',
-          latitude: 45.46,
-          longitude: 9.22,
+          latitude: 41.9,
+          longitude: 12.52,
           distanceMeters: 50,
           fuelPrice: 1.4,
           communicatedAt: null,
@@ -126,8 +134,8 @@ describe('MobileCalculator', () => {
           address: 'Via D',
           city: 'Milano',
           province: 'MI',
-          latitude: 45.465,
-          longitude: 9.195,
+          latitude: 41.905,
+          longitude: 12.495,
           distanceMeters: 10,
           fuelPrice: null,
           communicatedAt: null,
@@ -147,7 +155,7 @@ describe('MobileCalculator', () => {
     expect(await screen.findByText('1. Near Expensive')).toBeTruthy()
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'https://rifornio.it/api/nearby-stations?lat=45.4642&lng=9.19&radius=15000&limit=20&fuelType=Gasolio&isSelf=false',
+      'https://rifornio.it/api/nearby-stations?lat=41.9028&lng=12.4964&radius=15000&limit=20&fuelType=Gasolio&isSelf=false',
     )
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
       'https://rifornio.it/api/route-matrix',
@@ -160,11 +168,11 @@ describe('MobileCalculator', () => {
       headers: { 'Content-Type': 'application/json' },
     })
     expect(JSON.parse(routeRequest.body as string)).toEqual({
-      origin: { latitude: 45.4642, longitude: 9.19 },
+      origin: { latitude: 41.9028, longitude: 12.4964 },
       destinations: [
-        { latitude: 45.47, longitude: 9.18 },
-        { latitude: 45.45, longitude: 9.21 },
-        { latitude: 45.46, longitude: 9.22 },
+        { latitude: 41.91, longitude: 12.49 },
+        { latitude: 41.89, longitude: 12.51 },
+        { latitude: 41.9, longitude: 12.52 },
       ],
     })
     expect(
@@ -190,6 +198,71 @@ describe('MobileCalculator', () => {
     expect(screen.queryByText(/No Price/)).toBeNull()
   })
 
+  it('uses the newly selected fuel type on consecutive submissions', async () => {
+    arrangeResponse({
+      stations: [
+        {
+          id: 1,
+          mimitId: 101,
+          name: 'Benzina Station',
+          brand: null,
+          address: null,
+          city: 'Roma',
+          province: 'RM',
+          latitude: 41.91,
+          longitude: 12.49,
+          distanceMeters: 1_000,
+          fuelPrice: 2.007,
+          communicatedAt: null,
+        },
+      ],
+    })
+    arrangeResponse({
+      routes: [
+        { destinationIndex: 0, distanceMeters: 1_000, durationSeconds: 300 },
+      ],
+    })
+    arrangeResponse({
+      stations: [
+        {
+          id: 1,
+          mimitId: 101,
+          name: 'Gasolio Station',
+          brand: null,
+          address: null,
+          city: 'Roma',
+          province: 'RM',
+          latitude: 41.91,
+          longitude: 12.49,
+          distanceMeters: 1_000,
+          fuelPrice: 2.077,
+          communicatedAt: null,
+        },
+      ],
+    })
+    arrangeResponse({
+      routes: [
+        { destinationIndex: 0, distanceMeters: 1_000, durationSeconds: 300 },
+      ],
+    })
+    render(<MobileCalculator />)
+
+    submitForm({ fuelType: 'Benzina', serviceMode: 'true' })
+    expect(await screen.findByText('1. Benzina Station')).toBeTruthy()
+
+    submitForm({ fuelType: 'Gasolio', serviceMode: 'true' })
+    expect(await screen.findByText('1. Gasolio Station')).toBeTruthy()
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://rifornio.it/api/nearby-stations?lat=41.9028&lng=12.4964&radius=15000&limit=20&fuelType=Benzina&isSelf=true',
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'https://rifornio.it/api/nearby-stations?lat=41.9028&lng=12.4964&radius=15000&limit=20&fuelType=Gasolio&isSelf=true',
+    )
+  })
+
   it('shows a fuel-specific empty state without requesting routes', async () => {
     arrangeResponse({ stations: [] })
     render(<MobileCalculator />)
@@ -202,6 +275,32 @@ describe('MobileCalculator', () => {
       ),
     ).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    [
+      'permission denied',
+      "Per trovare i distributori vicini devi consentire l'accesso alla posizione.",
+    ],
+    [
+      'position unavailable',
+      'Non riesco a determinare la tua posizione. Controlla i servizi di localizzazione e riprova.',
+    ],
+    ['timeout', 'La posizione sta impiegando troppo tempo. Riprova.'],
+    [
+      'unknown error',
+      'Non è stato possibile recuperare la posizione. Riprova.',
+    ],
+  ])('shows a readable %s error without calling APIs', async (_, message) => {
+    vi.mocked(getMobileCurrentPosition).mockRejectedValueOnce(
+      new Error(message),
+    )
+    render(<MobileCalculator />)
+
+    submitForm()
+
+    expect((await screen.findByRole('alert')).textContent).toBe(message)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('shows a controlled nearby error', async () => {

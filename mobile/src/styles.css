@@ -72,17 +72,6 @@ p {
   line-height: 1.6;
 }
 
-.test-position-notice {
-  width: fit-content;
-  margin: 1rem 0 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.65rem;
-  background: #ecfdf5;
-  color: #065f46;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 .calculator-form form {
   display: flex;
   width: 100%;
@@ -253,7 +242,6 @@ p {
     color: #6ee7b7;
   }
 
-  .test-position-notice,
   .winner-card {
     background: rgb(6 78 59 / 45%);
     color: #a7f3d0;
