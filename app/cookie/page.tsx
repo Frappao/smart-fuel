@@ -41,7 +41,7 @@ export default function CookiePage() {
           <ul className="list-disc space-y-2 pl-5">
             <li>cookie applicativi impostati direttamente dall&apos;app;</li>
             <li>analytics o strumenti di misurazione del pubblico;</li>
-            <li>pixel marketing o sistemi pubblicitari;</li>
+            <li>pixel marketing o sistemi pubblicitari attivi;</li>
             <li>strumenti di session replay;</li>
             <li>uso di localStorage o sessionStorage;</li>
             <li>autenticazione o sessioni associate a un account utente.</li>
@@ -75,24 +75,33 @@ export default function CookiePage() {
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>
-            Strumenti pubblicitari e analytics
-          </h2>
+          <h2 className={headingClassName}>Pubblicità e Google AdSense</h2>
           <p>
-            Attualmente Rifornio non integra Google AdSense, altri sistemi
-            pubblicitari, analytics, Google Tag Manager o pixel marketing. Non
-            vengono quindi mostrate preferenze pubblicitarie o statistiche da
-            configurare nell&apos;app.
+            Rifornio è attualmente sottoposto alla procedura di revisione di
+            Google AdSense. Al momento non pubblica annunci tramite AdSense e il
+            relativo script o codice pubblicitario non è attivo nel sito. Nel
+            repository non risultano quindi richieste runtime AdSense né cookie
+            o tecnologie pubblicitarie collegati a questo servizio.
+          </p>
+          <p>
+            Non risultano inoltre altri sistemi pubblicitari, analytics, Google
+            Tag Manager o pixel marketing. Nel pannello AdSense è stata
+            configurata la CMP di Google, ma il codice attuale non permette di
+            considerarla caricata o mostrata agli utenti: la sua presenza nel
+            sito dovrà essere verificata quando verrà integrato il codice
+            pubblicitario.
           </p>
         </section>
 
         <section className={sectionClassName}>
           <h2 className={headingClassName}>Gestione futura del consenso</h2>
           <p>
-            Se Rifornio introdurrà strumenti pubblicitari, analytics o altre
-            tecnologie non strettamente necessarie, questa pagina verrà
-            aggiornata e verrà introdotto un sistema per raccogliere e gestire
-            le preferenze dell&apos;utente quando richiesto.
+            Prima o contestualmente all&apos;attivazione effettiva di AdSense, o di
+            altri strumenti pubblicitari, analytics o tecnologie non
+            strettamente necessarie, questa pagina verrà aggiornata. Le
+            eventuali tecnologie pubblicitarie e le preferenze dell&apos;utente
+            saranno gestite tramite il sistema di consenso applicabile, quando
+            richiesto.
           </p>
         </section>
 

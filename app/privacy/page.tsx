@@ -149,9 +149,26 @@ export default function PrivacyPage() {
           </h2>
           <p>
             Nel codice attuale non risultano cookie applicativi, analytics,
-            pixel marketing, pubblicità, strumenti di session replay o sistemi
-            di pagamento. Non vengono usati localStorage o sessionStorage per
+            pixel marketing, strumenti di session replay o sistemi di
+            pagamento. Non vengono usati localStorage o sessionStorage per
             conservare dati dell&apos;utente.
+          </p>
+          <p>
+            Rifornio è stato sottoposto alla procedura di revisione di Google
+            AdSense, ma al momento non pubblica annunci tramite questo servizio
+            e il relativo codice pubblicitario non è attivo. Non risultano
+            quindi attivi cookie o strumenti di tracciamento collegati ad
+            AdSense. Se il servizio verrà attivato, questa informativa sarà
+            aggiornata in base al suo funzionamento effettivo. I dettagli sulle
+            tecnologie pubblicitarie e sull&apos;eventuale gestione del consenso
+            sono riportati nella{" "}
+            <Link
+              className="font-medium text-zinc-700 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-300"
+              href="/cookie"
+            >
+              Cookie Policy
+            </Link>
+            .
           </p>
         </section>
 
