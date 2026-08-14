@@ -4,13 +4,14 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Cookie | Rifornio",
   description:
-    "Informazioni sull'uso attuale di cookie e tecnologie simili su Rifornio.",
+    "Informazioni sull'uso di cookie, Google Analytics e tecnologie simili su Rifornio.",
   alternates: {
     canonical: "/cookie",
   },
 };
 
 const sectionClassName = "space-y-3";
+
 const headingClassName =
   "text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100";
 
@@ -28,99 +29,168 @@ export default function CookiePage() {
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Cookie e tecnologie simili
         </h1>
+
         <p className="max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300">
-          Questa pagina descrive gli strumenti attualmente presenti in Rifornio
-          e distingue ciò che esiste oggi dalle possibili integrazioni future.
+          Questa pagina descrive l&apos;uso attuale di cookie, localStorage,
+          strumenti di misurazione e tecnologie simili su Rifornio.
         </p>
       </header>
 
       <div className="mt-8 space-y-9 text-base leading-7 text-zinc-700 dark:text-zinc-300">
         <section className={sectionClassName}>
           <h2 className={headingClassName}>Situazione attuale</h2>
-          <p>Nel repository attuale di Rifornio non risultano:</p>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>cookie applicativi impostati direttamente dall&apos;app;</li>
-            <li>analytics o strumenti di misurazione del pubblico;</li>
-            <li>pixel marketing o sistemi pubblicitari attivi;</li>
-            <li>strumenti di session replay;</li>
-            <li>uso di localStorage o sessionStorage;</li>
-            <li>autenticazione o sessioni associate a un account utente.</li>
-          </ul>
-        </section>
 
-        <section className={sectionClassName}>
-          <h2 className={headingClassName}>Cookie tecnici</h2>
           <p>
-            Il codice dell&apos;app non configura direttamente cookie tecnici e non
-            contiene oggi una piattaforma per la gestione del consenso. Il
-            repository, da solo, non permette però di escludere eventuali dati
-            tecnici o tecnologie gestiti dal browser, dall&apos;hosting o da altri
-            fornitori infrastrutturali secondo le loro configurazioni.
+            Rifornio utilizza Google Analytics 4 per misurare in modo statistico
+            l&apos;utilizzo del sito. Google Analytics viene però caricato
+            soltanto dopo che l&apos;utente ha espresso il proprio consenso.
+          </p>
+
+          <p>
+            Prima dell&apos;accettazione, il tag di Google Analytics non viene
+            caricato e Rifornio non invia dati a Google Analytics tramite tale
+            strumento.
+          </p>
+
+          <p>
+            Rifornio non utilizza attualmente pixel marketing, strumenti di
+            session replay, sistemi di autenticazione o strumenti di pagamento.
           </p>
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Servizi esterni</h2>
+          <h2 className={headingClassName}>Google Analytics 4</h2>
+
           <p>
-            Rifornio usa servizi infrastrutturali come Vercel, Supabase e Google
-            Routes per ospitare l&apos;app, cercare i distributori vicini e calcolare
-            le distanze stradali. Il repository non configura tramite questi
-            servizi cookie pubblicitari o strumenti di profilazione nel browser.
+            Dopo il consenso, Rifornio carica Google Analytics 4 con ID di
+            misurazione <code>G-0323M57ZQP</code>.
           </p>
+
           <p>
-            Il comando “Apri nel navigatore” porta a Google Maps in una nuova
-            scheda. Da quel momento si utilizza un servizio esterno, soggetto
-            alle proprie impostazioni e informative.
+            Google Analytics può raccogliere informazioni come visualizzazioni
+            di pagina, sessioni, caratteristiche tecniche del browser e del
+            dispositivo e informazioni geografiche approssimative.
+          </p>
+
+          <p>
+            Quando è consentita la memorizzazione per finalità analytics, Google
+            Analytics può utilizzare cookie proprietari, tra cui{" "}
+            <code>_ga</code>, per distinguere utenti e sessioni.
           </p>
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Pubblicità e Google AdSense</h2>
+          <h2 className={headingClassName}>Gestione del consenso</h2>
+
+          <p>
+            Rifornio utilizza un meccanismo di consenso che impedisce il
+            caricamento di Google Analytics finché l&apos;utente non sceglie di
+            accettarlo.
+          </p>
+
+          <p>
+            In caso di accettazione, il consenso relativo ad Analytics viene
+            impostato come concesso. Le impostazioni relative alla pubblicità,
+            alla personalizzazione pubblicitaria e all&apos;utilizzo dei dati
+            per finalità pubblicitarie restano invece negate.
+          </p>
+
+          <p>
+            In caso di rifiuto, Google Analytics non viene caricato.
+          </p>
+        </section>
+
+        <section className={sectionClassName}>
+          <h2 className={headingClassName}>Preferenza salvata nel browser</h2>
+
+          <p>
+            Per ricordare la scelta effettuata, Rifornio utilizza il
+            localStorage del browser.
+          </p>
+
+          <p>
+            La preferenza viene salvata con la chiave{" "}
+            <code>rifornio-analytics-consent</code> e può contenere il valore{" "}
+            <code>granted</code> oppure <code>denied</code>.
+          </p>
+
+          <p>
+            Questo valore viene utilizzato esclusivamente per ricordare la
+            scelta relativa ad Analytics e impedire che il banner venga
+            mostrato nuovamente a ogni visita.
+          </p>
+        </section>
+
+        <section className={sectionClassName}>
+          <h2 className={headingClassName}>Cookie tecnici e altri strumenti</h2>
+
+          <p>
+            Nel codice applicativo attuale non risultano cookie proprietari
+            utilizzati per account, autenticazione, preferenze del
+            rifornimento, pagamenti o cronologia delle ricerche.
+          </p>
+
+          <p>
+            Rifornio non utilizza sessionStorage per conservare preferenze o
+            dati dell&apos;utente.
+          </p>
+
+          <p>
+            Restano possibili trattamenti tecnici operati direttamente dal
+            browser, dall&apos;hosting o dagli altri provider infrastrutturali,
+            secondo il funzionamento dei rispettivi servizi.
+          </p>
+        </section>
+
+        <section className={sectionClassName}>
+          <h2 className={headingClassName}>Google AdSense</h2>
+
           <p>
             Rifornio è attualmente sottoposto alla procedura di revisione di
-            Google AdSense. Al momento non pubblica annunci tramite AdSense e il
-            relativo script o codice pubblicitario non è attivo nel sito. Nel
-            repository non risultano quindi richieste runtime AdSense né cookie
-            o tecnologie pubblicitarie collegati a questo servizio.
+            Google AdSense, ma il codice pubblicitario AdSense non è attivo sul
+            sito e non vengono ancora pubblicati annunci tramite questo
+            servizio.
           </p>
+
           <p>
-            Non risultano inoltre altri sistemi pubblicitari, analytics, Google
-            Tag Manager o pixel marketing. Nel pannello AdSense è stata
-            configurata la CMP di Google, ma il codice attuale non permette di
-            considerarla caricata o mostrata agli utenti: la sua presenza nel
-            sito dovrà essere verificata quando verrà integrato il codice
-            pubblicitario.
+            La configurazione relativa alla pubblicità verrà aggiornata, insieme
+            a questa pagina e alla gestione del consenso, prima
+            dell&apos;eventuale attivazione effettiva di AdSense.
           </p>
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Gestione futura del consenso</h2>
+          <h2 className={headingClassName}>Come cambiare la preferenza</h2>
+
           <p>
-            Prima o contestualmente all&apos;attivazione effettiva di AdSense, o di
-            altri strumenti pubblicitari, analytics o tecnologie non
-            strettamente necessarie, questa pagina verrà aggiornata. Le
-            eventuali tecnologie pubblicitarie e le preferenze dell&apos;utente
-            saranno gestite tramite il sistema di consenso applicabile, quando
-            richiesto.
+            Attualmente la scelta Analytics viene memorizzata nel localStorage
+            del browser. È possibile eliminarla tramite le impostazioni del
+            browser o cancellando i dati del sito relativi a Rifornio.
+          </p>
+
+          <p>
+            Dopo la cancellazione della preferenza, alla visita successiva
+            Rifornio mostrerà nuovamente il banner Analytics.
           </p>
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Come cambiare le preferenze</h2>
+          <h2 className={headingClassName}>Privacy</h2>
+
           <p>
-            Oggi Rifornio non presenta un pannello di preferenze perché nel
-            codice non risultano tecnologie opzionali da attivare o disattivare.
-            Puoi comunque gestire cookie e dati dei siti tramite le impostazioni
-            del browser. Se in futuro verrà introdotto un sistema di consenso,
-            questa sezione spiegherà come modificare le scelte effettuate.
+            Per maggiori informazioni sul trattamento dei dati durante
+            l&apos;utilizzo del servizio consulta la{" "}
+            <Link href="/privacy">pagina Privacy</Link>.
           </p>
         </section>
 
         <section className={sectionClassName}>
           <h2 className={headingClassName}>Aggiornamenti</h2>
+
           <p>
-            Le informazioni saranno aggiornate se cambieranno gli strumenti
-            tecnici usati da Rifornio o le relative modalità di funzionamento.
+            Questa pagina verrà aggiornata quando cambieranno gli strumenti di
+            misurazione, pubblicità o gestione del consenso utilizzati da
+            Rifornio.
           </p>
         </section>
       </div>
