@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/import-mimit",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
