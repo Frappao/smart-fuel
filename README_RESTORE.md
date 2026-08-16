@@ -458,6 +458,22 @@ npm run mobile:open:android
 
 Il progetto corrente usa Android API 36.
 
+### SDK e adb sul computer di sviluppo principale
+
+Configurazione verificata:
+
+- Android SDK: `~/Library/Android/sdk`
+- Java: Temurin JDK 21
+- `ANDROID_HOME`: non impostato
+- `ANDROID_SDK_ROOT`: non impostato
+- `adb`: non presente globalmente nel `PATH`
+
+`adb` può essere eseguito direttamente con:
+
+```bash
+~/Library/Android/sdk/platform-tools/adb
+```
+
 ---
 
 ## 16. iOS
