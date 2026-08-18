@@ -473,7 +473,7 @@ Configurazione verificata:
 ```bash
 ~/Library/Android/sdk/platform-tools/adb
 ```
-
+Sul nuovo computer non è necessario replicare esattamente questa configurazione: Android Studio può gestire il percorso SDK. Se si vuole usare `adb` direttamente dal terminale, aggiungere `platform-tools` al `PATH`.
 ---
 
 ## 16. iOS
