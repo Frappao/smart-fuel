@@ -1,8 +1,11 @@
-import {
-  getRouteMatrix,
-  type Coordinates,
-  type RouteMatrixDestination,
-} from '../../../lib/maps/getRouteMatrix'
+import { getMapboxRouteMatrix } from '../../../lib/maps/getMapboxRouteMatrix'
+
+interface Coordinates {
+  latitude: number
+  longitude: number
+}
+
+type RouteMatrixDestination = Coordinates
 
 const MAX_DESTINATIONS = 20
 
@@ -68,7 +71,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const routes = await getRouteMatrix(
+    const routes = await getMapboxRouteMatrix(
       origin,
       destinations as RouteMatrixDestination[],
     )

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getRouteMatrix } from '../../../lib/maps/getRouteMatrix'
+import { getMapboxRouteMatrix } from '../../../lib/maps/getMapboxRouteMatrix'
 import { POST } from './route'
 
-vi.mock('../../../lib/maps/getRouteMatrix', () => ({
-  getRouteMatrix: vi.fn(),
+vi.mock('../../../lib/maps/getMapboxRouteMatrix', () => ({
+  getMapboxRouteMatrix: vi.fn(),
 }))
 
 const origin = { latitude: 45.4642, longitude: 9.19 }
@@ -26,12 +26,12 @@ describe('POST /api/route-matrix', () => {
     vi.resetAllMocks()
   })
 
-  it('passes valid origin and destinations to getRouteMatrix', async () => {
-    vi.mocked(getRouteMatrix).mockResolvedValue([])
+  it('passes valid origin and destinations to getMapboxRouteMatrix', async () => {
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue([])
 
     const response = await POST(createRequest({ origin, destinations }))
 
-    expect(getRouteMatrix).toHaveBeenCalledWith(origin, destinations)
+    expect(getMapboxRouteMatrix).toHaveBeenCalledWith(origin, destinations)
     expect(response.status).toBe(200)
   })
 
@@ -40,16 +40,19 @@ describe('POST /api/route-matrix', () => {
       latitude: 45 + index / 100,
       longitude: 9 + index / 100,
     }))
-    vi.mocked(getRouteMatrix).mockResolvedValue([])
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue([])
 
     const acceptedResponse = await POST(
       createRequest({ origin, destinations: twentyDestinations }),
     )
 
     expect(acceptedResponse.status).toBe(200)
-    expect(getRouteMatrix).toHaveBeenCalledWith(origin, twentyDestinations)
+    expect(getMapboxRouteMatrix).toHaveBeenCalledWith(
+      origin,
+      twentyDestinations,
+    )
 
-    vi.mocked(getRouteMatrix).mockClear()
+    vi.mocked(getMapboxRouteMatrix).mockClear()
 
     const rejectedResponse = await POST(
       createRequest({
@@ -62,7 +65,7 @@ describe('POST /api/route-matrix', () => {
     )
 
     expect(rejectedResponse.status).toBe(400)
-    expect(getRouteMatrix).not.toHaveBeenCalled()
+    expect(getMapboxRouteMatrix).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -84,7 +87,7 @@ describe('POST /api/route-matrix', () => {
     await expect(response.json()).resolves.toEqual({
       error: expect.any(String),
     })
-    expect(getRouteMatrix).not.toHaveBeenCalled()
+    expect(getMapboxRouteMatrix).not.toHaveBeenCalled()
   })
 
   it('returns routes immediately for an empty destinations array', async () => {
@@ -92,40 +95,65 @@ describe('POST /api/route-matrix', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ routes: [] })
-    expect(getRouteMatrix).not.toHaveBeenCalled()
+    expect(getMapboxRouteMatrix).not.toHaveBeenCalled()
   })
 
-  it('returns 502 when Google Routes fails', async () => {
-    vi.mocked(getRouteMatrix).mockRejectedValue(
-      new Error('Sensitive Google error'),
+  it('returns a generic 502 without exposing Mapbox credentials', async () => {
+    const sensitiveToken = 'sensitive-mapbox-token'
+    vi.mocked(getMapboxRouteMatrix).mockRejectedValue(
+      new Error(
+        `Mapbox failed at https://api.mapbox.com/matrix?access_token=${sensitiveToken}`,
+      ),
     )
 
     const response = await POST(createRequest({ origin, destinations }))
+    const responseBody = await response.json()
 
     expect(response.status).toBe(502)
-    await expect(response.json()).resolves.toEqual({
+    expect(responseBody).toEqual({
       error: 'Unable to retrieve route distances.',
     })
+    expect(JSON.stringify(responseBody)).not.toContain(sensitiveToken)
+    expect(JSON.stringify(responseBody)).not.toContain('api.mapbox.com')
   })
 
-  it('returns routes as JSON with status 200', async () => {
+  it('preserves destinationIndex and distanceMeters in a 200 response', async () => {
     const routes = [
       {
         destinationIndex: 0,
         distanceMeters: 4_350,
-        durationSeconds: 420,
       },
       {
         destinationIndex: 1,
         distanceMeters: 8_120,
-        durationSeconds: 735.5,
       },
     ]
-    vi.mocked(getRouteMatrix).mockResolvedValue(routes)
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue(routes)
 
     const response = await POST(createRequest({ origin, destinations }))
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ routes })
+  })
+
+  it('returns valid routes when one destination has no route', async () => {
+    const threeDestinations = [
+      ...destinations,
+      { latitude: 45.49, longitude: 9.23 },
+    ]
+    const availableRoutes = [
+      { destinationIndex: 0, distanceMeters: 4_350 },
+      { destinationIndex: 2, distanceMeters: 9_480 },
+    ]
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue(availableRoutes)
+
+    const response = await POST(
+      createRequest({ origin, destinations: threeDestinations }),
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      routes: availableRoutes,
+    })
   })
 })
