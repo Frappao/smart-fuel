@@ -32,6 +32,16 @@ const litersFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 2,
 })
 
+const priceCommunicatedAtFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'Europe/Rome',
+})
+
 const searchErrorMessage =
   'Non riesco a cercare i distributori in questo momento. Riprova tra poco.'
 const routeDistanceErrorMessage =
@@ -46,6 +56,18 @@ function getNoCandidatesMessage(
   const serviceModeLabel = isSelf ? 'Self' : 'Servito'
 
   return `Non ho trovato distributori vicini con ${SUPPORTED_FUEL_TYPE_LABELS[fuelType]} ${serviceModeLabel} disponibile.`
+}
+
+function formatPriceCommunicatedAt(value: string | null): string | null {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : priceCommunicatedAtFormatter.format(date)
 }
 
 function getGoogleMapsNavigationUrl(
@@ -88,6 +110,9 @@ function StationResultCard({
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
   const isBestResult = index === 0
+  const formattedPriceCommunicatedAt = formatPriceCommunicatedAt(
+    result.station.communicatedAt,
+  )
   const navigationUrl = getGoogleMapsNavigationUrl(
     result.station.latitude,
     result.station.longitude,
@@ -116,6 +141,11 @@ function StationResultCard({
         <p className={isBestResult ? 'font-semibold' : undefined}>
           Distanza stradale stimata A/R:{' '}
           {distanceFormatter.format(travelDistanceKm)} km
+        </p>
+        <p className="text-zinc-600 dark:text-zinc-400">
+          {formattedPriceCommunicatedAt
+            ? `Prezzo comunicato: ${formattedPriceCommunicatedAt}`
+            : 'Data prezzo non disponibile'}
         </p>
         <p>
           Litri acquistati: {litersFormatter.format(result.litersPurchased)} L

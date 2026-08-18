@@ -88,6 +88,7 @@ describe('FuelSmartCalculator', () => {
           longitude: 9.18,
           distanceMeters: 14_000,
           fuelPrice: 1.6,
+          communicatedAt: '2026-08-18T06:42:00.000Z',
         },
         {
           id: 2,
@@ -99,6 +100,7 @@ describe('FuelSmartCalculator', () => {
           longitude: 9.21,
           distanceMeters: 100,
           fuelPrice: 1.5,
+          communicatedAt: null,
         },
         {
           id: 3,
@@ -204,11 +206,17 @@ describe('FuelSmartCalculator', () => {
       'Distanza stradale stimata A/R: 2,0 km',
     )
     expect(firstResult?.textContent).toContain(
+      'Prezzo comunicato: 18/08/2026, 08:42',
+    )
+    expect(firstResult?.textContent).toContain(
       'Litri stimati consumati per il viaggio: 0,20 L',
     )
     expect(firstResult?.textContent).toContain('Litri netti: 31,05 L')
     expect(secondResult?.textContent).toContain(
       'Distanza stradale stimata A/R: 40,0 km',
+    )
+    expect(secondResult?.textContent).toContain(
+      'Data prezzo non disponibile',
     )
     expect(secondResult?.textContent).toContain('Litri netti: 29,33 L')
     expect(
