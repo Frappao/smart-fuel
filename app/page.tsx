@@ -133,12 +133,23 @@ export default function Home() {
               prezzo sia identico a quello presente fisicamente alla pompa nel
               preciso momento dell&apos;arrivo.
             </p>
-            <a
-              className="inline-flex font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
-              href="/come-funziona"
+            <nav
+              aria-label="Approfondimenti"
+              className="flex flex-col items-start gap-3"
             >
-              Scopri nel dettaglio come funziona Rifornio
-            </a>
+              <a
+                className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
+                href="/come-funziona"
+              >
+                Scopri nel dettaglio come funziona Rifornio
+              </a>
+              <a
+                className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
+                href="/guide/distributore-piu-lontano"
+              >
+                Quando conviene davvero un distributore più lontano?
+              </a>
+            </nav>
           </article>
         </section>
       </main>
