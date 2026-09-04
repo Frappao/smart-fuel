@@ -149,6 +149,12 @@ export default function Home() {
               >
                 Quando conviene davvero un distributore più lontano?
               </a>
+              <a
+                className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
+                href="/guide/consumo-auto-convenienza"
+              >
+                Quanto incide il consumo dell&apos;auto sulla convenienza?
+              </a>
             </nav>
           </article>
         </section>
