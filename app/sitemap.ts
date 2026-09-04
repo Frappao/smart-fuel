@@ -13,6 +13,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://rifornio.it/il-progetto',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://rifornio.it/guide/distributore-piu-lontano',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://rifornio.it/guide/consumo-auto-convenienza',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
       url: 'https://rifornio.it/supporto',
       changeFrequency: 'monthly',
       priority: 0.5,
