@@ -3,21 +3,25 @@ import FuelSmartCalculator from "../components/calculation/FuelSmartCalculator";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16">
-        <header className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Rifornio
-          </h1>
-          <p className="max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-300">
-            Trova il distributore più conveniente considerando prezzo, distanza
-            e consumo.
-          </p>
-        </header>
-        <FuelSmartCalculator />
+      <main className="mx-auto flex w-full max-w-none flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start lg:gap-12 lg:py-0 lg:pr-0 lg:pl-8">
+        <div className="min-w-0 lg:sticky lg:top-0 lg:flex lg:h-screen lg:items-center lg:self-start">
+          <div className="flex flex-col gap-8 lg:mx-auto lg:w-full lg:max-w-[340px]">
+            <header className="space-y-3">
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                Rifornio
+              </h1>
+              <p className="max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-300">
+                Trova il distributore più conveniente considerando prezzo,
+                distanza e consumo.
+              </p>
+            </header>
+            <FuelSmartCalculator />
+          </div>
+        </div>
 
         <section
           aria-labelledby="homepage-guide-title"
-          className="space-y-8 border-t border-zinc-200 pt-8 sm:pt-10 dark:border-zinc-800"
+          className="min-w-0 space-y-8 border-t border-zinc-200 pt-8 sm:pt-10 lg:border-t-0 lg:py-16 lg:pr-6 dark:border-zinc-800"
         >
           <div className="space-y-3">
             <h2
