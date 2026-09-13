@@ -2,10 +2,10 @@ import FuelSmartCalculator from "../components/calculation/FuelSmartCalculator";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="mx-auto flex w-full max-w-none flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start lg:gap-12 lg:py-0 lg:pr-0 lg:pl-8">
-        <div className="min-w-0 lg:flex lg:min-h-screen lg:items-center lg:self-start">
-          <div className="flex flex-col gap-8 lg:mx-auto lg:w-full lg:max-w-[340px]">
+    <div className="flex min-h-screen flex-col lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+      <main className="mx-auto flex w-full max-w-none flex-1 flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12 lg:overflow-hidden lg:py-0 lg:pr-0 lg:pl-8">
+        <div className="min-w-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:py-8">
+          <div className="flex flex-col gap-8 lg:mx-auto lg:my-auto lg:w-full lg:max-w-[340px]">
             <header className="space-y-3">
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                 Rifornio
@@ -21,7 +21,7 @@ export default function Home() {
 
         <section
           aria-labelledby="homepage-guide-title"
-          className="min-w-0 space-y-8 border-t border-zinc-200 pt-8 sm:pt-10 lg:border-t-0 lg:py-16 lg:pr-6 dark:border-zinc-800"
+          className="min-w-0 space-y-8 border-t border-zinc-200 pt-8 sm:pt-10 lg:h-full lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:border-t-0 lg:py-16 lg:pr-6 dark:border-zinc-800"
         >
           <div className="space-y-3">
             <h2
