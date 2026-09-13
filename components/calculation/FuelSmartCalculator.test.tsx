@@ -233,10 +233,14 @@ describe('FuelSmartCalculator', () => {
 
     const firstResult = screen.getByText('1. Near Expensive').closest('li')
     const secondResult = screen.getByText('2. Cheap Fuel').closest('li')
-    const adSlot = screen.getByLabelText('Spazio pubblicitario')
+    const bannerAdSlot = screen.getByLabelText(
+      'Banner pubblicitario 300x250',
+    )
+    const firstResultsList = firstResult?.closest('ol')
+    const remainingResultsList = secondResult?.closest('ol')
 
-    expect(adSlot.previousElementSibling?.contains(firstResult)).toBe(true)
-    expect(adSlot.nextElementSibling?.contains(secondResult)).toBe(true)
+    expect(firstResultsList?.nextElementSibling).toBe(remainingResultsList)
+    expect(remainingResultsList?.nextElementSibling).toBe(bannerAdSlot)
     expect(firstResult?.textContent).toContain(
       'Ti conviene questo distributore',
     )

@@ -175,13 +175,14 @@ Non deve essere esposta al client.
 
 `NEXT_PUBLIC_ADS_ENABLED`
 
-Per lo stato corrente lasciare:
+Interruttore generale per il banner Adsterra. Il valore predefinito resta:
 
 ```dotenv
 NEXT_PUBLIC_ADS_ENABLED=false
 ```
 
-finché AdSense non viene attivato e verificato.
+Impostarlo a `true` soltanto negli ambienti in cui il banner deve essere
+caricato.
 
 ---
 

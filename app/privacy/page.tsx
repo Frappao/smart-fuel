@@ -188,18 +188,26 @@ export default function PrivacyPage() {
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Google AdSense</h2>
+          <h2 className={headingClassName}>Pubblicità Adsterra</h2>
 
           <p>
-            Rifornio è stato sottoposto alla procedura di revisione di Google
-            AdSense, ma al momento non pubblica annunci tramite questo servizio
-            e il relativo codice pubblicitario non è attivo.
+            Rifornio utilizza Adsterra come fornitore pubblicitario terzo per
+            mostrare un banner dopo i risultati della classifica.
           </p>
 
           <p>
-            Se il servizio pubblicitario verrà attivato, questa informativa e
-            la gestione del consenso saranno aggiornate in base al
-            funzionamento effettivo.
+            Durante l&apos;erogazione degli annunci, Adsterra può utilizzare
+            tecnologie come cookie, pixel o altri identificatori e trattare dati
+            tecnici del browser o del dispositivo, oltre a informazioni sulla
+            visualizzazione e sulle interazioni con gli annunci. Tali attività
+            avvengono secondo le modalità e le informative proprie di Adsterra.
+          </p>
+
+          <p>
+            Il sistema pubblicitario Adsterra è distinto da Google Analytics.
+            La preferenza salvata con la chiave{" "}
+            <code>rifornio-analytics-consent</code> riguarda esclusivamente
+            Analytics e non controlla il caricamento del banner Adsterra.
           </p>
 
           <p>

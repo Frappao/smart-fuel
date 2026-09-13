@@ -351,8 +351,6 @@ export default function FuelSmartCalculator() {
             />
           </ol>
 
-          <AdSlot />
-
           {results.length > 1 ? (
             <ol className="flex min-w-0 flex-col gap-3 sm:gap-4" start={2}>
               {results.slice(1).map((result, index) => (
@@ -365,6 +363,8 @@ export default function FuelSmartCalculator() {
               ))}
             </ol>
           ) : null}
+
+          <AdSlot />
         </div>
       ) : null}
     </section>

@@ -308,9 +308,14 @@ The support page currently uses a temporary public support email.
 
 Do not silently replace contact details without checking the current requested address.
 
-## AdSense
+## Advertising
 
-AdSense is not yet serving real ads.
+The website uses one Adsterra 300x250 banner after the station ranking when:
+
+NEXT_PUBLIC_ADS_ENABLED=true
+
+Do not add Native Banner, Popunder, Social Bar, Smartlink, or ads between
+ranking results without an explicit product request.
 
 ads.txt exists at:
 
@@ -320,9 +325,11 @@ Relevant file:
 
 public/ads.txt
 
-Do not activate advertising code without checking:
+The official Adsterra ads.txt record has not been added because it must come
+from the Adsterra dashboard. Do not invent one.
 
-- AdSense approval;
+Do not change advertising code without checking:
+
 - consent requirements;
 - privacy/cookie disclosures;
 - actual runtime behavior.
@@ -541,7 +548,7 @@ Never commit or expose:
 - .env.local
 - .env.test
 
-Public identifiers such as GA4 Measurement IDs and AdSense publisher IDs are not secrets, but still avoid unnecessary duplication.
+Public identifiers such as GA4 Measurement IDs and advertising placement IDs are not secrets, but still avoid unnecessary duplication.
 
 ## Operational rules for Codex
 
@@ -578,9 +585,9 @@ Current production state:
 - homepage indexed;
 - sitemap active;
 - robots.txt active;
-- ads.txt active;
+- ads.txt present but awaiting the official Adsterra record;
 - GA4 active with consent;
-- AdSense still pending;
+- one Adsterra 300x250 result banner enabled through environment configuration;
 - support page exists;
 - Android debug app functional;
 - Google Routes integration functional;

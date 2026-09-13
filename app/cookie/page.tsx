@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Cookie | Rifornio",
   description:
-    "Informazioni sull'uso di cookie, Google Analytics e tecnologie simili su Rifornio.",
+    "Informazioni sull'uso di cookie, pubblicità, Google Analytics e tecnologie simili su Rifornio.",
   alternates: {
     canonical: "/cookie",
   },
@@ -53,8 +53,9 @@ export default function CookiePage() {
           </p>
 
           <p>
-            Rifornio non utilizza attualmente pixel marketing, strumenti di
-            session replay, sistemi di autenticazione o strumenti di pagamento.
+            Rifornio non utilizza attualmente strumenti di session replay,
+            sistemi di autenticazione o strumenti di pagamento. Il banner
+            pubblicitario Adsterra è descritto nella sezione dedicata.
           </p>
         </section>
 
@@ -143,19 +144,24 @@ export default function CookiePage() {
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Google AdSense</h2>
+          <h2 className={headingClassName}>Pubblicità Adsterra</h2>
 
           <p>
-            Rifornio è attualmente sottoposto alla procedura di revisione di
-            Google AdSense, ma il codice pubblicitario AdSense non è attivo sul
-            sito e non vengono ancora pubblicati annunci tramite questo
-            servizio.
+            Rifornio utilizza Adsterra come fornitore pubblicitario terzo per
+            mostrare un banner dopo i risultati della classifica.
           </p>
 
           <p>
-            La configurazione relativa alla pubblicità verrà aggiornata, insieme
-            a questa pagina e alla gestione del consenso, prima
-            dell&apos;eventuale attivazione effettiva di AdSense.
+            Adsterra può utilizzare cookie, pixel o altri identificatori per
+            erogare e misurare gli annunci e può trattare dati tecnici del
+            browser o del dispositivo e informazioni sulle interazioni con gli
+            annunci, secondo le proprie informative.
+          </p>
+
+          <p>
+            La pubblicità Adsterra è separata da Google Analytics. La preferenza{" "}
+            <code>rifornio-analytics-consent</code> controlla esclusivamente il
+            caricamento di Analytics e non quello del banner Adsterra.
           </p>
         </section>
 
