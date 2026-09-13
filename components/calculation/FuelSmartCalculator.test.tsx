@@ -46,6 +46,44 @@ function submitForm(
   fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
 }
 
+interface RankingScenarioStation {
+  id: number
+  name: string
+  netFuelLiters: number
+  routeDistanceMeters: number
+}
+
+function arrangeRankingScenario(stations: RankingScenarioStation[]) {
+  arrangeApiResponse({
+    stations: stations.map(
+      ({ id, name, netFuelLiters, routeDistanceMeters }) => {
+        const travelDistanceKm = (routeDistanceMeters / 1_000) * 2
+        const travelFuelLiters = (travelDistanceKm * 10) / 100
+
+        return {
+          id,
+          name,
+          brand: `Brand ${id}`,
+          address: `Via ${id}`,
+          city: 'Milano',
+          latitude: 45.46 + id / 1_000,
+          longitude: 9.19 + id / 1_000,
+          distanceMeters: routeDistanceMeters,
+          fuelPrice: 50 / (netFuelLiters + travelFuelLiters),
+          communicatedAt: null,
+        }
+      },
+    ),
+  })
+  arrangeApiResponse({
+    routes: stations.map(({ routeDistanceMeters }, destinationIndex) => ({
+      destinationIndex,
+      distanceMeters: routeDistanceMeters,
+      durationSeconds: 300,
+    })),
+  })
+}
+
 describe('FuelSmartCalculator', () => {
   beforeEach(() => {
     vi.resetAllMocks()
@@ -248,6 +286,80 @@ describe('FuelSmartCalculator', () => {
     expect(screen.queryByText(/Middle Station/)).toBeNull()
     expect(screen.queryByText(/No Price/)).toBeNull()
     expect(screen.queryByText(/Invalid Coordinates/)).toBeNull()
+  })
+
+  it('keeps net fuel liters as the primary ranking criterion', async () => {
+    arrangeRankingScenario([
+      {
+        id: 1,
+        name: 'Far Better Station',
+        netFuelLiters: 20.02,
+        routeDistanceMeters: 8_000,
+      },
+      {
+        id: 2,
+        name: 'Near Worse Station',
+        netFuelLiters: 20,
+        routeDistanceMeters: 3_000,
+      },
+    ])
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await screen.findByText('1. Far Better Station')).toBeTruthy()
+    expect(screen.getByText('2. Near Worse Station')).toBeTruthy()
+  })
+
+  it('uses the shorter travel distance when displayed net liters are tied', async () => {
+    arrangeRankingScenario([
+      {
+        id: 1,
+        name: 'Far Tied Station',
+        netFuelLiters: 20.004,
+        routeDistanceMeters: 8_000,
+      },
+      {
+        id: 2,
+        name: 'Near Tied Station',
+        netFuelLiters: 20.004,
+        routeDistanceMeters: 3_000,
+      },
+    ])
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await screen.findByText('1. Near Tied Station')).toBeTruthy()
+    expect(screen.getByText('2. Far Tied Station')).toBeTruthy()
+  })
+
+  it('does not rank or describe a microscopic rounded-away advantage as the winner', async () => {
+    arrangeRankingScenario([
+      {
+        id: 1,
+        name: 'Far Microscopic Advantage',
+        netFuelLiters: 20.004,
+        routeDistanceMeters: 8_000,
+      },
+      {
+        id: 2,
+        name: 'Near Equivalent Station',
+        netFuelLiters: 20.001,
+        routeDistanceMeters: 3_000,
+      },
+    ])
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(
+      await screen.findByText('1. Near Equivalent Station'),
+    ).toBeTruthy()
+    expect(screen.getByText('2. Far Microscopic Advantage')).toBeTruthy()
+    expect(
+      screen.queryByText(/netti in più rispetto al secondo classificato/),
+    ).toBeNull()
   })
 
   it('shows a readable API error', async () => {

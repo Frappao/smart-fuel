@@ -32,6 +32,35 @@ const litersFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 2,
 })
 
+const rankedResultsLimit = 10
+
+function haveEquivalentDisplayedNetFuelLiters(
+  first: RankedStationResult,
+  second: RankedStationResult,
+): boolean {
+  return (
+    litersFormatter.format(first.netFuelLiters) ===
+    litersFormatter.format(second.netFuelLiters)
+  )
+}
+
+function compareRankedResults(
+  first: RankedStationResult,
+  second: RankedStationResult,
+): number {
+  const netFuelLitersDifference =
+    second.netFuelLiters - first.netFuelLiters
+
+  if (!haveEquivalentDisplayedNetFuelLiters(first, second)) {
+    return netFuelLitersDifference
+  }
+
+  return (
+    first.routeDistanceMeters - second.routeDistanceMeters ||
+    netFuelLitersDifference
+  )
+}
+
 const priceCommunicatedAtFormatter = new Intl.DateTimeFormat('it-IT', {
   day: '2-digit',
   month: '2-digit',
@@ -196,7 +225,8 @@ export default function FuelSmartCalculator() {
   const [error, setError] = useState<string | null>(null)
   const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
   const winnerAdvantageLiters =
-    results.length >= 2
+    results.length >= 2 &&
+    !haveEquivalentDisplayedNetFuelLiters(results[0], results[1])
       ? results[0].netFuelLiters - results[1].netFuelLiters
       : null
 
@@ -259,7 +289,10 @@ export default function FuelSmartCalculator() {
         routes: routeMatrixRoutes,
         refuelAmount: values.refuelAmount,
         consumptionLitersPer100Km: values.consumptionLitersPer100Km,
+        limit: candidateStations.length,
       })
+        .sort(compareRankedResults)
+        .slice(0, rankedResultsLimit)
 
       if (candidateStations.length > 0 && rankedResults.length === 0) {
         setEmptyStateMessage(noValidRoutesMessage)
