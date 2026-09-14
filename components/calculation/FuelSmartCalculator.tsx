@@ -312,6 +312,8 @@ export default function FuelSmartCalculator() {
 
   return (
     <section className="flex min-w-0 flex-col gap-6 sm:gap-8">
+      <AdSlot />
+
       <RefuelForm onCalculate={handleCalculate} />
 
       {isLoading ? (
@@ -363,8 +365,6 @@ export default function FuelSmartCalculator() {
               ))}
             </ol>
           ) : null}
-
-          <AdSlot />
         </div>
       ) : null}
     </section>
