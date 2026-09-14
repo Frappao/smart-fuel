@@ -192,15 +192,40 @@ export default function PrivacyPage() {
 
           <p>
             Rifornio utilizza Adsterra come fornitore pubblicitario terzo per
-            mostrare un banner dopo i risultati della classifica.
+            mostrare un banner dopo i risultati della classifica. Il contenuto
+            pubblicitario è erogato dal network e Rifornio non seleziona
+            direttamente i singoli annunci mostrati.
           </p>
 
           <p>
             Durante l&apos;erogazione degli annunci, Adsterra può utilizzare
             tecnologie come cookie, pixel o altri identificatori e trattare dati
-            tecnici del browser o del dispositivo, oltre a informazioni sulla
-            visualizzazione e sulle interazioni con gli annunci. Tali attività
-            avvengono secondo le modalità e le informative proprie di Adsterra.
+            tecnici relativi al browser, al dispositivo o alla rete, oltre a
+            informazioni sulla visualizzazione e sulle interazioni con gli
+            annunci. Tali attività dipendono dalla configurazione e avvengono
+            secondo le modalità proprie del provider.
+          </p>
+
+          <p>
+            Adsterra dispone di una propria{" "}
+            <a
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="https://adsterra.com/privacy-policy-managed/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Privacy Policy
+            </a>{" "}
+            e di una propria{" "}
+            <a
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="https://adsterra.com/cookies/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Cookie Policy
+            </a>
+            .
           </p>
 
           <p>

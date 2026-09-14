@@ -528,7 +528,8 @@ Sono già funzionanti:
 * Supporto;
 * sitemap;
 * robots.txt;
-* ads.txt;
+* banner Adsterra 300×250 dopo la classifica;
+* ads.txt presente, in attesa del record ufficiale fornito da Adsterra;
 * GA4 con consenso.
 
 Non ricostruire queste parti senza un bug reale.

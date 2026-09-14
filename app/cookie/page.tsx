@@ -32,7 +32,7 @@ export default function CookiePage() {
 
         <p className="max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300">
           Questa pagina descrive l&apos;uso attuale di cookie, localStorage,
-          strumenti di misurazione e tecnologie simili su Rifornio.
+          strumenti di misurazione, pubblicità e tecnologie simili su Rifornio.
         </p>
       </header>
 
@@ -60,7 +60,9 @@ export default function CookiePage() {
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Google Analytics 4</h2>
+          <h2 className={headingClassName}>
+            Analytics: Google Analytics 4
+          </h2>
 
           <p>
             Dopo il consenso, Rifornio carica Google Analytics 4 con ID di
@@ -81,7 +83,7 @@ export default function CookiePage() {
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Gestione del consenso</h2>
+          <h2 className={headingClassName}>Consenso Analytics</h2>
 
           <p>
             Rifornio utilizza un meccanismo di consenso che impedisce il
@@ -91,9 +93,10 @@ export default function CookiePage() {
 
           <p>
             In caso di accettazione, il consenso relativo ad Analytics viene
-            impostato come concesso. Le impostazioni relative alla pubblicità,
-            alla personalizzazione pubblicitaria e all&apos;utilizzo dei dati
-            per finalità pubblicitarie restano invece negate.
+            impostato come concesso. Nella configurazione Google, le impostazioni
+            relative alla pubblicità, alla personalizzazione pubblicitaria e
+            all&apos;utilizzo dei dati per finalità pubblicitarie restano invece
+            negate. Queste impostazioni non governano il banner Adsterra.
           </p>
 
           <p>
@@ -117,13 +120,13 @@ export default function CookiePage() {
 
           <p>
             Questo valore viene utilizzato esclusivamente per ricordare la
-            scelta relativa ad Analytics e impedire che il banner venga
-            mostrato nuovamente a ogni visita.
+            scelta relativa ad Analytics e impedire che la relativa richiesta
+            di scelta venga mostrata nuovamente a ogni visita.
           </p>
         </section>
 
         <section className={sectionClassName}>
-          <h2 className={headingClassName}>Cookie tecnici e altri strumenti</h2>
+          <h2 className={headingClassName}>Tecnologie necessarie</h2>
 
           <p>
             Nel codice applicativo attuale non risultano cookie proprietari
@@ -148,20 +151,47 @@ export default function CookiePage() {
 
           <p>
             Rifornio utilizza Adsterra come fornitore pubblicitario terzo per
-            mostrare un banner dopo i risultati della classifica.
+            mostrare un banner dopo i risultati della classifica. Il contenuto
+            degli annunci viene erogato dal network e non è selezionato
+            direttamente da Rifornio.
           </p>
 
           <p>
             Adsterra può utilizzare cookie, pixel o altri identificatori per
             erogare e misurare gli annunci e può trattare dati tecnici del
-            browser o del dispositivo e informazioni sulle interazioni con gli
-            annunci, secondo le proprie informative.
+            browser, del dispositivo o della rete e informazioni sulle
+            interazioni con gli annunci. L&apos;uso effettivo di tali tecnologie
+            dipende dalla configurazione e dalle modalità del provider.
+          </p>
+
+          <p>
+            Per maggiori dettagli è possibile consultare la{" "}
+            <a
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="https://adsterra.com/privacy-policy-managed/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Privacy Policy
+            </a>{" "}
+            e la{" "}
+            <a
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="https://adsterra.com/cookies/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Cookie Policy
+            </a>{" "}
+            di Adsterra.
           </p>
 
           <p>
             La pubblicità Adsterra è separata da Google Analytics. La preferenza{" "}
             <code>rifornio-analytics-consent</code> controlla esclusivamente il
             caricamento di Analytics e non quello del banner Adsterra.
+            L&apos;interfaccia attuale di Rifornio non offre una preferenza
+            pubblicitaria separata.
           </p>
         </section>
 
@@ -176,7 +206,15 @@ export default function CookiePage() {
 
           <p>
             Dopo la cancellazione della preferenza, alla visita successiva
-            Rifornio mostrerà nuovamente il banner Analytics.
+            Rifornio mostrerà nuovamente la richiesta di scelta Analytics.
+            Questa operazione non modifica il caricamento della pubblicità
+            Adsterra.
+          </p>
+
+          <p>
+            Per gestire o eliminare cookie e dati dei siti è possibile utilizzare
+            le impostazioni del browser. Il blocco di alcune tecnologie può
+            influire sulla visualizzazione o sul funzionamento degli annunci.
           </p>
         </section>
 
