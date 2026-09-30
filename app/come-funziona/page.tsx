@@ -57,7 +57,7 @@ export default function HowItWorksPage() {
             <li>la modalità Self o Servito;</li>
             <li>l&apos;importo che vuoi spendere;</li>
             <li>il consumo medio della tua auto;</li>
-            <li>la tua posizione;</li>
+            <li>la posizione attuale oppure una partenza scelta;</li>
             <li>il prezzo praticato dai distributori vicini;</li>
             <li>la distanza stradale necessaria per raggiungerli.</li>
           </ul>
@@ -73,6 +73,22 @@ export default function HowItWorksPage() {
             </code>
           </p>
           <p>Più alto è questo valore, maggiore è la convenienza stimata.</p>
+        </section>
+
+        <section className={sectionClassName}>
+          <h2 className={headingClassName}>Ricerca lungo un percorso</h2>
+          <p>
+            Puoi usare la posizione attuale come partenza oppure cercare una
+            località diversa, per esempio quando stai pianificando un viaggio
+            futuro o facendo una previsione per un&apos;altra persona.
+          </p>
+          <p>
+            In questo caso Rifornio individua i distributori in un corridoio
+            vicino al percorso e calcola la deviazione stradale necessaria per
+            passare da ciascun candidato. Dal rifornimento viene sottratto il
+            carburante stimato per la sola deviazione aggiuntiva, non per il
+            percorso che avresti comunque effettuato.
+          </p>
         </section>
 
         <section className={sectionClassName}>
@@ -151,9 +167,10 @@ export default function HowItWorksPage() {
         <section className={sectionClassName}>
           <h2 className={headingClassName}>La posizione</h2>
           <p>
-            La posizione serve per individuare i distributori vicini e calcolare
-            le distanze. Rifornio richiede l&apos;accesso alla posizione soltanto
-            quando avvii il calcolo tramite il browser.
+            La posizione serve per individuare i distributori vicini o come
+            partenza di un viaggio. Rifornio richiede l&apos;accesso alla posizione
+            soltanto quando scegli di usare quella attuale e avvii il calcolo.
+            Per un viaggio puoi anche cercare manualmente un&apos;altra partenza.
           </p>
           <p>
             Per maggiori informazioni consulta la pagina{" "}

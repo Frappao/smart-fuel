@@ -5,6 +5,12 @@ export interface StationNavigationDestination {
   longitude: number
 }
 
+export interface TripNavigationRequest {
+  origin: StationNavigationDestination
+  destination: StationNavigationDestination
+  station: StationNavigationDestination
+}
+
 const navigationErrorMessage =
   'Non riesco ad aprire il navigatore. Riprova.'
 
@@ -88,6 +94,48 @@ export async function openStationNavigation(
     if (completed) {
       return
     }
+  } catch {
+    // Expose one controlled message instead of native plugin details.
+  }
+
+  throw new StationNavigationError()
+}
+
+export function buildTripNavigationUrl({
+  origin,
+  destination,
+  station,
+}: TripNavigationRequest): string {
+  assertValidDestination(origin)
+  assertValidDestination(destination)
+  assertValidDestination(station)
+
+  const navigationUrl = new URL('https://www.google.com/maps/dir/')
+  navigationUrl.searchParams.set('api', '1')
+  navigationUrl.searchParams.set('origin', `${origin.latitude},${origin.longitude}`)
+  navigationUrl.searchParams.set(
+    'destination',
+    `${destination.latitude},${destination.longitude}`,
+  )
+  navigationUrl.searchParams.set(
+    'waypoints',
+    `${station.latitude},${station.longitude}`,
+  )
+  navigationUrl.searchParams.set('travelmode', 'driving')
+  navigationUrl.searchParams.set('dir_action', 'navigate')
+
+  return navigationUrl.toString()
+}
+
+export async function openTripNavigation(
+  request: TripNavigationRequest,
+): Promise<void> {
+  const url = buildTripNavigationUrl(request)
+
+  try {
+    const { completed } = await AppLauncher.openUrl({ url })
+
+    if (completed) return
   } catch {
     // Expose one controlled message instead of native plugin details.
   }

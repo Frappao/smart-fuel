@@ -99,7 +99,7 @@ Questo file contiene il contesto operativo aggiornato per Codex:
 * regole operative;
 * ranking;
 * MIMIT;
-* Google Routes;
+* Mapbox routing;
 * Supabase;
 * Android;
 * Google Play;
@@ -169,7 +169,11 @@ Non deve mai arrivare nel browser o nel bundle mobile.
 
 `GOOGLE_MAPS_API_KEY`
 
-Chiave usata server-side per Google Routes.
+Chiave legacy disponibile per i test di confronto con Google Routes.
+
+`MAPBOX_ACCESS_TOKEN`
+
+Token usato server-side per Mapbox Geocoding, Directions e Matrix.
 
 Non deve essere esposta al client.
 
@@ -262,7 +266,7 @@ Rifornio usa:
 * PostgreSQL;
 * PostGIS;
 * Open Data MIMIT;
-* Google Routes Compute Route Matrix.
+* Mapbox Geocoding, Directions e Matrix.
 
 La pipeline di ranking è:
 
@@ -270,7 +274,7 @@ La pipeline di ranking è:
 MIMIT
 → Supabase/PostGIS
 → massimo 20 candidati
-→ Google Routes
+→ Mapbox Matrix
 → calculateConvenience()
 → ranking
 ```
@@ -521,14 +525,15 @@ Sono già funzionanti:
 * homepage;
 * calcolo reale;
 * geolocalizzazione;
-* ranking Google Routes;
+* ranking stradale Mapbox;
+* pianificazione lungo un percorso con partenza attuale o personalizzata;
 * pagina Come funziona;
 * Privacy;
 * Cookie;
 * Supporto;
 * sitemap;
 * robots.txt;
-* banner Adsterra 300×250 dopo la classifica;
+* banner Adsterra 300×250 sopra il calcolatore;
 * ads.txt presente, in attesa del record ufficiale fornito da Adsterra;
 * GA4 con consenso.
 

@@ -43,15 +43,24 @@ export default function PrivacyPage() {
           <p>Durante un calcolo Rifornio tratta:</p>
 
           <ul className="list-disc space-y-2 pl-5">
-            <li>latitude e longitude fornite dal browser;</li>
+            <li>
+              latitude e longitude fornite dal browser o dall&apos;app, quando
+              scegli di usare la posizione attuale;
+            </li>
+            <li>
+              indirizzi o nomi di località cercati per impostare partenza e
+              destinazione di un viaggio;
+            </li>
             <li>tipo di carburante e modalità Self o Servito selezionati;</li>
             <li>importo del rifornimento e consumo medio indicati;</li>
             <li>dati pubblici dei distributori e dei prezzi carburante.</li>
           </ul>
 
           <p>
-            Importo e consumo vengono usati nel browser per il calcolo della
-            convenienza e non risultano inviati alle API di ricerca o routing.
+            Nella ricerca vicino alla posizione, importo e consumo vengono
+            elaborati dal client. Nel calcolo lungo un percorso vengono inviati
+            all&apos;API di Rifornio insieme alle coordinate selezionate, perché il
+            ranking della deviazione viene eseguito sul server.
           </p>
         </section>
 
@@ -59,9 +68,11 @@ export default function PrivacyPage() {
           <h2 className={headingClassName}>Geolocalizzazione</h2>
 
           <p>
-            La posizione viene richiesta soltanto quando avvii il calcolo. Il
-            browser mostra la propria richiesta di permesso e puoi negarla o
-            gestirla dalle impostazioni del dispositivo.
+            La posizione viene richiesta soltanto quando avvii un calcolo che
+            usa la posizione attuale. Il browser o il sistema operativo mostra
+            la propria richiesta di permesso e puoi negarla o gestirla dalle
+            impostazioni del dispositivo. Per pianificare un altro viaggio puoi
+            invece cercare e selezionare manualmente la partenza.
           </p>
 
           <p>
@@ -100,10 +111,24 @@ export default function PrivacyPage() {
               prezzi e ricerca geografica.
             </li>
             <li>
-              Google Routes, per calcolare le distanze stradali tra la
-              posizione dell&apos;utente e i distributori candidati.
+              Mapbox Geocoding, Directions e Matrix, per cercare le località,
+              ottenere il percorso e calcolare le distanze stradali dei
+              distributori candidati. Le richieste vengono effettuate dal
+              server di Rifornio.
             </li>
           </ul>
+          <p>
+            Per informazioni sul trattamento operato dal provider consulta la{" "}
+            <a
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="https://www.mapbox.com/legal/privacy"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Product Privacy Policy di Mapbox
+            </a>
+            .
+          </p>
         </section>
 
         <section className={sectionClassName}>
@@ -116,8 +141,9 @@ export default function PrivacyPage() {
           </p>
 
           <p>
-            La precisione GPS fornita dal browser resta nel dispositivo e non
-            viene inviata alle API di Rifornio.
+            La precisione GPS fornita dal browser o dal dispositivo resta nel
+            client: Rifornio invia alle proprie API soltanto latitude e
+            longitude necessarie al calcolo.
           </p>
         </section>
 
@@ -133,11 +159,12 @@ export default function PrivacyPage() {
           </p>
 
           <p>
-            La richiesta per trovare i distributori include tecnicamente
-            latitude e longitude nell&apos;URL della relativa API. Il repository
-            non contiene log applicativi permanenti di queste richieste, ma
-            non descrive le eventuali registrazioni operate
-            dall&apos;infrastruttura.
+            La ricerca dei distributori vicini include tecnicamente latitude e
+            longitude nell&apos;URL della relativa API. Le ricerche di indirizzi e
+            i calcoli lungo un percorso utilizzano invece richieste POST. Il
+            repository non contiene log applicativi permanenti di queste
+            richieste, ma non descrive le eventuali registrazioni operate
+            dall&apos;infrastruttura o dai provider tecnici.
           </p>
         </section>
 
@@ -245,10 +272,11 @@ export default function PrivacyPage() {
           <h2 className={headingClassName}>Link verso servizi esterni</h2>
 
           <p>
-            Il comando “Apri nel navigatore” apre Google Maps in una nuova
-            scheda e include nell&apos;URL le coordinate del distributore scelto,
-            non quelle dell&apos;utente. Da quel momento la navigazione avviene sul
-            servizio esterno.
+            Per una ricerca nelle vicinanze, il comando “Apri nel navigatore”
+            include nell&apos;URL di Google Maps le coordinate del distributore
+            scelto. Per un viaggio pianificato, il link include anche le
+            coordinate di partenza, destinazione e sosta. Da quel momento la
+            navigazione avviene sul servizio esterno.
           </p>
         </section>
 

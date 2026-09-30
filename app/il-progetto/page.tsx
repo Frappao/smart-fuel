@@ -48,9 +48,9 @@ export default function ProjectPage() {
           <h2 className={headingClassName}>Come funziona l&apos;idea</h2>
           <p>Rifornio combina alcuni elementi utili al confronto:</p>
           <ul className="list-disc space-y-2 pl-5">
-            <li>la posizione dell&apos;utente;</li>
-            <li>i distributori vicini;</li>
-            <li>i prezzi ufficiali della Benzina Self Service;</li>
+            <li>la posizione attuale o una partenza scelta;</li>
+            <li>i distributori vicini o lungo un percorso;</li>
+            <li>i prezzi ufficiali di Benzina, Gasolio e GPL;</li>
             <li>la distanza stradale;</li>
             <li>il consumo medio dell&apos;auto indicato dall&apos;utente.</li>
           </ul>

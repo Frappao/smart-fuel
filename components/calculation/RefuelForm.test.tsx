@@ -50,6 +50,29 @@ describe('RefuelForm', () => {
       screen.getByText('Il consumo medio deve essere maggiore di 0.'),
     ).toBeTruthy()
     expect(onCalculate).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByLabelText('Importo rifornimento in euro'))
+    fireEvent.click(screen.getByRole('button', { name: '50 €' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+    expect(document.activeElement).toBe(screen.getByLabelText('Consumo medio auto in L/100 km'))
+  })
+
+  it('selects quick amounts without submitting and clears their pressed state on manual input', () => {
+    const onCalculate = vi.fn()
+    render(<RefuelForm onCalculate={onCalculate} />)
+    const input = screen.getByLabelText<HTMLInputElement>('Importo rifornimento in euro')
+    for (const amount of [20, 50, 100]) {
+      fireEvent.click(screen.getByRole('button', { name: `${amount} €` }))
+      expect(input.value).toBe(String(amount))
+      expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(1)
+      expect(screen.getByRole('button', { name: `${amount} €` }).getAttribute('aria-pressed')).toBe('true')
+    }
+    expect(onCalculate).not.toHaveBeenCalled()
+    fireEvent.change(input, { target: { value: '35' } })
+    expect(screen.queryAllByRole('button', { pressed: true })).toHaveLength(0)
+    fireEvent.change(screen.getByLabelText('Consumo medio auto in L/100 km'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: '20 €' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+    expect(onCalculate).toHaveBeenCalledWith({ refuelAmount: 20, consumptionLitersPer100Km: 6, fuelType: 'Benzina', isSelf: true })
   })
 
   it('rejects zero and negative values', () => {

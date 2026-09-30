@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
@@ -85,6 +85,66 @@ describe('MobileCalculator', () => {
       screen.getByText('Sto cercando i distributori più convenienti...'),
     ).toBeTruthy()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('blocks concurrent submissions and restores the form after an error', async () => {
+    let rejectPosition!: (reason: Error) => void
+    vi.mocked(getMobileCurrentPosition).mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectPosition = reject
+      }),
+    )
+    render(<MobileCalculator />)
+    const form = screen
+      .getByRole('button', { name: 'Calcola convenienza' })
+      .closest('form')!
+
+    act(() => {
+      submitForm()
+      fireEvent.submit(form)
+    })
+
+    expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Calcolo in corso…',
+      }).disabled,
+    ).toBe(true)
+
+    for (const control of form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLButtonElement
+    >('input, select, button')) {
+      expect(control.disabled).toBe(true)
+    }
+
+    fireEvent.submit(form)
+    expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
+
+    await act(async () => {
+      rejectPosition(new Error('Posizione non disponibile'))
+    })
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Posizione non disponibile',
+    )
+
+    for (const control of form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLButtonElement
+    >('input, select, button')) {
+      expect(control.disabled).toBe(false)
+    }
+
+    arrangeResponse({ stations: [] })
+    fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+
+    expect(
+      await screen.findByText(
+        'Non ho trovato distributori vicini con Benzina Self disponibile.',
+      ),
+    ).toBeTruthy()
+    expect(getMobileCurrentPosition).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('uses Gasolio Servito and ranks routes by destinationIndex and net liters', async () => {

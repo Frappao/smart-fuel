@@ -1,6 +1,11 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import {
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 
 import {
   isSupportedFuelType,
@@ -18,6 +23,12 @@ export interface RefuelCalculationInput {
 
 interface RefuelFormProps {
   onCalculate: (values: RefuelCalculationInput) => void
+  isLoading?: boolean
+  children?: ReactNode
+  title?: string
+  locationMessage?: string
+  submitLabel?: string
+  loadingLabel?: string
 }
 
 interface FormErrors {
@@ -35,7 +46,18 @@ function parsePositiveNumber(value: string): number | null {
   return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null
 }
 
-export default function RefuelForm({ onCalculate }: RefuelFormProps) {
+export default function RefuelForm({
+  onCalculate,
+  isLoading = false,
+  children,
+  title = 'Il tuo rifornimento',
+  locationMessage =
+    'La posizione serve a trovare i distributori vicini e viene richiesta quando avvii il calcolo.',
+  submitLabel = 'Calcola convenienza',
+  loadingLabel = 'Calcolo in corso…',
+}: RefuelFormProps) {
+  const amountRef = useRef<HTMLInputElement>(null)
+  const consumptionRef = useRef<HTMLInputElement>(null)
   const [refuelAmount, setRefuelAmount] = useState('')
   const [consumption, setConsumption] = useState('')
   const [fuelType, setFuelType] = useState<SupportedFuelType>('Benzina')
@@ -44,6 +66,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isLoading) return
 
     const parsedRefuelAmount = parsePositiveNumber(refuelAmount)
     const parsedConsumption = parsePositiveNumber(consumption)
@@ -61,6 +84,8 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
     setErrors(nextErrors)
 
     if (parsedRefuelAmount === null || parsedConsumption === null) {
+      if (parsedRefuelAmount === null) amountRef.current?.focus()
+      else consumptionRef.current?.focus()
       return
     }
 
@@ -74,16 +99,20 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
 
   return (
     <form
-      className="flex w-full max-w-md flex-col gap-5 rounded-xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950"
+      className="flex w-full flex-col gap-5 rounded-xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950"
+      aria-busy={isLoading}
       noValidate
       onSubmit={handleSubmit}
     >
+      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      {children}
       <div className="flex min-w-0 flex-col gap-2">
         <label className="text-sm font-medium" htmlFor="fuel-type">
           Carburante
         </label>
         <select
           id="fuel-type"
+          disabled={isLoading}
           className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           value={fuelType}
           onChange={(event) => {
@@ -106,6 +135,7 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         </label>
         <select
           id="service-mode"
+          disabled={isLoading}
           className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           value={String(isSelf)}
           onChange={(event) => {
@@ -127,6 +157,10 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         </label>
         <input
           id="refuel-amount"
+          ref={amountRef}
+          disabled={isLoading}
+          placeholder="Es. 50"
+          inputMode="decimal"
           className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           type="number"
           min="0"
@@ -136,6 +170,20 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
           aria-describedby={errors.refuelAmount ? 'refuel-amount-error' : undefined}
           onChange={(event) => setRefuelAmount(event.target.value)}
         />
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Importi rapidi">
+          {[20, 50, 100].map((amount) => (
+            <button
+              key={amount}
+              type="button"
+              disabled={isLoading}
+              aria-pressed={parsePositiveNumber(refuelAmount) === amount}
+              onClick={() => setRefuelAmount(String(amount))}
+              className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium aria-pressed:border-emerald-600 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:aria-pressed:border-emerald-400 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200"
+            >
+              {amount} €
+            </button>
+          ))}
+        </div>
         {errors.refuelAmount ? (
           <p
             className="text-sm text-red-700 dark:text-red-300"
@@ -153,6 +201,10 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         </label>
         <input
           id="average-consumption"
+          ref={consumptionRef}
+          disabled={isLoading}
+          placeholder="Es. 6.5"
+          inputMode="decimal"
           className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
           type="number"
           min="0"
@@ -160,10 +212,15 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
           value={consumption}
           aria-invalid={Boolean(errors.consumption)}
           aria-describedby={
-            errors.consumption ? 'average-consumption-error' : undefined
+            errors.consumption
+              ? 'average-consumption-help average-consumption-error'
+              : 'average-consumption-help'
           }
           onChange={(event) => setConsumption(event.target.value)}
         />
+        <p id="average-consumption-help" className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          Trovi il consumo medio nel computer di bordo: usa il valore in L/100 km.
+        </p>
         {errors.consumption ? (
           <p
             className="text-sm text-red-700 dark:text-red-300"
@@ -175,11 +232,17 @@ export default function RefuelForm({ onCalculate }: RefuelFormProps) {
         ) : null}
       </div>
 
+      {locationMessage ? (
+        <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          {locationMessage}
+        </p>
+      ) : null}
       <button
+        disabled={isLoading}
         className="min-h-12 w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 dark:focus:ring-emerald-500 dark:focus:ring-offset-zinc-950"
         type="submit"
       >
-        Calcola convenienza
+        {isLoading ? loadingLabel : submitLabel}
       </button>
     </form>
   )

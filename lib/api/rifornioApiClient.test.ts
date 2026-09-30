@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   buildApiUrl,
+  fetchGeocodingResults,
   fetchNearbyStations,
   fetchRouteMatrix,
+  fetchTripStations,
 } from './rifornioApiClient'
 
 const fetchMock = vi.fn()
@@ -76,6 +78,46 @@ describe('Rifornio API client', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
+  })
+
+  it('sends geocoding queries as JSON with POST', async () => {
+    arrangeResponse({ results: [] })
+
+    await expect(fetchGeocodingResults('Milano')).resolves.toEqual({
+      results: [],
+    })
+    expect(fetchMock).toHaveBeenCalledWith('/api/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'Milano' }),
+    })
+  })
+
+  it('sends the complete trip request and validates its response', async () => {
+    const request = {
+      origin: { latitude: 45.4642, longitude: 9.19 },
+      destination: { latitude: 44.4949, longitude: 11.3426 },
+      refuelAmount: 50,
+      consumptionLitersPer100Km: 6,
+      fuelType: 'Gasolio' as const,
+      isSelf: false,
+    }
+    arrangeResponse({ baseRouteDistanceMeters: 214_350, results: [] })
+
+    await expect(fetchTripStations(request)).resolves.toEqual({
+      baseRouteDistanceMeters: 214_350,
+      results: [],
+    })
+    expect(fetchMock).toHaveBeenCalledWith('/api/trip-stations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+
+    arrangeResponse({ baseRouteDistanceMeters: 'invalid', results: [] })
+    await expect(fetchTripStations(request)).rejects.toThrow(
+      'Trip stations request returned an invalid response.',
+    )
   })
 
   it('turns a non-ok HTTP response into a controlled error', async () => {

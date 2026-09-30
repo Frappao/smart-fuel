@@ -1,4 +1,5 @@
 import type { SupportedFuelType } from '../fuels/supportedFuelTypes'
+import type { RankedRouteStationResult } from '../calculation/rankStationsAlongRoute'
 
 export interface NearbyStation {
   id: number
@@ -42,6 +43,31 @@ export interface RouteMatrixResponse {
   routes: unknown[]
 }
 
+export interface GeocodingResult {
+  id: string
+  label: string
+  latitude: number
+  longitude: number
+}
+
+export interface GeocodingResponse {
+  results: GeocodingResult[]
+}
+
+export interface TripStationsRequest {
+  origin: Coordinates
+  destination: Coordinates
+  refuelAmount: number
+  consumptionLitersPer100Km: number
+  fuelType: SupportedFuelType
+  isSelf: boolean
+}
+
+export interface TripStationsResponse {
+  baseRouteDistanceMeters: number
+  results: RankedRouteStationResult[]
+}
+
 export class RifornioApiError extends Error {
   constructor(
     message: string,
@@ -64,6 +90,22 @@ function isNearbyStationsResponse(
 
 function isRouteMatrixResponse(value: unknown): value is RouteMatrixResponse {
   return isRecord(value) && Array.isArray(value.routes)
+}
+
+function isGeocodingResponse(value: unknown): value is GeocodingResponse {
+  return isRecord(value) && Array.isArray(value.results)
+}
+
+function isTripStationsResponse(
+  value: unknown,
+): value is TripStationsResponse {
+  return (
+    isRecord(value) &&
+    typeof value.baseRouteDistanceMeters === 'number' &&
+    Number.isFinite(value.baseRouteDistanceMeters) &&
+    value.baseRouteDistanceMeters >= 0 &&
+    Array.isArray(value.results)
+  )
 }
 
 export function buildApiUrl(path: string, baseUrl?: string): string {
@@ -128,6 +170,42 @@ export async function fetchRouteMatrix(
 
   if (!isRouteMatrixResponse(responseBody)) {
     throw new Error('Route matrix request returned an invalid response.')
+  }
+
+  return responseBody
+}
+
+export async function fetchGeocodingResults(
+  query: string,
+  baseUrl?: string,
+): Promise<GeocodingResponse> {
+  const response = await fetch(buildApiUrl('/api/geocode', baseUrl), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  })
+  const responseBody = await readResponseJson(response, 'Geocoding request')
+
+  if (!isGeocodingResponse(responseBody)) {
+    throw new Error('Geocoding request returned an invalid response.')
+  }
+
+  return responseBody
+}
+
+export async function fetchTripStations(
+  request: TripStationsRequest,
+  baseUrl?: string,
+): Promise<TripStationsResponse> {
+  const response = await fetch(buildApiUrl('/api/trip-stations', baseUrl), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  const responseBody = await readResponseJson(response, 'Trip stations request')
+
+  if (!isTripStationsResponse(responseBody)) {
+    throw new Error('Trip stations request returned an invalid response.')
   }
 
   return responseBody

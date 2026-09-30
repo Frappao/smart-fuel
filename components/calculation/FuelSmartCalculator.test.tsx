@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedFuelType } from '../../lib/fuels/supportedFuelTypes'
@@ -110,6 +110,38 @@ describe('FuelSmartCalculator', () => {
     expect(
       screen.getByText('Sto cercando i distributori più convenienti...'),
     ).toBeTruthy()
+  })
+
+  it('blocks concurrent submissions and restores the form after an error', async () => {
+    let rejectPosition!: (reason: Error) => void
+    vi.mocked(getCurrentPosition).mockReturnValueOnce(new Promise((_, reject) => {
+      rejectPosition = reject
+    }))
+    render(<FuelSmartCalculator />)
+    const form = screen.getByRole('button', { name: 'Calcola convenienza' }).closest('form')!
+    act(() => {
+      submitForm()
+      fireEvent.submit(form)
+    })
+    expect(getCurrentPosition).toHaveBeenCalledOnce()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Calcolo in corso…' }).disabled).toBe(true)
+    for (const control of form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button')) {
+      expect(control.disabled).toBe(true)
+    }
+    fireEvent.submit(form)
+    expect(getCurrentPosition).toHaveBeenCalledOnce()
+    await act(async () => { rejectPosition(new Error('Posizione non disponibile')) })
+    expect(screen.getByRole('alert').textContent).toContain('Posizione non disponibile')
+    for (const control of form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button')) {
+      expect(control.disabled).toBe(false)
+    }
+    expect(screen.getByLabelText<HTMLInputElement>('Importo rifornimento in euro').value).toBe('50')
+    arrangeApiResponse({ stations: [] })
+    fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+    await screen.findByRole('button', { name: 'Calcola convenienza' })
+    expect(getCurrentPosition).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('submits the form and ranks priced stations by net fuel liters', async () => {

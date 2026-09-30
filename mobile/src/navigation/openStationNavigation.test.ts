@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildFallbackNavigationUrl,
   buildNativeNavigationUrl,
+  buildTripNavigationUrl,
   openStationNavigation,
+  openTripNavigation,
   StationNavigationError,
 } from './openStationNavigation'
 
@@ -107,6 +109,41 @@ describe('openStationNavigation', () => {
     openUrlMock.mockRejectedValue(new Error('raw fallback failure'))
 
     await expect(openStationNavigation(destination)).rejects.toEqual(
+      new StationNavigationError(),
+    )
+  })
+})
+
+describe('openTripNavigation', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  const request = {
+    origin: { latitude: 45.4642, longitude: 9.19 },
+    destination: { latitude: 44.4949, longitude: 11.3426 },
+    station: { latitude: 44.8015, longitude: 10.3279 },
+  }
+
+  it('builds a Google Maps route with the station as waypoint', () => {
+    const url = new URL(buildTripNavigationUrl(request))
+
+    expect(url.searchParams.get('origin')).toBe('45.4642,9.19')
+    expect(url.searchParams.get('destination')).toBe('44.4949,11.3426')
+    expect(url.searchParams.get('waypoints')).toBe('44.8015,10.3279')
+    expect(url.searchParams.get('travelmode')).toBe('driving')
+    expect(url.searchParams.get('dir_action')).toBe('navigate')
+  })
+
+  it('opens the trip URL and reports launcher failures consistently', async () => {
+    openUrlMock.mockResolvedValueOnce({ completed: true })
+    await expect(openTripNavigation(request)).resolves.toBeUndefined()
+    expect(openUrlMock).toHaveBeenCalledWith({
+      url: buildTripNavigationUrl(request),
+    })
+
+    openUrlMock.mockResolvedValueOnce({ completed: false })
+    await expect(openTripNavigation(request)).rejects.toEqual(
       new StationNavigationError(),
     )
   })

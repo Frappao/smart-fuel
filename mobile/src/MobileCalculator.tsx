@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import RefuelForm, {
   type RefuelCalculationInput,
@@ -18,6 +18,8 @@ import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { RIFORNIO_API_BASE_URL } from './config'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import { openStationNavigation } from './navigation/openStationNavigation'
+import MobileSearchMode from './MobileSearchMode'
+import MobileTripCalculator from './MobileTripCalculator'
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -126,6 +128,8 @@ function MobileStationResult({
 }
 
 export default function MobileCalculator() {
+  const [searchMode, setSearchMode] = useState<'nearby' | 'trip'>('nearby')
+  const calculationInFlight = useRef(false)
   const [results, setResults] = useState<RankedStationResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -135,6 +139,10 @@ export default function MobileCalculator() {
     results.length >= 2
       ? results[0].netFuelLiters - results[1].netFuelLiters
       : null
+
+  if (searchMode === 'trip') {
+    return <MobileTripCalculator onSelectNearby={() => setSearchMode('nearby')} />
+  }
 
   async function handleOpenNavigation(latitude: number, longitude: number) {
     setNavigationError(null)
@@ -147,6 +155,8 @@ export default function MobileCalculator() {
   }
 
   async function handleCalculate(values: RefuelCalculationInput) {
+    if (calculationInFlight.current) return
+    calculationInFlight.current = true
     setResults([])
     setError(null)
     setEmptyState(null)
@@ -222,6 +232,7 @@ export default function MobileCalculator() {
           : 'Non è stato possibile calcolare la convenienza.',
       )
     } finally {
+      calculationInFlight.current = false
       setIsLoading(false)
     }
   }
@@ -235,9 +246,10 @@ export default function MobileCalculator() {
           Confronta prezzo, distanza stradale e consumo della tua auto.
         </p>
       </header>
+      <MobileSearchMode mode="nearby" onChange={setSearchMode} />
 
       <section className="calculator-form" aria-label="Dati del rifornimento">
-        <RefuelForm onCalculate={handleCalculate} />
+        <RefuelForm onCalculate={handleCalculate} isLoading={isLoading} />
       </section>
 
       {isLoading ? (

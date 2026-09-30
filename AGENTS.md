@@ -90,7 +90,7 @@ Next.js App Router
 → browser geolocation
 → Rifornio APIs
 → Supabase/PostGIS
-→ Google Routes server-side
+→ Mapbox routing server-side
 → shared ranking
 → web results
 
@@ -123,7 +123,7 @@ Do not replace the stack unless strictly necessary.
 - Vitest
 - Testing Library
 - jsdom
-- Google Routes API
+- Mapbox Geocoding, Directions, and Matrix APIs
 - Capacitor
 - Vite
 - Git
@@ -198,14 +198,14 @@ Required architecture:
 all stations
 → PostGIS nearby pre-filter
 → maximum 20 candidates
-→ Google Routes
+→ Mapbox Matrix
 → ranking
 
 Do not use PostGIS straight-line distance as the final travel distance.
 
 Route Matrix mapping must preserve candidate order and associate results using destinationIndex.
 
-Do not associate Google route results using names or coordinates.
+Do not associate route results using names or coordinates.
 
 For the current nearby-station calculation:
 
@@ -235,11 +235,11 @@ Responsibilities include:
 
 Do not duplicate this logic unnecessarily in web or mobile components.
 
-## Google Routes
+## Mapbox routing
 
-Google Routes Compute Route Matrix is server-side only.
+Mapbox Geocoding, Directions, and Matrix requests are server-side only.
 
-The Google Maps API key must never be exposed to:
+MAPBOX_ACCESS_TOKEN must never be exposed to:
 
 - browser code;
 - mobile bundle;
@@ -258,6 +258,16 @@ Maximum destinations:
 The production endpoint is protected by a Vercel WAF rate limit.
 
 Do not remove or bypass that protection without an explicit task.
+
+Route planning additionally uses:
+
+- POST /api/geocode
+- POST /api/trip-stations
+- public.stations_along_route
+
+The user can use the current position or select a different origin. Route
+ranking subtracts only fuel consumed for the additional road detour compared
+with the base origin-to-destination route.
 
 ## Supabase
 
@@ -376,7 +386,8 @@ The Android debug app currently supports:
 
 - native geolocation;
 - real nearby-station calculation;
-- Google route-based ranking;
+- Mapbox route-based ranking;
+- trip planning with current or custom origin;
 - external Maps navigation.
 
 Native position behavior:
@@ -451,11 +462,8 @@ Do not implement these unless explicitly requested:
 - social features;
 - notifications;
 - native maps;
-- route-based commuter feature;
 - additional monetization features;
 - unrelated architectural refactors.
-
-The future route-based commuter feature is plausible, but it is post-MVP.
 
 ## Git rules
 
@@ -543,6 +551,7 @@ Never commit or expose:
 
 - SUPABASE_SECRET_KEY
 - GOOGLE_MAPS_API_KEY
+- MAPBOX_ACCESS_TOKEN
 - CRON_SECRET
 - private tokens
 - .env.local
@@ -590,7 +599,8 @@ Current production state:
 - one Adsterra 300x250 result banner enabled through environment configuration;
 - support page exists;
 - Android debug app functional;
-- Google Routes integration functional;
+- Mapbox routing integration functional;
+- route planning implemented locally and awaiting Supabase schema deployment;
 - MIMIT daily import automated through Vercel Cron;
 - no Google Play release uploaded yet.
 

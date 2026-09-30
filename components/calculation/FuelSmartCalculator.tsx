@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
   fetchNearbyStations,
@@ -218,6 +218,7 @@ function StationResultCard({
 }
 
 export default function FuelSmartCalculator() {
+  const calculationInFlight = useRef(false)
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
   const [results, setResults] = useState<RankedStationResult[]>([])
@@ -231,6 +232,8 @@ export default function FuelSmartCalculator() {
       : null
 
   async function handleCalculate(values: RefuelCalculationInput) {
+    if (calculationInFlight.current) return
+    calculationInFlight.current = true
     setCalculationInput(values)
     setResults([])
     setError(null)
@@ -306,6 +309,7 @@ export default function FuelSmartCalculator() {
           : 'Non è stato possibile calcolare la convenienza.',
       )
     } finally {
+      calculationInFlight.current = false
       setIsLoading(false)
     }
   }
@@ -314,7 +318,7 @@ export default function FuelSmartCalculator() {
     <section className="flex min-w-0 flex-col gap-6 sm:gap-8">
       <AdSlot />
 
-      <RefuelForm onCalculate={handleCalculate} />
+      <RefuelForm onCalculate={handleCalculate} isLoading={isLoading} />
 
       {isLoading ? (
         <p
