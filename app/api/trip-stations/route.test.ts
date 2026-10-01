@@ -206,6 +206,68 @@ describe('POST /api/trip-stations', () => {
     expect(getMapboxRouteViaWaypoint).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps Matrix results when the winner verification is unavailable', async () => {
+    const stations = [station(1, 1.8), station(2, 1.75)]
+    vi.mocked(getStationsAlongRoute).mockResolvedValue(stations)
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 40_000 },
+      { destinationIndex: 1, distanceMeters: 45_000 },
+    ])
+    vi.mocked(getMapboxRoutesToDestination).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 61_000 },
+      { destinationIndex: 1, distanceMeters: 65_000 },
+    ])
+    vi.mocked(getMapboxRouteViaWaypoint).mockRejectedValue(
+      new Error('temporary Directions failure'),
+    )
+
+    const response = await POST(createRequest(requestBody))
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(
+      responseBody.results.map(
+        (result: { station: { id: number } }) => result.station.id,
+      ),
+    ).toEqual([2, 1])
+  })
+
+  it('keeps a contender Matrix route when its verification fails', async () => {
+    const stations = [station(1, 1.889), station(2, 1.829)]
+    vi.mocked(getMapboxDirections).mockResolvedValue({
+      distanceMeters: 600_000,
+      geometry,
+    })
+    vi.mocked(getStationsAlongRoute).mockResolvedValue(stations)
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 300_000 },
+      { destinationIndex: 1, distanceMeters: 310_000 },
+    ])
+    vi.mocked(getMapboxRoutesToDestination).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 300_400 },
+      { destinationIndex: 1, distanceMeters: 315_500 },
+    ])
+    vi.mocked(getMapboxRouteViaWaypoint).mockImplementation(
+      async (_origin, waypoint) => {
+        if (waypoint.latitude === stations[1].latitude) {
+          throw new Error('temporary contender failure')
+        }
+
+        return {
+          originToWaypointDistanceMeters: 300_000,
+          waypointToDestinationDistanceMeters: 300_350,
+        }
+      },
+    )
+
+    const response = await POST(createRequest(requestBody))
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(responseBody.results).toHaveLength(2)
+    expect(responseBody.results[0].station.id).toBe(1)
+  })
+
   it.each([
     ['origin', { ...requestBody, origin: { latitude: 91, longitude: 9 } }],
     ['destination', { ...requestBody, destination: null }],

@@ -167,14 +167,23 @@ export async function POST(request: Request): Promise<Response> {
     const preliminaryWinnerIndex = candidateIndexById.get(
       preliminaryWinner.station.id,
     )!
-    const winnerRoute = await getMapboxRouteViaWaypoint(
-      origin,
-      {
-        latitude: preliminaryWinner.station.latitude,
-        longitude: preliminaryWinner.station.longitude,
-      },
-      destination,
-    )
+    let winnerRoute: Awaited<ReturnType<typeof getMapboxRouteViaWaypoint>>
+
+    try {
+      winnerRoute = await getMapboxRouteViaWaypoint(
+        origin,
+        {
+          latitude: preliminaryWinner.station.latitude,
+          longitude: preliminaryWinner.station.longitude,
+        },
+        destination,
+      )
+    } catch {
+      return Response.json({
+        baseRouteDistanceMeters: baseRoute.distanceMeters,
+        results: preliminaryResults.slice(0, RESULT_LIMIT),
+      })
+    }
     const verifiedWinner = rankStationsAlongRoute({
       candidates,
       routes: [
@@ -208,12 +217,12 @@ export async function POST(request: Request): Promise<Response> {
         winnerRoute.waypointToDestinationDistanceMeters,
     })
 
-    await Promise.all(
+    const contenderRoutes = await Promise.allSettled(
       possibleWinners.map(async (result) => {
         const destinationIndex = candidateIndexById.get(result.station.id)!
 
         if (destinationIndex === preliminaryWinnerIndex) {
-          return
+          return null
         }
 
         const route = await getMapboxRouteViaWaypoint(
@@ -224,15 +233,28 @@ export async function POST(request: Request): Promise<Response> {
           },
           destination,
         )
-        refinedRoutes.set(destinationIndex, {
-          destinationIndex,
-          originToStationDistanceMeters:
-            route.originToWaypointDistanceMeters,
-          stationToDestinationDistanceMeters:
-            route.waypointToDestinationDistanceMeters,
-        })
+
+        return { destinationIndex, route }
       }),
     )
+
+    for (const contenderRoute of contenderRoutes) {
+      if (
+        contenderRoute.status !== 'fulfilled' ||
+        contenderRoute.value === null
+      ) {
+        continue
+      }
+
+      const { destinationIndex, route } = contenderRoute.value
+      refinedRoutes.set(destinationIndex, {
+        destinationIndex,
+        originToStationDistanceMeters:
+          route.originToWaypointDistanceMeters,
+        stationToDestinationDistanceMeters:
+          route.waypointToDestinationDistanceMeters,
+      })
+    }
 
     const results = rankStationsAlongRoute({
       candidates,
