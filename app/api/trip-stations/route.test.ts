@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMapboxDirections } from '../../../lib/maps/getMapboxDirections'
 import { getMapboxRouteMatrix } from '../../../lib/maps/getMapboxRouteMatrix'
+import { getMapboxRouteViaWaypoint } from '../../../lib/maps/getMapboxRouteViaWaypoint'
 import { getMapboxRoutesToDestination } from '../../../lib/maps/getMapboxRoutesToDestination'
 import { getStationsAlongRoute } from '../../../lib/stations/getStationsAlongRoute'
 import { POST } from './route'
@@ -11,6 +12,9 @@ vi.mock('../../../lib/maps/getMapboxDirections', () => ({
 }))
 vi.mock('../../../lib/maps/getMapboxRouteMatrix', () => ({
   getMapboxRouteMatrix: vi.fn(),
+}))
+vi.mock('../../../lib/maps/getMapboxRouteViaWaypoint', () => ({
+  getMapboxRouteViaWaypoint: vi.fn(),
 }))
 vi.mock('../../../lib/maps/getMapboxRoutesToDestination', () => ({
   getMapboxRoutesToDestination: vi.fn(),
@@ -69,6 +73,10 @@ describe('POST /api/trip-stations', () => {
       distanceMeters: 100_000,
       geometry,
     })
+    vi.mocked(getMapboxRouteViaWaypoint).mockResolvedValue({
+      originToWaypointDistanceMeters: 45_000,
+      waypointToDestinationDistanceMeters: 65_000,
+    })
   })
 
   it('ranks valid corridor stations by their road detour', async () => {
@@ -101,6 +109,14 @@ describe('POST /api/trip-stations', () => {
     )
     expect(getMapboxRoutesToDestination).toHaveBeenCalledWith(
       stations.map(({ latitude, longitude }) => ({ latitude, longitude })),
+      destination,
+    )
+    expect(getMapboxRouteViaWaypoint).toHaveBeenCalledWith(
+      origin,
+      {
+        latitude: stations[1].latitude,
+        longitude: stations[1].longitude,
+      },
       destination,
     )
     expect(responseBody.baseRouteDistanceMeters).toBe(100_000)
@@ -147,6 +163,47 @@ describe('POST /api/trip-stations', () => {
     })
     expect(getMapboxRouteMatrix).not.toHaveBeenCalled()
     expect(getMapboxRoutesToDestination).not.toHaveBeenCalled()
+    expect(getMapboxRouteViaWaypoint).not.toHaveBeenCalled()
+  })
+
+  it('corrects a preliminary Matrix winner using routes through each contender', async () => {
+    const stations = [station(1, 1.889), station(2, 1.829)]
+    vi.mocked(getMapboxDirections).mockResolvedValue({
+      distanceMeters: 600_000,
+      geometry,
+    })
+    vi.mocked(getStationsAlongRoute).mockResolvedValue(stations)
+    vi.mocked(getMapboxRouteMatrix).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 300_000 },
+      { destinationIndex: 1, distanceMeters: 310_000 },
+    ])
+    vi.mocked(getMapboxRoutesToDestination).mockResolvedValue([
+      { destinationIndex: 0, distanceMeters: 300_400 },
+      { destinationIndex: 1, distanceMeters: 315_500 },
+    ])
+    vi.mocked(getMapboxRouteViaWaypoint).mockImplementation(
+      async (_origin, waypoint) =>
+        waypoint.latitude === stations[0].latitude
+          ? {
+              originToWaypointDistanceMeters: 300_000,
+              waypointToDestinationDistanceMeters: 300_350,
+            }
+          : {
+              originToWaypointDistanceMeters: 303_000,
+              waypointToDestinationDistanceMeters: 303_470,
+            },
+    )
+
+    const response = await POST(createRequest(requestBody))
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(
+      responseBody.results.map(
+        (result: { station: { id: number } }) => result.station.id,
+      ),
+    ).toEqual([2, 1])
+    expect(getMapboxRouteViaWaypoint).toHaveBeenCalledTimes(2)
   })
 
   it.each([

@@ -15,8 +15,8 @@ describe.skipIf(process.env.RUN_ROUTE_TRIP_INTEGRATION !== '1')(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            origin: { latitude: 45.4642, longitude: 9.19 },
-            destination: { latitude: 44.4949, longitude: 11.3426 },
+            origin: { latitude: 45.625, longitude: 9.035 },
+            destination: { latitude: 41.9028, longitude: 12.4964 },
             refuelAmount: 50,
             consumptionLitersPer100Km: 6,
             fuelType: 'Benzina',

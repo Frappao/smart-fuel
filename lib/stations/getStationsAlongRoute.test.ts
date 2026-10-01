@@ -105,4 +105,52 @@ describe('getStationsAlongRoute', () => {
       'Stations along route lookup failed: database unavailable',
     )
   })
+
+  it('reduces dense straight routes before the corridor lookup', async () => {
+    const rpc = arrangeSupabaseClient({ data: [], error: null })
+    const denseRoute = {
+      type: 'LineString' as const,
+      coordinates: [
+        [9, 45] as [number, number],
+        [9.0001, 45] as [number, number],
+        [9.0002, 45] as [number, number],
+        [9.0003, 45] as [number, number],
+        [9.0004, 45] as [number, number],
+      ],
+    }
+
+    await getStationsAlongRoute(denseRoute)
+
+    const rpcArguments = vi.mocked(rpc).mock.calls[0]?.[1] as {
+      corridor_meters: number
+      route_geojson: string
+    }
+    expect(rpcArguments.corridor_meters).toBe(2_025)
+    expect(JSON.parse(rpcArguments.route_geojson)).toEqual({
+      type: 'LineString',
+      coordinates: [
+        [9, 45],
+        [9.0004, 45],
+      ],
+    })
+  })
+
+  it('preserves route bends larger than the simplification tolerance', async () => {
+    const rpc = arrangeSupabaseClient({ data: [], error: null })
+    const bentRoute = {
+      type: 'LineString' as const,
+      coordinates: [
+        [9, 45] as [number, number],
+        [9.001, 45.001] as [number, number],
+        [9.002, 45] as [number, number],
+      ],
+    }
+
+    await getStationsAlongRoute(bentRoute)
+
+    const rpcArguments = vi.mocked(rpc).mock.calls[0]?.[1] as {
+      route_geojson: string
+    }
+    expect(JSON.parse(rpcArguments.route_geojson)).toEqual(bentRoute)
+  })
 })
