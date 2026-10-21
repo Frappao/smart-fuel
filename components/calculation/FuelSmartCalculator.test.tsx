@@ -24,13 +24,8 @@ function submitForm(
   fuelType: SupportedFuelType = 'Benzina',
   isSelf = true,
 ) {
-  fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
-    target: { value: fuelType },
-  })
-  fireEvent.change(
-    screen.getByRole('combobox', { name: 'Modalità di servizio' }),
-    { target: { value: String(isSelf) } },
-  )
+  fireEvent.click(screen.getByRole('radio', { name: fuelType }))
+  fireEvent.click(screen.getByRole('radio', { name: isSelf ? 'Self' : 'Servito' }))
   fireEvent.change(
     screen.getByRole('spinbutton', {
       name: 'Importo rifornimento in euro',
@@ -255,7 +250,7 @@ describe('FuelSmartCalculator', () => {
       ],
     })
     expect(
-      screen.getAllByRole('heading', { level: 3 }).map((heading) =>
+      screen.getAllByRole('heading', { level: 3, name: /^\d+\./ }).map((heading) =>
         heading.textContent,
       ),
     ).toEqual([

@@ -1,9 +1,19 @@
+import Link from "next/link";
 import FuelSearchCalculator from "../components/calculation/FuelSearchCalculator";
+
+import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
 export default function Home() {
   return (
+    <VehicleAccount>
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:h-dvh lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-8">
+      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+        <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
+          <AccountButton />
+        </nav>
+      </header>
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-8">
         <div
           aria-label="Calcolatore e risultati"
           role="region"
@@ -12,9 +22,6 @@ export default function Home() {
         >
           <div className="flex w-full flex-col gap-8">
             <header className="space-y-4">
-              <p className="text-lg font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">
-                Rifornio
-              </p>
               <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
                 Fai rifornimento dove conviene davvero.
               </h1>
@@ -23,6 +30,7 @@ export default function Home() {
                 distanza e consumo.
               </p>
             </header>
+            <RegistrationPrompt />
             <FuelSearchCalculator />
           </div>
         </div>
@@ -251,5 +259,6 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    </VehicleAccount>
   );
 }

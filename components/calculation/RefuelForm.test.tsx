@@ -13,12 +13,6 @@ describe('RefuelForm', () => {
   it('renders both numeric fields with Benzina Self selected by default', () => {
     render(<RefuelForm onCalculate={vi.fn()} />)
 
-    const fuelTypeSelect = screen.getByRole<HTMLSelectElement>('combobox', {
-      name: 'Carburante',
-    })
-    const serviceModeSelect = screen.getByRole<HTMLSelectElement>('combobox', {
-      name: 'Modalità di servizio',
-    })
     const refuelAmountInput = screen.getByRole<HTMLInputElement>('spinbutton', {
       name: 'Importo rifornimento in euro',
     })
@@ -26,9 +20,8 @@ describe('RefuelForm', () => {
       name: 'Consumo medio auto in L/100 km',
     })
 
-    expect(fuelTypeSelect.value).toBe('Benzina')
-    expect(serviceModeSelect.value).toBe('true')
-    expect(serviceModeSelect.selectedOptions[0]?.textContent).toBe('Self')
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Benzina' }).checked).toBe(true)
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Self' }).checked).toBe(true)
     expect(refuelAmountInput.type).toBe('number')
     expect(refuelAmountInput.value).toBe('')
     expect(consumptionInput.type).toBe('number')
@@ -52,8 +45,11 @@ describe('RefuelForm', () => {
     expect(onCalculate).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(screen.getByLabelText('Importo rifornimento in euro'))
     fireEvent.click(screen.getByRole('button', { name: '50 €' }))
+    expect(screen.queryByText('Inserisci un importo di rifornimento maggiore di 0.')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
     expect(document.activeElement).toBe(screen.getByLabelText('Consumo medio auto in L/100 km'))
+    fireEvent.change(screen.getByLabelText('Consumo medio auto in L/100 km'), { target: { value: '6' } })
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('selects quick amounts without submitting and clears their pressed state on manual input', () => {
@@ -135,13 +131,8 @@ describe('RefuelForm', () => {
       const onCalculate = vi.fn()
       render(<RefuelForm onCalculate={onCalculate} />)
 
-      fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
-        target: { value: fuelType },
-      })
-      fireEvent.change(
-        screen.getByRole('combobox', { name: 'Modalità di servizio' }),
-        { target: { value: 'false' } },
-      )
+      fireEvent.click(screen.getByRole('radio', { name: fuelType }))
+      fireEvent.click(screen.getByRole('radio', { name: 'Servito' }))
       fireEvent.change(
         screen.getByRole('spinbutton', {
           name: 'Importo rifornimento in euro',
@@ -171,12 +162,8 @@ describe('RefuelForm', () => {
     const onCalculate = vi.fn()
     render(<RefuelForm onCalculate={onCalculate} />)
 
-    const serviceModeSelect = screen.getByRole('combobox', {
-      name: 'Modalità di servizio',
-    })
-
-    fireEvent.change(serviceModeSelect, { target: { value: 'false' } })
-    fireEvent.change(serviceModeSelect, { target: { value: 'true' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'Servito' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Self' }))
     fireEvent.change(
       screen.getByRole('spinbutton', {
         name: 'Importo rifornimento in euro',
@@ -200,4 +187,16 @@ describe('RefuelForm', () => {
       isSelf: true,
     })
   })
+})
+
+it('converts an existing consumption when changing units and submits L/100 km', () => {
+  const onCalculate = vi.fn()
+  render(<RefuelForm onCalculate={onCalculate} />)
+  fireEvent.click(screen.getByRole('button', { name: '50 €' }))
+  fireEvent.change(screen.getByLabelText('Consumo medio auto in L/100 km'), { target: { value: '5' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'km/L' }))
+  expect(screen.getByLabelText<HTMLInputElement>('Consumo medio auto in km/L').value).toBe('20')
+  fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+  expect(onCalculate).toHaveBeenCalledWith({ refuelAmount: 50, consumptionLitersPer100Km: 5, fuelType: 'Benzina', isSelf: true })
+  cleanup()
 })

@@ -8,11 +8,14 @@ import {
 } from 'react'
 
 import {
-  isSupportedFuelType,
   SUPPORTED_FUEL_TYPE_LABELS,
   SUPPORTED_FUEL_TYPES,
   type SupportedFuelType,
 } from '../../lib/fuels/supportedFuelTypes'
+
+import ChoiceGroup from '../ui/ChoiceGroup'
+import { useVehicleAccount } from '../account/VehicleAccount'
+import { convertConsumption, toLitersPer100Km, type ConsumptionUnit } from '../../lib/vehicles/consumption'
 
 export interface RefuelCalculationInput {
   refuelAmount: number
@@ -32,6 +35,7 @@ interface RefuelFormProps {
 }
 
 interface FormErrors {
+  vehicleName?: string
   refuelAmount?: string
   consumption?: string
 }
@@ -56,20 +60,36 @@ export default function RefuelForm({
   submitLabel = 'Calcola convenienza',
   loadingLabel = 'Calcolo in corso…',
 }: RefuelFormProps) {
+  const account = useVehicleAccount()
+  const selected = account?.selected
+  const [lastSelected, setLastSelected] = useState(selected)
+  const [vehicleName, setVehicleName] = useState(selected?.name ?? '')
+  const [unit, setUnit] = useState<ConsumptionUnit>(selected?.consumption_unit ?? 'L/100 km')
+  const vehicleNameRef = useRef<HTMLInputElement>(null)
+  const [saveFeedback, setSaveFeedback] = useState('')
   const amountRef = useRef<HTMLInputElement>(null)
   const consumptionRef = useRef<HTMLInputElement>(null)
   const [refuelAmount, setRefuelAmount] = useState('')
-  const [consumption, setConsumption] = useState('')
-  const [fuelType, setFuelType] = useState<SupportedFuelType>('Benzina')
+  const [consumption, setConsumption] = useState(selected ? String(selected.consumption) : '')
+  const [fuelType, setFuelType] = useState<SupportedFuelType>(selected?.fuel_type ?? 'Benzina')
   const [isSelf, setIsSelf] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
+
+  if (selected !== lastSelected) {
+    setLastSelected(selected)
+    setVehicleName(selected?.name ?? '')
+    setConsumption(selected ? String(selected.consumption) : '')
+    setUnit(selected?.consumption_unit ?? 'L/100 km')
+    setFuelType(selected?.fuel_type ?? 'Benzina')
+    setErrors({})
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (isLoading) return
 
     const parsedRefuelAmount = parsePositiveNumber(refuelAmount)
-    const parsedConsumption = parsePositiveNumber(consumption)
+    const parsedConsumption = toLitersPer100Km(Number(consumption), unit)
     const nextErrors: FormErrors = {}
 
     if (parsedRefuelAmount === null) {
@@ -106,50 +126,100 @@ export default function RefuelForm({
     >
       <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       {children}
+      <section aria-labelledby="vehicle-details-title" className="flex min-w-0 flex-col gap-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+        <h3 id="vehicle-details-title" className="font-semibold">La tua auto</h3>
+      {account?.user && <div className="space-y-4">
+        <ChoiceGroup label="Le tue auto" value={selected?.id ?? ''} disabled={isLoading || account.busy} onChange={id => { setSaveFeedback(''); account.select(id) }} options={[
+          ...account.vehicles.map(vehicle => ({ value: vehicle.id, label: vehicle.name, description: `${vehicle.consumption} ${vehicle.consumption_unit}` })),
+          { value: '', label: '+ Nuova auto' },
+        ]} />
+        {account.busy && <p className="text-sm text-zinc-500" role="status">Aggiornamento auto in corso…</p>}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium" htmlFor="vehicle-name">Nome e modello auto</label>
+          <input id="vehicle-name" ref={vehicleNameRef} disabled={isLoading || account.busy} className="min-h-12 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-950" placeholder="Es. Fiat Panda di famiglia" maxLength={80} value={vehicleName} aria-invalid={Boolean(errors.vehicleName)} aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined} onChange={event => { setVehicleName(event.target.value); setErrors(previous => ({ ...previous, vehicleName: undefined })); setSaveFeedback('') }} />
+          {errors.vehicleName && <p id="vehicle-name-error" className="text-sm text-red-700 dark:text-red-300" role="alert">{errors.vehicleName}</p>}
+        </div>
+      </div>}
+      <ChoiceGroup label="Carburante" value={fuelType} disabled={isLoading} onChange={setFuelType} options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))} />
       <div className="flex min-w-0 flex-col gap-2">
-        <label className="text-sm font-medium" htmlFor="fuel-type">
-          Carburante
+        <ChoiceGroup label="Unità di consumo" value={unit} disabled={isLoading} onChange={next => {
+          if (next !== unit) {
+            setConsumption(convertConsumption(consumption, 'km/L'))
+            setUnit(next)
+          }
+        }} options={[
+          { value: 'L/100 km', label: 'L/100 km', description: 'Litri ogni 100 km' },
+          { value: 'km/L', label: 'km/L', description: 'Chilometri con un litro' },
+        ]} />
+        <label className="text-sm font-medium" htmlFor="average-consumption">
+          Consumo medio auto in {unit}
         </label>
-        <select
-          id="fuel-type"
+        <input
+          id="average-consumption"
+          ref={consumptionRef}
           disabled={isLoading}
+          placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+          inputMode="decimal"
           className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
-          value={fuelType}
-          onChange={(event) => {
-            if (isSupportedFuelType(event.target.value)) {
-              setFuelType(event.target.value)
-            }
-          }}
-        >
-          {SUPPORTED_FUEL_TYPES.map((supportedFuelType) => (
-            <option key={supportedFuelType} value={supportedFuelType}>
-              {SUPPORTED_FUEL_TYPE_LABELS[supportedFuelType]}
-            </option>
-          ))}
-        </select>
+          type="number"
+          min="0"
+          step="0.1"
+          value={consumption}
+          aria-invalid={Boolean(errors.consumption)}
+          aria-describedby={
+            errors.consumption
+              ? 'average-consumption-help average-consumption-error'
+              : 'average-consumption-help'
+          }
+          onChange={(event) => { setConsumption(event.target.value); setErrors(previous => ({ ...previous, consumption: undefined })); setSaveFeedback('') }}
+        />
+        <p id="average-consumption-help" className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+          Trovi il consumo medio nel computer di bordo: usa il valore in {unit}.
+        </p>
+        {errors.consumption ? (
+          <p
+            className="text-sm text-red-700 dark:text-red-300"
+            id="average-consumption-error"
+            role="alert"
+          >
+            {errors.consumption}
+          </p>
+        ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-col gap-2">
-        <label className="text-sm font-medium" htmlFor="service-mode">
-          Modalità di servizio
-        </label>
-        <select
-          id="service-mode"
-          disabled={isLoading}
-          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
-          value={String(isSelf)}
-          onChange={(event) => {
-            if (event.target.value === 'true') {
-              setIsSelf(true)
-            } else if (event.target.value === 'false') {
-              setIsSelf(false)
+      {account?.user && <div className="space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Salva nome, carburante e consumo per ritrovarli al prossimo accesso.</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={isLoading || account.busy} className="min-h-12 flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:bg-emerald-400 dark:text-emerald-950" onClick={async () => {
+            const nextErrors: FormErrors = {}
+            if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
+            if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
+            setErrors(nextErrors)
+            setSaveFeedback('')
+            if (nextErrors.vehicleName || nextErrors.consumption) {
+              setSaveFeedback('Completa nome e consumo per salvare l’auto.')
+              if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
+              else consumptionRef.current?.focus()
+              return
             }
-          }}
-        >
-          <option value="true">Self</option>
-          <option value="false">Servito</option>
-        </select>
+            const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
+            setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
+          }}>{account.busy ? 'Attendi…' : selected ? 'Salva modifiche auto' : 'Salva nuova auto'}</button>
+          {selected && <button type="button" disabled={isLoading || account.busy} className="min-h-12 rounded-xl border border-zinc-300 px-4 py-3 text-sm text-zinc-600 hover:border-red-400 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400" onClick={() => {
+            if (window.confirm(`Eliminare ${selected.name} dalle auto salvate?`)) void account.remove(selected.id)
+          }}>Elimina auto</button>}
+        </div>
+        {saveFeedback && <p role="status" className="text-sm">{saveFeedback}</p>}
+      </div>}
+
+      </section>
+      <div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
+        <h3 className="font-semibold">Questo rifornimento</h3>
       </div>
+      <ChoiceGroup label="Modalità di servizio" value={isSelf ? 'true' : 'false'} disabled={isLoading} onChange={value => setIsSelf(value === 'true')} options={[
+        { value: 'true', label: 'Self' },
+        { value: 'false', label: 'Servito' },
+      ]} />
 
       <div className="flex min-w-0 flex-col gap-2">
         <label className="text-sm font-medium" htmlFor="refuel-amount">
@@ -168,7 +238,7 @@ export default function RefuelForm({
           value={refuelAmount}
           aria-invalid={Boolean(errors.refuelAmount)}
           aria-describedby={errors.refuelAmount ? 'refuel-amount-error' : undefined}
-          onChange={(event) => setRefuelAmount(event.target.value)}
+          onChange={(event) => { setRefuelAmount(event.target.value); setErrors(previous => ({ ...previous, refuelAmount: undefined })) }}
         />
         <div className="flex flex-wrap gap-2" role="group" aria-label="Importi rapidi">
           {[20, 50, 100].map((amount) => (
@@ -177,7 +247,7 @@ export default function RefuelForm({
               type="button"
               disabled={isLoading}
               aria-pressed={parsePositiveNumber(refuelAmount) === amount}
-              onClick={() => setRefuelAmount(String(amount))}
+              onClick={() => { setRefuelAmount(String(amount)); setErrors(previous => ({ ...previous, refuelAmount: undefined })) }}
               className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium aria-pressed:border-emerald-600 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:aria-pressed:border-emerald-400 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200"
             >
               {amount} €
@@ -191,43 +261,6 @@ export default function RefuelForm({
             role="alert"
           >
             {errors.refuelAmount}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-2">
-        <label className="text-sm font-medium" htmlFor="average-consumption">
-          Consumo medio auto in L/100 km
-        </label>
-        <input
-          id="average-consumption"
-          ref={consumptionRef}
-          disabled={isLoading}
-          placeholder="Es. 6.5"
-          inputMode="decimal"
-          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
-          type="number"
-          min="0"
-          step="0.1"
-          value={consumption}
-          aria-invalid={Boolean(errors.consumption)}
-          aria-describedby={
-            errors.consumption
-              ? 'average-consumption-help average-consumption-error'
-              : 'average-consumption-help'
-          }
-          onChange={(event) => setConsumption(event.target.value)}
-        />
-        <p id="average-consumption-help" className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Trovi il consumo medio nel computer di bordo: usa il valore in L/100 km.
-        </p>
-        {errors.consumption ? (
-          <p
-            className="text-sm text-red-700 dark:text-red-300"
-            id="average-consumption-error"
-            role="alert"
-          >
-            {errors.consumption}
           </p>
         ) : null}
       </div>

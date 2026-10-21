@@ -129,9 +129,12 @@ export default function CookiePage() {
           <h2 className={headingClassName}>Tecnologie necessarie</h2>
 
           <p>
-            Nel codice applicativo attuale non risultano cookie proprietari
-            utilizzati per account, autenticazione, preferenze del
-            rifornimento, pagamenti o cronologia delle ricerche.
+            Per l’account facoltativo, Supabase Auth memorizza la sessione nel
+            localStorage del browser, così da mantenere l’accesso alle visite
+            successive. Il comando “Esci” rimuove la sessione da questo
+            dispositivo. Questa memorizzazione è separata dalla scelta relativa
+            ad Analytics. I profili delle auto sono salvati nel database
+            associati all’account.
           </p>
 
           <p>

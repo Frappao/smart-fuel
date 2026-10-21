@@ -32,13 +32,8 @@ function submitForm({
   fuelType?: 'Benzina' | 'Gasolio' | 'GPL'
   serviceMode?: 'true' | 'false'
 } = {}) {
-  fireEvent.change(screen.getByRole('combobox', { name: 'Carburante' }), {
-    target: { value: fuelType },
-  })
-  fireEvent.change(
-    screen.getByRole('combobox', { name: 'Modalità di servizio' }),
-    { target: { value: serviceMode } },
-  )
+  fireEvent.click(screen.getByRole('radio', { name: fuelType }))
+  fireEvent.click(screen.getByRole('radio', { name: serviceMode === 'true' ? 'Self' : 'Servito' }))
   fireEvent.change(
     screen.getByRole('spinbutton', {
       name: 'Importo rifornimento in euro',
@@ -242,7 +237,7 @@ describe('MobileCalculator', () => {
       ],
     })
     expect(
-      screen.getAllByRole('heading', { level: 3 }).map(({ textContent }) =>
+      screen.getAllByRole('heading', { level: 3, name: /^\d+\./ }).map(({ textContent }) =>
         textContent,
       ),
     ).toEqual(['1. Near Expensive', '2. Far Cheap'])
@@ -278,7 +273,7 @@ describe('MobileCalculator', () => {
     expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledTimes(requestCountBeforeNavigation)
     expect(
-      screen.getAllByRole('heading', { level: 3 }).map(({ textContent }) =>
+      screen.getAllByRole('heading', { level: 3, name: /^\d+\./ }).map(({ textContent }) =>
         textContent,
       ),
     ).toEqual(['1. Near Expensive', '2. Far Cheap'])

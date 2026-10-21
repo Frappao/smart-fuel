@@ -135,9 +135,23 @@ export default function PrivacyPage() {
           <h2 className={headingClassName}>Conservazione nell&apos;app</h2>
 
           <p>
-            Rifornio non dispone di account utente e non mantiene nel database
-            applicativo una cronologia delle ricerche o delle posizioni
-            utilizzate per i calcoli.
+            L’account sul sito è facoltativo. Supabase Auth gestisce l’indirizzo
+            email e l’autenticazione tramite codice oppure tramite Google.
+            Se scegli un accesso con Google, il provider autentica il
+            tuo account e trasmette a Supabase i dati di identità autorizzati,
+            che possono includere email e informazioni del profilo.
+            Se salvi un’auto, il
+            database conserva il nome o modello inserito, il carburante, il
+            consumo e la relativa unità, associati al tuo account. Puoi
+            modificare o eliminare le auto dal modulo di rifornimento. Per
+            richiedere la cancellazione dell’account puoi contattarci tramite
+            la pagina di supporto.
+          </p>
+          <p>
+            La sessione di accesso viene conservata nel localStorage del browser
+            e rimossa da questo dispositivo quando premi “Esci”. Rifornio non
+            mantiene nel database applicativo una cronologia delle ricerche o
+            delle posizioni utilizzate per i calcoli.
           </p>
 
           <p>
