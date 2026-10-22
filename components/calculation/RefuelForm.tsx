@@ -74,6 +74,7 @@ export default function RefuelForm({
   const [fuelType, setFuelType] = useState<SupportedFuelType>(selected?.fuel_type ?? 'Benzina')
   const [isSelf, setIsSelf] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [isManageOpen, setIsManageOpen] = useState(false)
 
   if (selected !== lastSelected) {
     setLastSelected(selected)
@@ -82,6 +83,7 @@ export default function RefuelForm({
     setUnit(selected?.consumption_unit ?? 'L/100 km')
     setFuelType(selected?.fuel_type ?? 'Benzina')
     setErrors({})
+    setIsManageOpen(!selected)
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -134,18 +136,15 @@ export default function RefuelForm({
           </div>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">Profilo e consumi</span>
         </div>
-      {account?.user && <div className="space-y-4">
-        <ChoiceGroup label="Le tue auto" value={selected?.id ?? ''} disabled={isLoading || account.busy} onChange={id => { setSaveFeedback(''); account.select(id) }} options={[
-          ...account.vehicles.map(vehicle => ({ value: vehicle.id, label: vehicle.name, description: `${vehicle.consumption} ${vehicle.consumption_unit}` })),
-          { value: '', label: '+ Nuova auto' },
-        ]} />
-        {account.busy && <p className="text-sm text-zinc-500" role="status">Aggiornamento auto in corso…</p>}
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium" htmlFor="vehicle-name">Nome e modello auto</label>
-          <input id="vehicle-name" ref={vehicleNameRef} disabled={isLoading || account.busy} className="min-h-12 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-950" placeholder="Es. Fiat Panda di famiglia" maxLength={80} value={vehicleName} aria-invalid={Boolean(errors.vehicleName)} aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined} onChange={event => { setVehicleName(event.target.value); setErrors(previous => ({ ...previous, vehicleName: undefined })); setSaveFeedback('') }} />
-          {errors.vehicleName && <p id="vehicle-name-error" className="text-sm text-red-700 dark:text-red-300" role="alert">{errors.vehicleName}</p>}
+      {account?.user && (
+        <div className="space-y-3">
+          <ChoiceGroup label="Le tue auto" value={selected?.id ?? ''} disabled={isLoading || account.busy} onChange={id => { setSaveFeedback(''); account.select(id) }} options={[
+            ...account.vehicles.map(vehicle => ({ value: vehicle.id, label: vehicle.name, description: `${vehicle.consumption} ${vehicle.consumption_unit}` })),
+            { value: '', label: '+ Nuova auto' },
+          ]} />
+          {account.busy && <p className="text-sm text-zinc-500" role="status">Aggiornamento auto in corso…</p>}
         </div>
-      </div>}
+      )}
       <ChoiceGroup label="Carburante" value={fuelType} disabled={isLoading} onChange={setFuelType} options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))} />
       <div className="flex min-w-0 flex-col gap-2">
         <ChoiceGroup label="Unità di consumo" value={unit} disabled={isLoading} onChange={next => {
@@ -194,48 +193,96 @@ export default function RefuelForm({
       </div>
 
       {account?.user && (
-        <div className="space-y-3 rounded-xl border border-dashed border-zinc-300 bg-white/80 p-3.5 dark:border-zinc-700 dark:bg-zinc-950/60">
-          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Salva nome, carburante e consumo nel tuo account per i prossimi accessi.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={isLoading || account.busy}
-              className="min-h-11 flex-1 rounded-xl border border-emerald-600/80 bg-emerald-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-              onClick={async () => {
-                const nextErrors: FormErrors = {}
-                if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
-                if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
-                setErrors(nextErrors)
-                setSaveFeedback('')
-                if (nextErrors.vehicleName || nextErrors.consumption) {
-                  setSaveFeedback('Completa nome e consumo per salvare l’auto.')
-                  if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
-                  else consumptionRef.current?.focus()
-                  return
-                }
-                const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
-                setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
-              }}
-            >
-              {account.busy ? 'Attendi…' : selected ? 'Salva modifiche auto' : 'Salva nuova auto'}
-            </button>
-            {selected && (
+        <details
+          className="group rounded-xl border border-zinc-200 bg-white/80 transition-all dark:border-zinc-800 dark:bg-zinc-950/60"
+          open={isManageOpen}
+          onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between p-3.5 text-xs sm:text-sm font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200">
+            <span className="flex items-center gap-2">
+              <svg aria-hidden="true" className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              <span>{selected ? `Modifica o salva "${selected.name}" nel tuo profilo` : 'Salva questa auto nel tuo profilo'}</span>
+            </span>
+            <span className="text-xs text-zinc-400 transition-transform group-open:rotate-180">
+              ▼
+            </span>
+          </summary>
+          <div className="space-y-4 border-t border-zinc-100 p-4 dark:border-zinc-800">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200" htmlFor="vehicle-name">
+                Nome e modello auto
+              </label>
+              <input
+                id="vehicle-name"
+                ref={vehicleNameRef}
+                disabled={isLoading || account.busy}
+                className="min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900"
+                placeholder="Es. Fiat Panda di famiglia"
+                maxLength={80}
+                value={vehicleName}
+                aria-invalid={Boolean(errors.vehicleName)}
+                aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined}
+                onChange={event => {
+                  setVehicleName(event.target.value)
+                  setErrors(previous => ({ ...previous, vehicleName: undefined }))
+                  setSaveFeedback('')
+                }}
+              />
+              {errors.vehicleName && (
+                <p id="vehicle-name-error" className="text-xs text-red-700 dark:text-red-300" role="alert">
+                  {errors.vehicleName}
+                </p>
+              )}
+            </div>
+
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Salva nome, carburante e consumo per ritrovarli già pronti al prossimo accesso.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={isLoading || account.busy}
-                className="min-h-11 rounded-xl border border-zinc-300 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-600 transition hover:border-red-400 hover:bg-red-50/50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-red-950/20"
-                onClick={() => {
-                  if (window.confirm(`Eliminare ${selected.name} dalle auto salvate?`)) void account.remove(selected.id)
+                className="min-h-11 flex-1 rounded-xl border border-emerald-600/80 bg-emerald-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                onClick={async () => {
+                  const nextErrors: FormErrors = {}
+                  if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
+                  if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
+                  setErrors(nextErrors)
+                  setSaveFeedback('')
+                  if (nextErrors.vehicleName || nextErrors.consumption) {
+                    setIsManageOpen(true)
+                    setSaveFeedback('Completa nome e consumo per salvare l’auto.')
+                    if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
+                    else consumptionRef.current?.focus()
+                    return
+                  }
+                  const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
+                  setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
                 }}
               >
-                Elimina auto
+                {account.busy ? 'Attendi…' : selected ? 'Salva modifiche auto' : 'Salva nuova auto'}
               </button>
-            )}
+              {selected && (
+                <button
+                  type="button"
+                  disabled={isLoading || account.busy}
+                  className="min-h-11 rounded-xl border border-zinc-300 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-600 transition hover:border-red-400 hover:bg-red-50/50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-red-950/20"
+                  onClick={() => {
+                    if (window.confirm(`Eliminare ${selected.name} dalle auto salvate?`)) void account.remove(selected.id)
+                  }}
+                >
+                  Elimina auto
+                </button>
+              )}
+            </div>
+            {saveFeedback && <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{saveFeedback}</p>}
           </div>
-          {saveFeedback && <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{saveFeedback}</p>}
-        </div>
+        </details>
       )}
 
       </section>
