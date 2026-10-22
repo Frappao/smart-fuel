@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
+import { POPULAR_CITIES } from '../lib/cities/popularCities'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
+  const baseRoutes: MetadataRoute.Sitemap = [
     {
       url: 'https://rifornio.it/',
       changeFrequency: 'weekly',
@@ -16,6 +17,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: 'https://rifornio.it/il-progetto',
       changeFrequency: 'monthly',
       priority: 0.8,
+    },
+    {
+      url: 'https://rifornio.it/prezzi-carburanti',
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
     {
       url: 'https://rifornio.it/guide/distributore-piu-lontano',
@@ -43,4 +49,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
   ]
+
+  const cityRoutes: MetadataRoute.Sitemap = POPULAR_CITIES.map((city) => ({
+    url: `https://rifornio.it/prezzi-carburanti/${city.slug}`,
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }))
+
+  return [...baseRoutes, ...cityRoutes]
 }
