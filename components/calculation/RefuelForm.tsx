@@ -121,185 +121,462 @@ export default function RefuelForm({
 
   return (
     <form
-      className="flex w-full flex-col gap-5 rounded-xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950"
+      className="flex w-full flex-col gap-5 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950"
       aria-busy={isLoading}
       noValidate
       onSubmit={handleSubmit}
     >
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-      {children}
-      <section aria-labelledby="vehicle-details-title" className="flex min-w-0 flex-col gap-5 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
-        <div className="flex items-center justify-between border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">1</span>
-            <h3 id="vehicle-details-title" className="font-semibold text-base text-zinc-900 dark:text-zinc-100">La tua auto</h3>
-          </div>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">Profilo e consumi</span>
-        </div>
-      {account?.user && (
-        <div className="space-y-3">
-          <ChoiceGroup label="Le tue auto" value={selected?.id ?? ''} disabled={isLoading || account.busy} onChange={id => { setSaveFeedback(''); account.select(id) }} options={[
-            ...account.vehicles.map(vehicle => ({ value: vehicle.id, label: vehicle.name, description: `${vehicle.consumption} ${vehicle.consumption_unit}` })),
-            { value: '', label: '+ Nuova auto' },
-          ]} />
-          {account.busy && <p className="text-sm text-zinc-500" role="status">Aggiornamento auto in corso…</p>}
-        </div>
-      )}
-      <ChoiceGroup label="Carburante" value={fuelType} disabled={isLoading} onChange={setFuelType} options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))} />
-      <div className="flex min-w-0 flex-col gap-2">
-        <ChoiceGroup label="Unità di consumo" value={unit} disabled={isLoading} onChange={next => {
-          if (next !== unit) {
-            setConsumption(convertConsumption(consumption, 'km/L'))
-            setUnit(next)
-          }
-        }} options={[
-          { value: 'L/100 km', label: 'L/100 km', description: 'Litri ogni 100 km' },
-          { value: 'km/L', label: 'km/L', description: 'Chilometri con un litro' },
-        ]} />
-        <label className="text-sm font-medium" htmlFor="average-consumption">
-          Consumo medio auto in {unit}
-        </label>
-        <input
-          id="average-consumption"
-          ref={consumptionRef}
-          disabled={isLoading}
-          placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
-          inputMode="decimal"
-          className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
-          type="number"
-          min="0"
-          step="0.1"
-          value={consumption}
-          aria-invalid={Boolean(errors.consumption)}
-          aria-describedby={
-            errors.consumption
-              ? 'average-consumption-help average-consumption-error'
-              : 'average-consumption-help'
-          }
-          onChange={(event) => { setConsumption(event.target.value); setErrors(previous => ({ ...previous, consumption: undefined })); setSaveFeedback('') }}
-        />
-        <p id="average-consumption-help" className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Trovi il consumo medio nel computer di bordo: usa il valore in {unit}.
-        </p>
-        {errors.consumption ? (
-          <p
-            className="text-sm text-red-700 dark:text-red-300"
-            id="average-consumption-error"
-            role="alert"
-          >
-            {errors.consumption}
-          </p>
-        ) : null}
+      <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800/60">
+        <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
+        {account?.user && selected && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200/60 dark:bg-emerald-950/60 dark:border-emerald-800/60 dark:text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Auto: {selected.name}
+          </span>
+        )}
       </div>
 
+      {/* 1. SELEZIONE AUTO ALL'INIZIO DEL CALCOLATORE (PER UTENTI LOGGATI) */}
       {account?.user && (
-        <details
-          className="group rounded-xl border border-zinc-200 bg-white/80 transition-all dark:border-zinc-800 dark:bg-zinc-950/60"
-          open={isManageOpen}
-          onToggle={(e) => setIsManageOpen(e.currentTarget.open)}
-        >
-          <summary className="flex cursor-pointer list-none items-center justify-between p-3.5 text-xs sm:text-sm font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200">
-            <span className="flex items-center gap-2">
-              <svg aria-hidden="true" className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              <span>{selected ? `Modifica o salva "${selected.name}" nel tuo profilo` : 'Salva questa auto nel tuo profilo'}</span>
-            </span>
-            <span className="text-xs text-zinc-400 transition-transform group-open:rotate-180">
-              ▼
-            </span>
-          </summary>
-          <div className="space-y-4 border-t border-zinc-100 p-4 dark:border-zinc-800">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200" htmlFor="vehicle-name">
-                Nome e modello auto
-              </label>
-              <input
-                id="vehicle-name"
-                ref={vehicleNameRef}
-                disabled={isLoading || account.busy}
-                className="min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900"
-                placeholder="Es. Fiat Panda di famiglia"
-                maxLength={80}
-                value={vehicleName}
-                aria-invalid={Boolean(errors.vehicleName)}
-                aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined}
-                onChange={event => {
-                  setVehicleName(event.target.value)
-                  setErrors(previous => ({ ...previous, vehicleName: undefined }))
-                  setSaveFeedback('')
-                }}
-              />
-              {errors.vehicleName && (
-                <p id="vehicle-name-error" className="text-xs text-red-700 dark:text-red-300" role="alert">
-                  {errors.vehicleName}
-                </p>
-              )}
+        <section aria-labelledby="vehicle-selector-title" className="flex min-w-0 flex-col gap-3.5 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="flex items-center justify-between border-b border-zinc-200/80 pb-2.5 dark:border-zinc-800/80">
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" aria-hidden="true">🚗</span>
+              <h3 id="vehicle-selector-title" className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100">
+                La tua auto
+              </h3>
             </div>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {selected ? 'Profilo salvato' : 'Nuovo inserimento'}
+            </span>
+          </div>
 
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Salva nome, carburante e consumo per ritrovarli già pronti al prossimo accesso.
+          <ChoiceGroup
+            label="Le tue auto"
+            value={selected?.id ?? ''}
+            disabled={isLoading || account.busy}
+            onChange={id => {
+              setSaveFeedback('')
+              account.select(id)
+            }}
+            options={[
+              ...account.vehicles.map(vehicle => ({
+                value: vehicle.id,
+                label: vehicle.name,
+                description: `${vehicle.consumption} ${vehicle.consumption_unit}`,
+              })),
+              { value: '', label: '+ Nuova auto' },
+            ]}
+          />
+          {account.busy && (
+            <p className="text-xs text-zinc-500 animate-pulse" role="status">
+              Aggiornamento auto in corso…
             </p>
+          )}
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={isLoading || account.busy}
-                className="min-h-11 flex-1 rounded-xl border border-emerald-600/80 bg-emerald-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
-                onClick={async () => {
-                  const nextErrors: FormErrors = {}
-                  if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
-                  if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
-                  setErrors(nextErrors)
-                  setSaveFeedback('')
-                  if (nextErrors.vehicleName || nextErrors.consumption) {
-                    setIsManageOpen(true)
-                    setSaveFeedback('Completa nome e consumo per salvare l’auto.')
-                    if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
-                    else consumptionRef.current?.focus()
-                    return
+          {/* Menù a scomparsa per modificare l'auto già selezionata */}
+          {selected ? (
+            <details
+              className="group rounded-xl border border-zinc-200/80 bg-white/90 transition-all dark:border-zinc-800 dark:bg-zinc-950/80"
+              open={isManageOpen}
+              onToggle={e => setIsManageOpen(e.currentTarget.open)}
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-xs sm:text-sm font-medium text-zinc-700 hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400">
+                <span className="flex items-center gap-2">
+                  <span className="text-xs font-normal text-zinc-500">Dati auto:</span>
+                  <strong className="text-zinc-900 dark:text-zinc-100">{selected.name}</strong>
+                  <span className="text-xs text-zinc-500">({fuelType} • {consumption} {unit})</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 underline underline-offset-4 dark:text-emerald-400">
+                  <span className="group-open:hidden">Modifica auto ▾</span>
+                  <span className="hidden group-open:inline">Chiudi modifiche ▴</span>
+                </span>
+              </summary>
+              <div className="space-y-4 border-t border-zinc-100 p-4 dark:border-zinc-800">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200" htmlFor="vehicle-name">
+                    Nome e modello auto
+                  </label>
+                  <input
+                    id="vehicle-name"
+                    ref={vehicleNameRef}
+                    disabled={isLoading || account.busy}
+                    className="min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900"
+                    placeholder="Es. Fiat Panda di famiglia"
+                    maxLength={80}
+                    value={vehicleName}
+                    aria-invalid={Boolean(errors.vehicleName)}
+                    aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined}
+                    onChange={event => {
+                      setVehicleName(event.target.value)
+                      setErrors(previous => ({ ...previous, vehicleName: undefined }))
+                      setSaveFeedback('')
+                    }}
+                  />
+                  {errors.vehicleName && (
+                    <p id="vehicle-name-error" className="text-xs text-red-700 dark:text-red-300" role="alert">
+                      {errors.vehicleName}
+                    </p>
+                  )}
+                </div>
+
+                <ChoiceGroup
+                  label="Carburante"
+                  value={fuelType}
+                  disabled={isLoading}
+                  onChange={setFuelType}
+                  options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))}
+                />
+
+                <div className="flex min-w-0 flex-col gap-2">
+                  <ChoiceGroup
+                    label="Unità di consumo"
+                    value={unit}
+                    disabled={isLoading}
+                    onChange={next => {
+                      if (next !== unit) {
+                        setConsumption(convertConsumption(consumption, 'km/L'))
+                        setUnit(next)
+                      }
+                    }}
+                    options={[
+                      { value: 'L/100 km', label: 'L/100 km', description: 'Litri ogni 100 km' },
+                      { value: 'km/L', label: 'km/L', description: 'Chilometri con un litro' },
+                    ]}
+                  />
+                  <label className="text-sm font-medium" htmlFor="average-consumption">
+                    Consumo medio auto in {unit}
+                  </label>
+                  <input
+                    id="average-consumption"
+                    ref={consumptionRef}
+                    disabled={isLoading}
+                    placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+                    inputMode="decimal"
+                    className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={consumption}
+                    aria-invalid={Boolean(errors.consumption)}
+                    aria-describedby={
+                      errors.consumption
+                        ? 'average-consumption-help average-consumption-error'
+                        : 'average-consumption-help'
+                    }
+                    onChange={event => {
+                      setConsumption(event.target.value)
+                      setErrors(previous => ({ ...previous, consumption: undefined }))
+                      setSaveFeedback('')
+                    }}
+                  />
+                  <p id="average-consumption-help" className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Trovi il consumo medio nel computer di bordo: usa il valore in {unit}.
+                  </p>
+                  {errors.consumption && (
+                    <p className="text-xs text-red-700 dark:text-red-300" id="average-consumption-error" role="alert">
+                      {errors.consumption}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={isLoading || account.busy}
+                    className="min-h-11 flex-1 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
+                    onClick={async () => {
+                      const nextErrors: FormErrors = {}
+                      if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
+                      if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
+                      setErrors(nextErrors)
+                      setSaveFeedback('')
+                      if (nextErrors.vehicleName || nextErrors.consumption) {
+                        setIsManageOpen(true)
+                        setSaveFeedback('Completa nome e consumo per salvare l’auto.')
+                        if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
+                        else consumptionRef.current?.focus()
+                        return
+                      }
+                      const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
+                      setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
+                    }}
+                  >
+                    {account.busy ? 'Attendi…' : 'Salva modifiche auto'}
+                  </button>
+                  <button
+                    type="button"
+                    className="min-h-11 rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    onClick={() => setIsManageOpen(false)}
+                  >
+                    Chiudi modifiche ▴
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isLoading || account.busy}
+                    className="min-h-11 rounded-xl border border-zinc-200 px-3 py-2.5 text-xs sm:text-sm text-zinc-500 transition hover:border-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-red-950/20"
+                    onClick={() => {
+                      if (window.confirm(`Eliminare ${selected.name} dalle auto salvate?`)) void account.remove(selected.id)
+                    }}
+                  >
+                    Elimina auto
+                  </button>
+                </div>
+                {saveFeedback && <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{saveFeedback}</p>}
+              </div>
+            </details>
+          ) : (
+            /* Pannello: Aggiungi nuova auto */
+            <div className="rounded-xl border border-dashed border-emerald-300 bg-white/90 p-4 shadow-xs dark:border-emerald-800 dark:bg-zinc-950/90 space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">➕</span>
+                  <h4 className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    Aggiungi nuova auto
+                  </h4>
+                </div>
+                {account.vehicles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      account.select(account.vehicles[0].id)
+                      setSaveFeedback('')
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    ✕ Chiudi / Torna all&apos;auto salvata
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs sm:text-sm font-medium text-zinc-800 dark:text-zinc-200" htmlFor="vehicle-name">
+                  Nome e modello auto
+                </label>
+                <input
+                  id="vehicle-name"
+                  ref={vehicleNameRef}
+                  disabled={isLoading || account.busy}
+                  className="min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900"
+                  placeholder="Es. Fiat Panda di famiglia"
+                  maxLength={80}
+                  value={vehicleName}
+                  aria-invalid={Boolean(errors.vehicleName)}
+                  aria-describedby={errors.vehicleName ? 'vehicle-name-error' : undefined}
+                  onChange={event => {
+                    setVehicleName(event.target.value)
+                    setErrors(previous => ({ ...previous, vehicleName: undefined }))
+                    setSaveFeedback('')
+                  }}
+                />
+                {errors.vehicleName && (
+                  <p id="vehicle-name-error" className="text-xs text-red-700 dark:text-red-300" role="alert">
+                    {errors.vehicleName}
+                  </p>
+                )}
+              </div>
+
+              <ChoiceGroup
+                label="Carburante"
+                value={fuelType}
+                disabled={isLoading}
+                onChange={setFuelType}
+                options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))}
+              />
+
+              <div className="flex min-w-0 flex-col gap-2">
+                <ChoiceGroup
+                  label="Unità di consumo"
+                  value={unit}
+                  disabled={isLoading}
+                  onChange={next => {
+                    if (next !== unit) {
+                      setConsumption(convertConsumption(consumption, 'km/L'))
+                      setUnit(next)
+                    }
+                  }}
+                  options={[
+                    { value: 'L/100 km', label: 'L/100 km', description: 'Litri ogni 100 km' },
+                    { value: 'km/L', label: 'km/L', description: 'Chilometri con un litro' },
+                  ]}
+                />
+                <label className="text-sm font-medium" htmlFor="average-consumption">
+                  Consumo medio auto in {unit}
+                </label>
+                <input
+                  id="average-consumption"
+                  ref={consumptionRef}
+                  disabled={isLoading}
+                  placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+                  inputMode="decimal"
+                  className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={consumption}
+                  aria-invalid={Boolean(errors.consumption)}
+                  aria-describedby={
+                    errors.consumption
+                      ? 'average-consumption-help average-consumption-error'
+                      : 'average-consumption-help'
                   }
-                  const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
-                  setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
-                }}
-              >
-                {account.busy ? 'Attendi…' : selected ? 'Salva modifiche auto' : 'Salva nuova auto'}
-              </button>
-              {selected && (
+                  onChange={event => {
+                    setConsumption(event.target.value)
+                    setErrors(previous => ({ ...previous, consumption: undefined }))
+                    setSaveFeedback('')
+                  }}
+                />
+                <p id="average-consumption-help" className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Trovi il consumo medio nel computer di bordo: usa il valore in {unit}.
+                </p>
+                {errors.consumption && (
+                  <p className="text-xs text-red-700 dark:text-red-300" id="average-consumption-error" role="alert">
+                    {errors.consumption}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="button"
                   disabled={isLoading || account.busy}
-                  className="min-h-11 rounded-xl border border-zinc-300 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-600 transition hover:border-red-400 hover:bg-red-50/50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-red-950/20"
-                  onClick={() => {
-                    if (window.confirm(`Eliminare ${selected.name} dalle auto salvate?`)) void account.remove(selected.id)
+                  className="min-h-11 flex-1 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-50 dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400"
+                  onClick={async () => {
+                    const nextErrors: FormErrors = {}
+                    if (!vehicleName.trim()) nextErrors.vehicleName = 'Inserisci il nome o il modello dell’auto.'
+                    if (toLitersPer100Km(Number(consumption), unit) === null) nextErrors.consumption = 'Il consumo medio deve essere maggiore di 0.'
+                    setErrors(nextErrors)
+                    setSaveFeedback('')
+                    if (nextErrors.vehicleName || nextErrors.consumption) {
+                      setSaveFeedback('Completa nome e consumo per salvare l’auto.')
+                      if (nextErrors.vehicleName) vehicleNameRef.current?.focus()
+                      else consumptionRef.current?.focus()
+                      return
+                    }
+                    const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType })
+                    setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
                   }}
                 >
-                  Elimina auto
+                  {account.busy ? 'Attendi…' : 'Salva nuova auto'}
                 </button>
-              )}
+                {account.vehicles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      account.select(account.vehicles[0].id)
+                      setSaveFeedback('')
+                    }}
+                    className="min-h-11 rounded-xl border border-zinc-200 px-4 py-2.5 text-xs sm:text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    Annulla
+                  </button>
+                )}
+              </div>
+              {saveFeedback && <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{saveFeedback}</p>}
             </div>
-            {saveFeedback && <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{saveFeedback}</p>}
-          </div>
-        </details>
+          )}
+        </section>
       )}
 
-      </section>
+      {/* 2. PROFILO AUTO PER UTENTI NON REGISTRATI (GUEST) */}
+      {!account?.user && (
+        <section aria-labelledby="guest-vehicle-title" className="flex min-w-0 flex-col gap-4 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <div className="flex items-center justify-between border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">1</span>
+              <h3 id="guest-vehicle-title" className="font-semibold text-base text-zinc-900 dark:text-zinc-100">La tua auto</h3>
+            </div>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Profilo e consumi</span>
+          </div>
 
+          <ChoiceGroup
+            label="Carburante"
+            value={fuelType}
+            disabled={isLoading}
+            onChange={setFuelType}
+            options={SUPPORTED_FUEL_TYPES.map(value => ({ value, label: SUPPORTED_FUEL_TYPE_LABELS[value] }))}
+          />
+
+          <div className="flex min-w-0 flex-col gap-2">
+            <ChoiceGroup
+              label="Unità di consumo"
+              value={unit}
+              disabled={isLoading}
+              onChange={next => {
+                if (next !== unit) {
+                  setConsumption(convertConsumption(consumption, 'km/L'))
+                  setUnit(next)
+                }
+              }}
+              options={[
+                { value: 'L/100 km', label: 'L/100 km', description: 'Litri ogni 100 km' },
+                { value: 'km/L', label: 'km/L', description: 'Chilometri con un litro' },
+              ]}
+            />
+            <label className="text-sm font-medium" htmlFor="average-consumption">
+              Consumo medio auto in {unit}
+            </label>
+            <input
+              id="average-consumption"
+              ref={consumptionRef}
+              disabled={isLoading}
+              placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+              inputMode="decimal"
+              className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
+              type="number"
+              min="0"
+              step="0.1"
+              value={consumption}
+              aria-invalid={Boolean(errors.consumption)}
+              aria-describedby={
+                errors.consumption
+                  ? 'average-consumption-help average-consumption-error'
+                  : 'average-consumption-help'
+              }
+              onChange={event => {
+                setConsumption(event.target.value)
+                setErrors(previous => ({ ...previous, consumption: undefined }))
+              }}
+            />
+            <p id="average-consumption-help" className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              Trovi il consumo medio nel computer di bordo: usa il valore in {unit}.
+            </p>
+            {errors.consumption && (
+              <p className="text-sm text-red-700 dark:text-red-300" id="average-consumption-error" role="alert">
+                {errors.consumption}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Se ci sono elementi figli aggiuntivi (es. partenza e arrivo nel calcolatore percorso) */}
+      {children}
+
+      {/* 3. IL CALCOLATORE: QUESTO RIFORNIMENTO (DISTINTO E SEPARATO) */}
       <section aria-labelledby="refuel-details-title" className="flex min-w-0 flex-col gap-5 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
         <div className="flex items-center justify-between border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-500 dark:text-zinc-950">2</span>
-            <h3 id="refuel-details-title" className="font-semibold text-base text-zinc-900 dark:text-zinc-100">Questo rifornimento</h3>
+            <span className="flex size-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-500 dark:text-zinc-950">
+              {account?.user ? '⛽' : '2'}
+            </span>
+            <h3 id="refuel-details-title" className="font-semibold text-base text-zinc-900 dark:text-zinc-100">
+              Questo rifornimento
+            </h3>
           </div>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">Importo e pompa</span>
         </div>
 
-        <ChoiceGroup label="Modalità di servizio" value={isSelf ? 'true' : 'false'} disabled={isLoading} onChange={value => setIsSelf(value === 'true')} options={[
-          { value: 'true', label: 'Self' },
-          { value: 'false', label: 'Servito' },
-        ]} />
+        <ChoiceGroup
+          label="Modalità di servizio"
+          value={isSelf ? 'true' : 'false'}
+          disabled={isLoading}
+          onChange={value => setIsSelf(value === 'true')}
+          options={[
+            { value: 'true', label: 'Self' },
+            { value: 'false', label: 'Servito' },
+          ]}
+        />
 
         <div className="flex min-w-0 flex-col gap-2">
           <label className="text-sm font-medium" htmlFor="refuel-amount">
@@ -318,46 +595,47 @@ export default function RefuelForm({
             value={refuelAmount}
             aria-invalid={Boolean(errors.refuelAmount)}
             aria-describedby={errors.refuelAmount ? 'refuel-amount-error' : undefined}
-            onChange={(event) => { setRefuelAmount(event.target.value); setErrors(previous => ({ ...previous, refuelAmount: undefined })) }}
+            onChange={event => {
+              setRefuelAmount(event.target.value)
+              setErrors(previous => ({ ...previous, refuelAmount: undefined }))
+            }}
           />
           <div className="flex flex-wrap gap-2" role="group" aria-label="Importi rapidi">
-            {[20, 50, 100].map((amount) => (
+            {[20, 50, 100].map(amount => (
               <button
                 key={amount}
                 type="button"
                 disabled={isLoading}
                 aria-pressed={parsePositiveNumber(refuelAmount) === amount}
-                onClick={() => { setRefuelAmount(String(amount)); setErrors(previous => ({ ...previous, refuelAmount: undefined })) }}
+                onClick={() => {
+                  setRefuelAmount(String(amount))
+                  setErrors(previous => ({ ...previous, refuelAmount: undefined }))
+                }}
                 className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium aria-pressed:border-emerald-600 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:aria-pressed:border-emerald-400 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200"
               >
                 {amount} €
               </button>
             ))}
           </div>
-          {errors.refuelAmount ? (
-            <p
-              className="text-sm text-red-700 dark:text-red-300"
-              id="refuel-amount-error"
-              role="alert"
-            >
+          {errors.refuelAmount && (
+            <p className="text-sm text-red-700 dark:text-red-300" id="refuel-amount-error" role="alert">
               {errors.refuelAmount}
             </p>
-          ) : null}
+          )}
         </div>
-      </section>
 
-      {locationMessage ? (
-        <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
           {locationMessage}
         </p>
-      ) : null}
-      <button
-        disabled={isLoading}
-        className="min-h-14 w-full rounded-xl bg-emerald-600 px-5 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 dark:focus:ring-emerald-500 dark:focus:ring-offset-zinc-950"
-        type="submit"
-      >
-        {isLoading ? loadingLabel : submitLabel}
-      </button>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="min-h-12 w-full rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:bg-emerald-400 dark:text-zinc-950 dark:hover:bg-emerald-300"
+        >
+          {isLoading ? loadingLabel : submitLabel}
+        </button>
+      </section>
     </form>
   )
 }
