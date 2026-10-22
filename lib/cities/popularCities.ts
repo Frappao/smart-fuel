@@ -46,12 +46,15 @@ export const POPULAR_CITIES: PopularCity[] = [
 ]
 
 export function formatCityFromSlug(slug: string): string {
-  const match = POPULAR_CITIES.find((c) => c.slug === slug.toLowerCase())
+  const cleanSlug = decodeURIComponent(slug).replace(/[\[\]]/g, '').trim().toLowerCase()
+  const match = POPULAR_CITIES.find((c) => c.slug === cleanSlug)
   if (match) return match.name
 
   // Fallback: capitalize words from slug, e.g. "san-donato-milanese" -> "San Donato Milanese"
-  return slug
+  return cleanSlug
     .split('-')
+    .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
+

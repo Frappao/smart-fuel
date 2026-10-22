@@ -99,4 +99,30 @@ describe('getCityStations', () => {
     expect(result.stations).toEqual([])
     expect(result.stats).toEqual({})
   })
+
+  it('sanitizes bracketed and encoded inputs like %5Bsaronno%5D and [saronno]', async () => {
+    const mockSelect = vi.fn().mockReturnThis()
+    const mockIlike = vi.fn().mockReturnThis()
+    const mockLimit = vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    })
+
+    vi.mocked(createSupabaseServerClient).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        select: mockSelect,
+      }),
+    } as unknown as ReturnType<typeof createSupabaseServerClient>)
+
+    mockSelect.mockReturnValue({
+      ilike: mockIlike,
+    })
+    mockIlike.mockReturnValue({
+      limit: mockLimit,
+    })
+
+    await getCityStations('%5Bsaronno%5D')
+    expect(mockIlike).toHaveBeenCalledWith('city', 'saronno')
+  })
 })
+

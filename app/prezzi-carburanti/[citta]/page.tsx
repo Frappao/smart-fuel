@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { formatCityFromSlug, POPULAR_CITIES } from '../../../lib/cities/popularCities'
 import { getCityStations } from '../../../lib/stations/getCityStations'
 
@@ -18,33 +18,43 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { citta } = await params
-  const cityName = formatCityFromSlug(citta)
+  const cleanSlug = decodeURIComponent(citta).replace(/[\[\]]/g, '').trim().toLowerCase()
+  const cityName = formatCityFromSlug(cleanSlug)
 
   return {
     title: `Prezzi Benzina e Gasolio a ${cityName} | Distributori Convenienti — Rifornio`,
     description: `Prezzi aggiornati di benzina, diesel e GPL a ${cityName}. Confronta i distributori ed evita di sprecare carburante per raggiungere quello sbagliato.`,
     alternates: {
-      canonical: `/prezzi-carburanti/${citta}`,
+      canonical: `/prezzi-carburanti/${cleanSlug}`,
     },
     openGraph: {
       title: `Prezzi Carburanti a ${cityName} — Rifornio`,
       description: `Scopri dove fare rifornimento a ${cityName} considerando prezzo alla pompa e consumi di viaggio.`,
-      url: `https://rifornio.it/prezzi-carburanti/${citta}`,
+      url: `https://rifornio.it/prezzi-carburanti/${cleanSlug}`,
     },
   }
 }
 
 export default async function CityFuelPage({ params }: PageProps) {
   const { citta } = await params
-  const cityName = formatCityFromSlug(citta)
+  const decodedCitta = decodeURIComponent(citta).trim()
+  const cleanSlug = decodedCitta.replace(/[\[\]]/g, '').trim().toLowerCase()
 
-  if (!cityName || cityName.length > 50) {
+  if (!cleanSlug || cleanSlug.length > 50) {
     notFound()
   }
 
+  // If the user arrived with brackets, uppercase, or URL encoding (e.g. /prezzi-carburanti/[saronno]),
+  // redirect them to the clean canonical URL /prezzi-carburanti/saronno
+  if (citta !== cleanSlug) {
+    redirect(`/prezzi-carburanti/${cleanSlug}`)
+  }
+
+  const cityName = formatCityFromSlug(cleanSlug)
   const cityData = await getCityStations(cityName)
-  const popularCityInfo = POPULAR_CITIES.find((c) => c.slug === citta.toLowerCase())
+  const popularCityInfo = POPULAR_CITIES.find((c) => c.slug === cleanSlug)
   const provinceLabel = cityData.province || popularCityInfo?.province || ''
+
 
   // Sort stations so that those with self benzina or gasolio prices are listed first by price
   const sortedStations = [...cityData.stations].sort((a, b) => {

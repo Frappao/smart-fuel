@@ -71,7 +71,7 @@ function calculateStat(prices: number[]): FuelStatSummary | undefined {
 }
 
 export async function getCityStations(cityName: string): Promise<CityFuelData> {
-  const normalizedCity = cityName.trim()
+  const normalizedCity = decodeURIComponent(cityName).replace(/[\[\]]/g, '').trim()
 
   try {
     const supabase = createSupabaseServerClient()
