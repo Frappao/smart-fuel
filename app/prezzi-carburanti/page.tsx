@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 }
 
 export default function PrezziCarburantiIndexPage() {
-  // Group cities by region
+  // Group cities by region and sort alphabetically
   const citiesByRegion = POPULAR_CITIES.reduce<Record<string, typeof POPULAR_CITIES>>((acc, city) => {
     const region = city.region || 'Altre'
     if (!acc[region]) acc[region] = []
@@ -27,9 +27,35 @@ export default function PrezziCarburantiIndexPage() {
   }, {})
 
   const regions = Object.keys(citiesByRegion).sort((a, b) => a.localeCompare(b))
+  for (const region of regions) {
+    citiesByRegion[region].sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://rifornio.it/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Prezzi Carburanti',
+        item: 'https://rifornio.it/prezzi-carburanti',
+      },
+    ],
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
         <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">

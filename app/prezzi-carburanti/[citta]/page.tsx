@@ -63,28 +63,62 @@ export default async function CityFuelPage({ params }: PageProps) {
     return priceA - priceB
   })
 
-  // Json-Ld Breadcrumbs
+  // Json-Ld Breadcrumbs & Local Gas Stations Schema
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
+    '@graph': [
       {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: 'https://rifornio.it/',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: 'https://rifornio.it/',
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Prezzi Carburanti',
+            item: 'https://rifornio.it/prezzi-carburanti',
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: cityName,
+            item: `https://rifornio.it/prezzi-carburanti/${cleanSlug}`,
+          },
+        ],
       },
       {
-        '@type': 'ListItem',
-        position: 2,
-        name: 'Prezzi Carburanti',
-        item: 'https://rifornio.it/prezzi-carburanti',
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: cityName,
-        item: `https://rifornio.it/prezzi-carburanti/${citta}`,
+        '@type': 'ItemList',
+        name: `Distributori di carburante a ${cityName}`,
+        description: `Elenco distributori e prezzi carburanti a ${cityName} da dati ufficiali MIMIT.`,
+        numberOfItems: sortedStations.length,
+        itemListElement: sortedStations.slice(0, 15).map((station, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'GasStation',
+            name: station.name || `${station.brand || 'Distributore'} ${cityName}`,
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: station.address || undefined,
+              addressLocality: cityName,
+              addressRegion: provinceLabel || undefined,
+              addressCountry: 'IT',
+            },
+            ...(station.latitude && station.longitude
+              ? {
+                  geo: {
+                    '@type': 'GeoCoordinates',
+                    latitude: station.latitude,
+                    longitude: station.longitude,
+                  },
+                }
+              : {}),
+          },
+        })),
       },
     ],
   }
@@ -310,7 +344,7 @@ export default async function CityFuelPage({ params }: PageProps) {
             Prezzi carburanti nelle altre città
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            {POPULAR_CITIES.filter((c) => c.slug !== citta.toLowerCase()).slice(0, 16).map((c) => (
+            {POPULAR_CITIES.filter((c) => c.slug !== cleanSlug).slice(0, 16).map((c) => (
               <Link
                 key={c.slug}
                 href={`/prezzi-carburanti/${c.slug}`}

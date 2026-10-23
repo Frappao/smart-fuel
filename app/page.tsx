@@ -1,16 +1,38 @@
 import Link from "next/link";
 import FuelSearchCalculator from "../components/calculation/FuelSearchCalculator";
+import { ResultsMapProvider } from "../components/map/ResultsMapContext";
+import { HomepageRightColumn } from "../components/map/StationsResultMap";
+import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 
 import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
 export default function Home() {
   return (
     <VehicleAccount>
+    <AppBetaProvider>
+    <ResultsMapProvider>
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
         <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
-          <AccountButton />
+          <div className="flex items-center gap-6">
+            <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
+            <Link
+              href="/prezzi-carburanti"
+              className="text-sm font-medium text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
+            >
+              Prezzi Carburanti
+            </Link>
+            <Link
+              href="/come-funziona"
+              className="hidden text-sm font-medium text-zinc-600 transition hover:text-emerald-700 sm:inline-block dark:text-zinc-300 dark:hover:text-emerald-400"
+            >
+              Come funziona
+            </Link>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <AppBetaButton />
+            <AccountButton />
+          </div>
         </nav>
       </header>
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-8">
@@ -35,11 +57,13 @@ export default function Home() {
           </div>
         </div>
 
-        <section
-          aria-labelledby="homepage-guide-title"
-          tabIndex={0}
-          className="min-w-0 space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:p-6 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain dark:border-zinc-800 dark:bg-zinc-900/40 dark:focus-visible:outline-emerald-400"
-        >
+        <HomepageRightColumn
+          defaultGuide={
+            <section
+              aria-labelledby="homepage-guide-title"
+              tabIndex={0}
+              className="min-w-0 space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:p-6 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain dark:border-zinc-800 dark:bg-zinc-900/40 dark:focus-visible:outline-emerald-400"
+            >
           <div className="space-y-3">
             <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
               La guida alla convenienza
@@ -166,26 +190,34 @@ export default function Home() {
             aria-label="Approfondimenti"
             className="flex flex-col items-start gap-3 border-t border-zinc-200 pt-5 text-sm leading-6 dark:border-zinc-800"
           >
-            <a
+            <Link
+              className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
+              href="/prezzi-carburanti"
+            >
+              Consulta i prezzi dei carburanti per città
+            </Link>
+            <Link
               className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
               href="/come-funziona"
             >
               Scopri nel dettaglio come funziona Rifornio
-            </a>
-            <a
+            </Link>
+            <Link
               className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
               href="/guide/distributore-piu-lontano"
             >
               Quando conviene davvero un distributore più lontano?
-            </a>
-            <a
+            </Link>
+            <Link
               className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
               href="/guide/consumo-auto-convenienza"
             >
               Quanto incide il consumo dell&apos;auto sulla convenienza?
-            </a>
+            </Link>
           </nav>
-        </section>
+            </section>
+          }
+        />
       </main>
 
       <footer className="border-t border-zinc-200 dark:border-zinc-800">
@@ -218,47 +250,70 @@ export default function Home() {
           <p>Rifornio è un servizio indipendente e non è affiliato al MIMIT.</p>
 
           <nav
-            aria-label="Informazioni legali"
+            aria-label="Informazioni e pagine utili"
             className="flex flex-wrap gap-x-4 gap-y-2"
           >
-            <a
+            <Link
+              className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+              href="/prezzi-carburanti"
+            >
+              Prezzi Carburanti
+            </Link>
+
+            <Link
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/come-funziona"
             >
               Come funziona
-            </a>
+            </Link>
 
-            <a
+            <Link
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/il-progetto"
             >
               Il progetto
-            </a>
+            </Link>
 
-            <a
+            <Link
+              className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+              href="/guide/distributore-piu-lontano"
+            >
+              Guida Distributore Lontano
+            </Link>
+
+            <Link
+              className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
+              href="/guide/consumo-auto-convenienza"
+            >
+              Guida Consumo Auto
+            </Link>
+
+            <Link
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/supporto"
             >
               Supporto
-            </a>
+            </Link>
 
-            <a
+            <Link
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/privacy"
             >
               Privacy
-            </a>
+            </Link>
 
-            <a
+            <Link
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/cookie"
             >
               Cookie
-            </a>
+            </Link>
           </nav>
         </div>
       </footer>
     </div>
+    </ResultsMapProvider>
+    </AppBetaProvider>
     </VehicleAccount>
   );
 }

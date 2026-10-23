@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   fetchNearbyStations,
@@ -15,12 +15,13 @@ import {
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
+import { useResultsMap, type MapCoordinates } from '../map/ResultsMapContext'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
-
-const priceFormatter = new Intl.NumberFormat('it-IT', {
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
-})
+import {
+  buildWinnerInsight,
+  RoadSignPrice,
+  type WinnerInsight,
+} from './RoadSignPrice'
 
 const distanceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 1,
@@ -129,12 +130,18 @@ interface StationResultCardProps {
   result: RankedStationResult
   index: number
   winnerAdvantageLiters: number | null
+  winnerInsight: WinnerInsight | null
+  onSelectOnMap?: (stationId: number) => void
+  isSelectedOnMap?: boolean
 }
 
 function StationResultCard({
   result,
   index,
   winnerAdvantageLiters,
+  winnerInsight,
+  onSelectOnMap,
+  isSelectedOnMap,
 }: StationResultCardProps) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
@@ -149,10 +156,15 @@ function StationResultCard({
 
   return (
     <li
+      onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
       className={
         isBestResult
           ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-sm sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/30'
-          : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950/40'
+          : `min-w-0 break-words rounded-lg border bg-white p-4 transition dark:bg-zinc-950/40 ${
+              isSelectedOnMap
+                ? 'border-emerald-500 ring-1 ring-emerald-500/40 dark:border-emerald-400'
+                : 'border-zinc-200 dark:border-zinc-800'
+            }`
       }
     >
       {isBestResult ? (
@@ -165,7 +177,7 @@ function StationResultCard({
       </h3>
       <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
         <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
-          Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L
+          Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
         </p>
         <p className={isBestResult ? 'font-semibold' : undefined}>
           Distanza stradale stimata A/R:{' '}
@@ -198,6 +210,14 @@ function StationResultCard({
             più rispetto al secondo classificato.
           </p>
         ) : null}
+        {isBestResult && winnerInsight ? (
+          <div className="mt-1 rounded-lg border border-emerald-300/80 bg-white/80 px-3.5 py-2.5 text-sm leading-6 text-zinc-800 sm:col-span-2 dark:border-emerald-700/60 dark:bg-zinc-900/60 dark:text-zinc-200">
+            <span className="mr-1.5 inline-block rounded bg-emerald-700 px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase dark:bg-emerald-400 dark:text-emerald-950">
+              {winnerInsight.badge}
+            </span>
+            <span>{winnerInsight.message}</span>
+          </div>
+        ) : null}
       </div>
       {navigationUrl ? (
         <a
@@ -219,8 +239,10 @@ function StationResultCard({
 
 export default function FuelSmartCalculator() {
   const calculationInFlight = useRef(false)
+  const resultsMap = useResultsMap()
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
+  const [originCoords, setOriginCoords] = useState<MapCoordinates | null>(null)
   const [results, setResults] = useState<RankedStationResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -230,6 +252,69 @@ export default function FuelSmartCalculator() {
     !haveEquivalentDisplayedNetFuelLiters(results[0], results[1])
       ? results[0].netFuelLiters - results[1].netFuelLiters
       : null
+  const winnerInsight = useMemo(
+    () =>
+      winnerAdvantageLiters !== null
+        ? buildWinnerInsight(
+            results.map((r) => ({
+              station: r.station,
+              netFuelLiters: r.netFuelLiters,
+              travelDistanceKm: (r.routeDistanceMeters / 1_000) * 2,
+            })),
+            'nearby',
+          )
+        : null,
+    [results, winnerAdvantageLiters],
+  )
+
+  const setMapData = resultsMap?.setMapData
+
+  useEffect(() => {
+    if (!setMapData) return
+
+    if (results.length === 0) {
+      setMapData(null)
+      return
+    }
+
+    setMapData({
+      mode: 'nearby',
+      fuelType: calculationInput
+        ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
+        : 'Benzina',
+      isSelf: calculationInput?.isSelf ?? true,
+      origin: originCoords,
+      stations: results.map((result, idx) => {
+        const travelKm = (result.routeDistanceMeters / 1_000) * 2
+        return {
+          id: result.station.id,
+          rank: idx + 1,
+          displayName: getStationDisplayName(result.station),
+          brand: result.station.brand,
+          address: result.station.address,
+          city: result.station.city,
+          latitude: result.station.latitude,
+          longitude: result.station.longitude,
+          fuelPrice: result.station.fuelPrice,
+          netFuelLiters: result.netFuelLiters,
+          travelDistanceKm: travelKm,
+          travelFuelLiters: result.travelFuelLiters,
+          navigationHref: getGoogleMapsNavigationUrl(
+            result.station.latitude,
+            result.station.longitude,
+          ),
+          navigationLabel: 'Apri nel navigatore',
+          distanceSummary: `Distanza A/R: ${distanceFormatter.format(travelKm)} km`,
+        }
+      }),
+    })
+  }, [results, originCoords, calculationInput, setMapData])
+
+  useEffect(() => {
+    return () => {
+      setMapData?.(null)
+    }
+  }, [setMapData])
 
   async function handleCalculate(values: RefuelCalculationInput) {
     if (calculationInFlight.current) return
@@ -242,6 +327,10 @@ export default function FuelSmartCalculator() {
 
     try {
       const position = await getCurrentPosition()
+      setOriginCoords({
+        latitude: position.latitude,
+        longitude: position.longitude,
+      })
       let nearbyStationsResponse
 
       try {
@@ -352,8 +441,13 @@ export default function FuelSmartCalculator() {
           <ol>
             <StationResultCard
               index={0}
+              isSelectedOnMap={
+                resultsMap?.selectedStationId === results[0].station.id
+              }
+              onSelectOnMap={resultsMap?.setSelectedStationId}
               result={results[0]}
               winnerAdvantageLiters={winnerAdvantageLiters}
+              winnerInsight={winnerInsight}
             />
           </ol>
 
@@ -362,9 +456,14 @@ export default function FuelSmartCalculator() {
               {results.slice(1).map((result, index) => (
                 <StationResultCard
                   index={index + 1}
+                  isSelectedOnMap={
+                    resultsMap?.selectedStationId === result.station.id
+                  }
                   key={result.station.id}
+                  onSelectOnMap={resultsMap?.setSelectedStationId}
                   result={result}
                   winnerAdvantageLiters={winnerAdvantageLiters}
+                  winnerInsight={null}
                 />
               ))}
             </ol>

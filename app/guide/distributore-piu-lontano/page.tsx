@@ -17,8 +17,59 @@ const linkClassName =
   "font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300";
 
 export default function FartherStationGuidePage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://rifornio.it/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Guide",
+            item: "https://rifornio.it/come-funziona",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Quando conviene un distributore più lontano?",
+            item: "https://rifornio.it/guide/distributore-piu-lontano",
+          },
+        ],
+      },
+      {
+        "@type": "Article",
+        headline: "Quando conviene davvero un distributore più lontano?",
+        description:
+          "Scopri come prezzo, distanza, importo del rifornimento e consumo dell'auto determinano se conviene raggiungere un distributore più lontano.",
+        url: "https://rifornio.it/guide/distributore-piu-lontano",
+        author: {
+          "@type": "Organization",
+          name: "Rifornio",
+          url: "https://rifornio.it",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Rifornio",
+          url: "https://rifornio.it",
+        },
+        inLanguage: "it-IT",
+      },
+    ],
+  };
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="space-y-3 border-b border-zinc-200 pb-8 dark:border-zinc-800">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Quando conviene davvero un distributore più lontano?

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   fetchTripStations,
@@ -9,11 +9,18 @@ import {
 } from '../../lib/api/rifornioApiClient'
 import { getStationDisplayName } from '../../lib/calculation/rankNearbyStations'
 import type { RankedRouteStationResult } from '../../lib/calculation/rankStationsAlongRoute'
+import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import RefuelForm, {
   type RefuelCalculationInput,
 } from '../calculation/RefuelForm'
+import {
+  buildWinnerInsight,
+  RoadSignPrice,
+  type WinnerInsight,
+} from '../calculation/RoadSignPrice'
+import { useResultsMap } from '../map/ResultsMapContext'
 import AddressSearchField from './AddressSearchField'
 
 type OriginMode = 'current' | 'custom'
@@ -25,10 +32,6 @@ const distanceFormatter = new Intl.NumberFormat('it-IT', {
 const litersFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-})
-const priceFormatter = new Intl.NumberFormat('it-IT', {
-  minimumFractionDigits: 3,
-  maximumFractionDigits: 3,
 })
 
 function toCoordinates(location: GeocodingResult): Coordinates {
@@ -61,6 +64,9 @@ interface TripResultCardProps {
   index: number
   origin: Coordinates
   destination: Coordinates
+  winnerInsight: WinnerInsight | null
+  onSelectOnMap?: (stationId: number) => void
+  isSelectedOnMap?: boolean
 }
 
 function TripResultCard({
@@ -68,6 +74,9 @@ function TripResultCard({
   index,
   origin,
   destination,
+  winnerInsight,
+  onSelectOnMap,
+  isSelectedOnMap,
 }: TripResultCardProps) {
   const isWinner = index === 0
   const navigationUrl = getTripNavigationUrl(origin, destination, {
@@ -77,10 +86,15 @@ function TripResultCard({
 
   return (
     <li
+      onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
       className={
         isWinner
           ? 'rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 dark:border-emerald-400 dark:bg-emerald-950/30'
-          : 'rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950/40'
+          : `rounded-xl border bg-white p-4 transition dark:bg-zinc-950/40 ${
+              isSelectedOnMap
+                ? 'border-emerald-500 ring-1 ring-emerald-500/40 dark:border-emerald-400'
+                : 'border-zinc-200 dark:border-zinc-800'
+            }`
       }
     >
       {isWinner ? (
@@ -92,7 +106,9 @@ function TripResultCard({
         {index + 1}. {getStationDisplayName(result.station)}
       </h3>
       <div className="mt-3 grid gap-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-        <p>Prezzo: {priceFormatter.format(result.station.fuelPrice)} €/L</p>
+        <p>
+          Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
+        </p>
         <p>
           Deviazione aggiuntiva:{' '}
           {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
@@ -104,6 +120,14 @@ function TripResultCard({
         <p className="font-semibold">
           Litri netti: {litersFormatter.format(result.netFuelLiters)} L
         </p>
+        {isWinner && winnerInsight ? (
+          <div className="mt-1 rounded-lg border border-emerald-300/80 bg-white/80 px-3.5 py-2.5 text-sm leading-6 text-zinc-800 sm:col-span-2 dark:border-emerald-700/60 dark:bg-zinc-900/60 dark:text-zinc-200">
+            <span className="mr-1.5 inline-block rounded bg-emerald-700 px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase dark:bg-emerald-400 dark:text-emerald-950">
+              {winnerInsight.badge}
+            </span>
+            <span>{winnerInsight.message}</span>
+          </div>
+        ) : null}
       </div>
       <a
         className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 sm:w-auto dark:border-emerald-400 dark:text-emerald-200"
@@ -119,9 +143,12 @@ function TripResultCard({
 
 export default function TripCalculator() {
   const calculationInFlight = useRef(false)
+  const resultsMap = useResultsMap()
   const [originMode, setOriginMode] = useState<OriginMode>('current')
   const [customOrigin, setCustomOrigin] = useState<GeocodingResult | null>(null)
   const [destination, setDestination] = useState<GeocodingResult | null>(null)
+  const [lastCalculationInput, setLastCalculationInput] =
+    useState<RefuelCalculationInput | null>(null)
   const [results, setResults] = useState<RankedRouteStationResult[]>([])
   const [journeyCoordinates, setJourneyCoordinates] = useState<{
     origin: Coordinates
@@ -133,6 +160,75 @@ export default function TripCalculator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
+
+  const winnerInsight = useMemo(
+    () =>
+      results.length >= 2
+        ? buildWinnerInsight(
+            results.map((r) => ({
+              station: r.station,
+              netFuelLiters: r.netFuelLiters,
+              travelDistanceKm: r.detourDistanceMeters / 1_000,
+            })),
+            'trip',
+          )
+        : null,
+    [results],
+  )
+
+  const setMapData = resultsMap?.setMapData
+
+  useEffect(() => {
+    if (!setMapData) return
+
+    if (results.length === 0 || !journeyCoordinates) {
+      setMapData(null)
+      return
+    }
+
+    setMapData({
+      mode: 'trip',
+      fuelType: lastCalculationInput
+        ? SUPPORTED_FUEL_TYPE_LABELS[lastCalculationInput.fuelType]
+        : 'Benzina',
+      isSelf: lastCalculationInput?.isSelf ?? true,
+      origin: journeyCoordinates.origin,
+      destination: journeyCoordinates.destination,
+      stations: results.map((result, idx) => {
+        const detourKm = result.detourDistanceMeters / 1_000
+        return {
+          id: result.station.id,
+          rank: idx + 1,
+          displayName: getStationDisplayName(result.station),
+          brand: result.station.brand,
+          address: result.station.address,
+          city: result.station.city,
+          latitude: result.station.latitude,
+          longitude: result.station.longitude,
+          fuelPrice: result.station.fuelPrice,
+          netFuelLiters: result.netFuelLiters,
+          travelDistanceKm: detourKm,
+          travelFuelLiters: result.detourFuelLiters,
+          navigationHref: getTripNavigationUrl(
+            journeyCoordinates.origin,
+            journeyCoordinates.destination,
+            {
+              latitude: result.station.latitude,
+              longitude: result.station.longitude,
+            },
+          ),
+          navigationLabel: 'Apri percorso con questa sosta',
+          distanceSummary: `Deviazione: ${distanceFormatter.format(detourKm)} km`,
+        }
+      }),
+    })
+  }, [results, journeyCoordinates, lastCalculationInput, setMapData])
+
+  useEffect(() => {
+    return () => {
+      setMapData?.(null)
+    }
+  }, [setMapData])
 
   function clearCalculatedJourney() {
     setResults([])
@@ -155,6 +251,7 @@ export default function TripCalculator() {
     }
 
     calculationInFlight.current = true
+    setLastCalculationInput(values)
     setIsLoading(true)
     setError(null)
     setEmptyState(null)
@@ -301,9 +398,14 @@ export default function TripCalculator() {
             <TripResultCard
               destination={journeyCoordinates.destination}
               index={index}
+              isSelectedOnMap={
+                resultsMap?.selectedStationId === result.station.id
+              }
               key={result.station.id}
+              onSelectOnMap={resultsMap?.setSelectedStationId}
               origin={journeyCoordinates.origin}
               result={result}
+              winnerInsight={index === 0 ? winnerInsight : null}
             />
           ))}
         </ol>
