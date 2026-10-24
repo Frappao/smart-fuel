@@ -16,6 +16,7 @@ import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import { useResultsMap, type MapCoordinates } from '../map/ResultsMapContext'
+import ShareResultButtons from '../share/ShareResultButtons'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 import {
   buildWinnerInsight,
@@ -133,6 +134,9 @@ interface StationResultCardProps {
   winnerInsight: WinnerInsight | null
   onSelectOnMap?: (stationId: number) => void
   isSelectedOnMap?: boolean
+  refuelAmount?: number
+  fuelType?: string
+  isSelf?: boolean
 }
 
 function StationResultCard({
@@ -142,6 +146,9 @@ function StationResultCard({
   winnerInsight,
   onSelectOnMap,
   isSelectedOnMap,
+  refuelAmount = 50,
+  fuelType = 'Benzina',
+  isSelf = true,
 }: StationResultCardProps) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
@@ -233,6 +240,18 @@ function StationResultCard({
           Apri nel navigatore
         </a>
       ) : null}
+      {isBestResult ? (
+        <ShareResultButtons
+          stationName={stationName}
+          brand={result.station.brand}
+          city={result.station.city}
+          fuelPrice={result.station.fuelPrice}
+          netFuelLiters={result.netFuelLiters}
+          fuelType={fuelType}
+          isSelf={isSelf}
+          refuelAmount={refuelAmount}
+        />
+      ) : null}
     </li>
   )
 }
@@ -254,17 +273,19 @@ export default function FuelSmartCalculator() {
       : null
   const winnerInsight = useMemo(
     () =>
-      winnerAdvantageLiters !== null
+      results.length >= 2
         ? buildWinnerInsight(
             results.map((r) => ({
               station: r.station,
               netFuelLiters: r.netFuelLiters,
               travelDistanceKm: (r.routeDistanceMeters / 1_000) * 2,
+              litersPurchased: r.litersPurchased,
+              travelFuelLiters: r.travelFuelLiters,
             })),
             'nearby',
           )
         : null,
-    [results, winnerAdvantageLiters],
+    [results],
   )
 
   const setMapData = resultsMap?.setMapData
@@ -440,11 +461,18 @@ export default function FuelSmartCalculator() {
         <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
           <ol>
             <StationResultCard
+              fuelType={
+                calculationInput
+                  ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
+                  : 'Benzina'
+              }
               index={0}
+              isSelf={calculationInput?.isSelf ?? true}
               isSelectedOnMap={
                 resultsMap?.selectedStationId === results[0].station.id
               }
               onSelectOnMap={resultsMap?.setSelectedStationId}
+              refuelAmount={calculationInput?.refuelAmount ?? 50}
               result={results[0]}
               winnerAdvantageLiters={winnerAdvantageLiters}
               winnerInsight={winnerInsight}

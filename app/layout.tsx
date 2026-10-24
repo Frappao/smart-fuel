@@ -44,11 +44,20 @@ export const metadata: Metadata = {
     siteName: "Rifornio",
     locale: "it_IT",
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Rifornio — Fai rifornimento dove conviene davvero",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Rifornio — Fai rifornimento dove conviene davvero",
     description: "Trova il distributore più conveniente considerando prezzo, distanza e consumo dell'auto.",
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,

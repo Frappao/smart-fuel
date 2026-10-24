@@ -3,6 +3,7 @@ import FuelSearchCalculator from "../components/calculation/FuelSearchCalculator
 import { ResultsMapProvider } from "../components/map/ResultsMapContext";
 import { HomepageRightColumn } from "../components/map/StationsResultMap";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
+import SharedStationBanner from "../components/share/SharedStationBanner";
 
 import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
@@ -52,6 +53,7 @@ export default function Home() {
                 distanza e consumo.
               </p>
             </header>
+            <SharedStationBanner />
             <RegistrationPrompt />
             <FuelSearchCalculator />
           </div>

@@ -21,6 +21,7 @@ import {
   type WinnerInsight,
 } from '../calculation/RoadSignPrice'
 import { useResultsMap } from '../map/ResultsMapContext'
+import ShareResultButtons from '../share/ShareResultButtons'
 import AddressSearchField from './AddressSearchField'
 
 type OriginMode = 'current' | 'custom'
@@ -67,6 +68,9 @@ interface TripResultCardProps {
   winnerInsight: WinnerInsight | null
   onSelectOnMap?: (stationId: number) => void
   isSelectedOnMap?: boolean
+  refuelAmount?: number
+  fuelType?: string
+  isSelf?: boolean
 }
 
 function TripResultCard({
@@ -77,8 +81,12 @@ function TripResultCard({
   winnerInsight,
   onSelectOnMap,
   isSelectedOnMap,
+  refuelAmount = 50,
+  fuelType = 'Benzina',
+  isSelf = true,
 }: TripResultCardProps) {
   const isWinner = index === 0
+  const stationName = getStationDisplayName(result.station)
   const navigationUrl = getTripNavigationUrl(origin, destination, {
     latitude: result.station.latitude,
     longitude: result.station.longitude,
@@ -103,7 +111,7 @@ function TripResultCard({
         </p>
       ) : null}
       <h3 className="mt-1 font-semibold">
-        {index + 1}. {getStationDisplayName(result.station)}
+        {index + 1}. {stationName}
       </h3>
       <div className="mt-3 grid gap-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
         <p>
@@ -137,6 +145,18 @@ function TripResultCard({
       >
         Apri percorso con questa sosta
       </a>
+      {isWinner ? (
+        <ShareResultButtons
+          stationName={stationName}
+          brand={result.station.brand}
+          city={result.station.city}
+          fuelPrice={result.station.fuelPrice}
+          netFuelLiters={result.netFuelLiters}
+          fuelType={fuelType}
+          isSelf={isSelf}
+          refuelAmount={refuelAmount}
+        />
+      ) : null}
     </li>
   )
 }
@@ -169,6 +189,8 @@ export default function TripCalculator() {
               station: r.station,
               netFuelLiters: r.netFuelLiters,
               travelDistanceKm: r.detourDistanceMeters / 1_000,
+              litersPurchased: r.litersPurchased,
+              travelFuelLiters: r.detourFuelLiters,
             })),
             'trip',
           )
@@ -397,13 +419,20 @@ export default function TripCalculator() {
           {results.map((result, index) => (
             <TripResultCard
               destination={journeyCoordinates.destination}
+              fuelType={
+                lastCalculationInput
+                  ? SUPPORTED_FUEL_TYPE_LABELS[lastCalculationInput.fuelType]
+                  : 'Benzina'
+              }
               index={index}
+              isSelf={lastCalculationInput?.isSelf ?? true}
               isSelectedOnMap={
                 resultsMap?.selectedStationId === result.station.id
               }
               key={result.station.id}
               onSelectOnMap={resultsMap?.setSelectedStationId}
               origin={journeyCoordinates.origin}
+              refuelAmount={lastCalculationInput?.refuelAmount ?? 50}
               result={result}
               winnerInsight={index === 0 ? winnerInsight : null}
             />

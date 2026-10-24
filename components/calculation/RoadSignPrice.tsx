@@ -68,6 +68,8 @@ export interface WinnerInsightCandidate {
   }
   netFuelLiters: number
   travelDistanceKm: number
+  litersPurchased?: number
+  travelFuelLiters?: number
 }
 
 export interface WinnerInsight {
@@ -85,13 +87,6 @@ export function buildWinnerInsight(
 
   const winner = results[0]
   const runnerUp = results[1]
-
-  if (
-    Math.round(winner.netFuelLiters * 100) <=
-    Math.round(runnerUp.netFuelLiters * 100)
-  ) {
-    return null
-  }
 
   const cheapestNominal = results.reduce((cheapest, candidate) =>
     candidate.station.fuelPrice < cheapest.station.fuelPrice
@@ -120,10 +115,40 @@ export function buildWinnerInsight(
         ? `evitando ${oneDecimalFormatter.format(extraKm)} km di deviazione in più`
         : `evitando ${oneDecimalFormatter.format(extraKm)} km di strada extra A/R`
 
+    if (
+      typeof winner.litersPurchased === 'number' &&
+      typeof cheapestNominal.litersPurchased === 'number' &&
+      typeof winner.travelFuelLiters === 'number' &&
+      typeof cheapestNominal.travelFuelLiters === 'number'
+    ) {
+      const pumpExtraCostEuros = Math.max(
+        0,
+        (cheapestNominal.litersPurchased - winner.litersPurchased) *
+          winner.station.fuelPrice,
+      )
+      const realSavedCents = Math.round(realEurosSaved * 100)
+      const pumpExtraCostCents = Math.round(pumpExtraCostEuros * 100)
+      const extraTripCostEuros = (realSavedCents + pumpExtraCostCents) / 100
+
+      if (pumpExtraCostCents > 0 && extraTripCostEuros > 0) {
+        return {
+          badge: 'La dritta di Rifornio',
+          message: `Costa ${oneDecimalFormatter.format(centsDiff)} cent/L in più di ${cheaperName} (+${twoDecimalFormatter.format(pumpExtraCostCents / 100)} € alla pompa su questo importo), ma ${distancePhrase} non bruci ${twoDecimalFormatter.format(extraTripCostEuros)} € di carburante nel tragitto: risparmi davvero circa ${twoDecimalFormatter.format(realSavedCents / 100)} € sul pieno.`,
+        }
+      }
+    }
+
     return {
       badge: 'La dritta di Rifornio',
       message: `Costa ${oneDecimalFormatter.format(centsDiff)} cent/L in più di ${cheaperName}, ma ${distancePhrase} risparmi davvero circa ${twoDecimalFormatter.format(realEurosSaved)} € sul pieno.`,
     }
+  }
+
+  if (
+    Math.round(winner.netFuelLiters * 100) <=
+    Math.round(runnerUp.netFuelLiters * 100)
+  ) {
+    return null
   }
 
   const secondExtraKm = runnerUp.travelDistanceKm - winner.travelDistanceKm
