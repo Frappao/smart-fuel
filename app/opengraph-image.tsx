@@ -37,11 +37,11 @@ export default async function Image() {
               borderRadius: '14px',
               backgroundColor: '#059669',
               color: '#ffffff',
-              fontSize: '28px',
-              fontWeight: 'bold',
+              fontSize: '26px',
+              fontWeight: '900',
             }}
           >
-            ⛽
+            R
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span
@@ -72,7 +72,7 @@ export default async function Image() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
               gap: '8px',
               padding: '6px 14px',
@@ -87,7 +87,7 @@ export default async function Image() {
               alignSelf: 'flex-start',
             }}
           >
-            ● La prima guida al risparmio reale al volante
+            La prima guida al risparmio reale al volante
           </div>
 
           <h1
@@ -142,7 +142,7 @@ export default async function Image() {
               fontWeight: '700',
             }}
           >
-            ★ Litri netti calcolati
+            Litri netti calcolati
           </div>
 
           <div
@@ -159,7 +159,7 @@ export default async function Image() {
               fontWeight: '700',
             }}
           >
-            📍 Vicino a me & Lungo il percorso
+            Vicino a me e lungo il percorso
           </div>
 
           <div
@@ -176,7 +176,7 @@ export default async function Image() {
               fontWeight: '700',
             }}
           >
-            🇮🇹 Dati Open Data MIMIT
+            Dati Open Data MIMIT
           </div>
 
           <div
@@ -194,7 +194,7 @@ export default async function Image() {
               marginLeft: 'auto',
             }}
           >
-            📱 App Android & iOS
+            App Android e iOS
           </div>
         </div>
       </div>
