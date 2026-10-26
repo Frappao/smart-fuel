@@ -197,4 +197,18 @@ describe('importMimitFuelPrices', () => {
     expect(upsert).toHaveBeenCalledOnce()
     expect(deleteRows).toHaveBeenCalledOnce()
   })
+
+  it('aborts and does not delete existing prices when no valid fuel prices match', async () => {
+    vi.mocked(parseFuelPricesCsv).mockReturnValue([])
+    const { deleteRows, upsert } = arrangeSupabaseClient({
+      stationPages: [{ data: [{ id: 70, mimit_id: 7 }], error: null }],
+    })
+
+    await expect(importMimitFuelPrices()).rejects.toThrow(
+      'MIMIT fuel prices import aborted: no valid fuel prices matched',
+    )
+
+    expect(upsert).not.toHaveBeenCalled()
+    expect(deleteRows).not.toHaveBeenCalled()
+  })
 })

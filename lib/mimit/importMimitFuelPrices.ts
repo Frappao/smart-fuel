@@ -65,6 +65,12 @@ export async function importMimitFuelPrices(): Promise<ImportMimitFuelPricesResu
     rows.push(mapFuelPriceToDatabaseRow(price, stationId))
   }
 
+  if (rows.length === 0) {
+    throw new Error(
+      'MIMIT fuel prices import aborted: no valid fuel prices matched',
+    )
+  }
+
   let totalImported = 0
 
   for (let offset = 0; offset < rows.length; offset += IMPORT_BATCH_SIZE) {

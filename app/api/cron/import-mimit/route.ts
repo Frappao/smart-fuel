@@ -31,7 +31,9 @@ export async function GET(request: Request): Promise<Response> {
       stations: result.stations,
       fuelPrices: result.fuelPrices,
     })
-  } catch {
+  } catch (error) {
+    console.error('MIMIT cron import failed:', error)
+
     return Response.json(
       { error: 'Unable to import MIMIT data.' },
       { status: 500 },

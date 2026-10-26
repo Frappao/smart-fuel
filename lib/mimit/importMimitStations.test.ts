@@ -136,4 +136,16 @@ describe('importMimitStations', () => {
     expect(upsert).toHaveBeenCalledOnce()
     expect(deleteRows).toHaveBeenCalledOnce()
   })
+
+  it('aborts and does not delete existing stations when no valid stations are parsed', async () => {
+    vi.mocked(parseStationsCsv).mockReturnValue([])
+    const { deleteRows, upsert } = arrangeSupabaseClient()
+
+    await expect(importMimitStations()).rejects.toThrow(
+      'MIMIT stations import aborted: no valid stations parsed',
+    )
+
+    expect(upsert).not.toHaveBeenCalled()
+    expect(deleteRows).not.toHaveBeenCalled()
+  })
 })

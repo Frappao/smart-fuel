@@ -17,6 +17,11 @@ export async function importMimitStations(): Promise<ImportMimitStationsResult> 
   const importStartedAt = new Date().toISOString()
   const csv = await downloadCsv(MIMIT_STATIONS_CSV_URL)
   const stations = parseStationsCsv(csv)
+
+  if (stations.length === 0) {
+    throw new Error('MIMIT stations import aborted: no valid stations parsed')
+  }
+
   const rows = stations.map(mapStationToDatabaseRow)
   const supabase = createSupabaseServerClient()
 

@@ -21,7 +21,16 @@ describe('downloadCsv', () => {
     )
     expect(fetchMock).toHaveBeenCalledWith(
       'https://example.test/stations.csv',
-      { method: 'GET' },
+      {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          Accept: 'text/csv,text/plain;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'it-IT,it;q=0.9',
+          'User-Agent':
+            'Mozilla/5.0 (compatible; Rifornio/1.0; +https://rifornio.it)',
+        },
+      },
     )
   })
 
@@ -37,5 +46,24 @@ describe('downloadCsv', () => {
     await expect(
       downloadCsv('https://example.test/stations.csv'),
     ).rejects.toThrow(/500/)
+  })
+
+  it('rifiuta risposte HTML (es. pagina di blocco WAF) restituite con status 200', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: vi
+          .fn()
+          .mockResolvedValue(
+            '<html><head><title>Request Rejected</title></head><body>The requested URL was rejected.</body></html>',
+          ),
+      }),
+    )
+
+    await expect(
+      downloadCsv('https://example.test/stations.csv'),
+    ).rejects.toThrow(/received HTML instead of CSV/)
   })
 })

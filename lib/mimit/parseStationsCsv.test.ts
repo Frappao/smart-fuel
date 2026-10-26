@@ -39,4 +39,29 @@ describe('parseStationsCsv', () => {
       },
     ])
   })
+
+  it('scarta righe con idImpianto non valido e deduplica per mimitId', () => {
+    const csv = [
+      'Estrazione del 2026-08-06',
+      'idImpianto|Gestore|Bandiera|Tipo Impianto|Nome Impianto|Indirizzo|Comune|Provincia|Latitudine|Longitudine',
+      'abc|GESTORE|Eni|Stradale|Stazione|Via 1|Roma|RM|41.9|12.5',
+      '59183|VECCHIO GESTORE|Eni|Stradale|Stazione 1|Via 1|Roma|RM|41.9|12.5',
+      '59183|NUOVO GESTORE|Eni|Stradale|Stazione 1|Via 1|Roma|RM|41.9|12.5',
+    ].join('\n')
+
+    expect(parseStationsCsv(csv)).toEqual([
+      {
+        mimitId: 59183,
+        manager: 'NUOVO GESTORE',
+        brand: 'Eni',
+        stationType: 'Stradale',
+        name: 'Stazione 1',
+        address: 'Via 1',
+        city: 'Roma',
+        province: 'RM',
+        latitude: 41.9,
+        longitude: 12.5,
+      },
+    ])
+  })
 })

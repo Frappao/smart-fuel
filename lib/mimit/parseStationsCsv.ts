@@ -13,40 +13,51 @@ function parseNullableNumber(value: string | undefined): number | null {
 }
 
 export function parseStationsCsv(csv: string): MimitStationRow[] {
-  return csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(
-      (line) =>
-        line !== '' &&
-        !line.startsWith('Estrazione del ') &&
-        !line.startsWith('idImpianto|Gestore|'),
-    )
-    .map((line) => {
-      const [
-        mimitId,
-        manager,
-        brand,
-        stationType,
-        name,
-        address,
-        city,
-        province,
-        latitude,
-        longitude,
-      ] = line.split('|').map((field) => field.trim())
+  const byMimitId = new Map<number, MimitStationRow>()
 
-      return {
-        mimitId: Number(mimitId),
-        manager: manager ?? '',
-        brand: brand ?? '',
-        stationType: stationType ?? '',
-        name: name ?? '',
-        address: address ?? '',
-        city: city ?? '',
-        province: province ?? '',
-        latitude: parseNullableNumber(latitude),
-        longitude: parseNullableNumber(longitude),
-      }
+  for (const rawLine of csv.split(/\r?\n/)) {
+    const line = rawLine.trim()
+
+    if (
+      line === '' ||
+      line.startsWith('Estrazione del ') ||
+      line.startsWith('idImpianto|Gestore|')
+    ) {
+      continue
+    }
+
+    const [
+      mimitId,
+      manager,
+      brand,
+      stationType,
+      name,
+      address,
+      city,
+      province,
+      latitude,
+      longitude,
+    ] = line.split('|').map((field) => field.trim())
+
+    const parsedMimitId = Number(mimitId)
+
+    if (!Number.isInteger(parsedMimitId) || parsedMimitId <= 0) {
+      continue
+    }
+
+    byMimitId.set(parsedMimitId, {
+      mimitId: parsedMimitId,
+      manager: manager ?? '',
+      brand: brand ?? '',
+      stationType: stationType ?? '',
+      name: name ?? '',
+      address: address ?? '',
+      city: city ?? '',
+      province: province ?? '',
+      latitude: parseNullableNumber(latitude),
+      longitude: parseNullableNumber(longitude),
     })
+  }
+
+  return Array.from(byMimitId.values())
 }

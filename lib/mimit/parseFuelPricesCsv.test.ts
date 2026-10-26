@@ -47,4 +47,26 @@ describe('parseFuelPricesCsv', () => {
 
     expect(parseFuelPricesCsv(csv)[0]?.fuelType).toBe('GPL')
   })
+
+  it('scarta righe malformate e deduplica per idImpianto, carburante e modalità', () => {
+    const csv = [
+      'Estrazione del 2026-08-11',
+      'idImpianto|descCarburante|prezzo|isSelf|dtComu',
+      'invalid|Benzina|1.899|1|11/08/2026 08:00:00',
+      '3464|Benzina|-1|1|11/08/2026 08:00:00',
+      '3464||1.899|1|11/08/2026 08:00:00',
+      '3464|Benzina|1.899|1|11/08/2026 08:00:00',
+      '3464|Benzina|1.849|1|11/08/2026 09:00:00',
+    ].join('\n')
+
+    expect(parseFuelPricesCsv(csv)).toEqual([
+      {
+        mimitId: 3464,
+        fuelType: 'Benzina',
+        price: 1.849,
+        isSelf: true,
+        communicatedAt: '11/08/2026 09:00:00',
+      },
+    ])
+  })
 })

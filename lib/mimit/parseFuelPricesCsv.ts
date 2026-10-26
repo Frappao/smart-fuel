@@ -7,26 +7,48 @@ function parseIsSelf(value: string | undefined): boolean {
 }
 
 export function parseFuelPricesCsv(csv: string): MimitFuelPriceRow[] {
-  return csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(
-      (line) =>
-        line !== '' &&
-        !line.startsWith('Estrazione del ') &&
-        !line.startsWith('idImpianto|descCarburante|'),
-    )
-    .map((line) => {
-      const [mimitId, fuelType, price, isSelf, communicatedAt] = line
-        .split('|')
-        .map((field) => field.trim())
+  const byCompositeKey = new Map<string, MimitFuelPriceRow>()
 
-      return {
-        mimitId: Number(mimitId),
-        fuelType: fuelType ?? '',
-        price: Number(price),
-        isSelf: parseIsSelf(isSelf),
-        communicatedAt: communicatedAt || null,
-      }
+  for (const rawLine of csv.split(/\r?\n/)) {
+    const line = rawLine.trim()
+
+    if (
+      line === '' ||
+      line.startsWith('Estrazione del ') ||
+      line.startsWith('idImpianto|descCarburante|')
+    ) {
+      continue
+    }
+
+    const [mimitId, fuelType, price, isSelf, communicatedAt] = line
+      .split('|')
+      .map((field) => field.trim())
+
+    const parsedMimitId = Number(mimitId)
+    const normalizedFuelType = fuelType ?? ''
+    const parsedPrice = Number(price)
+    const parsedIsSelf = parseIsSelf(isSelf)
+
+    if (
+      !Number.isInteger(parsedMimitId) ||
+      parsedMimitId <= 0 ||
+      normalizedFuelType === '' ||
+      !Number.isFinite(parsedPrice) ||
+      parsedPrice <= 0
+    ) {
+      continue
+    }
+
+    const key = `${parsedMimitId}|${normalizedFuelType}|${parsedIsSelf}`
+
+    byCompositeKey.set(key, {
+      mimitId: parsedMimitId,
+      fuelType: normalizedFuelType,
+      price: parsedPrice,
+      isSelf: parsedIsSelf,
+      communicatedAt: communicatedAt || null,
     })
+  }
+
+  return Array.from(byCompositeKey.values())
 }
