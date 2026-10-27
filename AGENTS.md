@@ -113,6 +113,7 @@ The mobile app must not contain backend secrets.
 
 Do not replace the stack unless strictly necessary.
 
+- Node.js (v20+ LTS recommended, v24 supported)
 - Next.js App Router
 - TypeScript
 - React
@@ -288,6 +289,48 @@ PostGIS and the nearby_stations RPC are already implemented and working.
 
 Do not redesign them without a verified reason.
 
+### Migrations and schema files
+
+Schema definitions and migrations are stored in:
+
+- `supabase/schema.sql`: idempotent bootstrap schema for the entire database (stations, fuel_prices, nearby_stations RPC, etc.).
+- `supabase/migrations/`: incremental migration files:
+  - `20260930_add_stations_along_route.sql`: adds `public.stations_along_route` RPC for corridor searches along driving routes.
+  - `202610210001_user_vehicles.sql`: creates `public.user_vehicles` table with user-scoped RLS policies.
+  - `202610230001_app_waitlist.sql`: creates `public.app_waitlist` table with RLS enabled and direct access revoked.
+
+### How to apply migrations
+
+Migrations are applied manually:
+
+1. Open the Supabase Dashboard for the project.
+2. Navigate to the SQL Editor.
+3. For a fresh database, run `supabase/schema.sql`.
+4. For updating an existing database, run the pending files in `supabase/migrations/` in chronological order.
+5. Alternatively, if Supabase CLI is linked to the project:
+   `npx supabase migration up` or `npx supabase db push`.
+
+Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`) are currently pending execution on the production database.
+
+### Supabase security and Row Level Security (RLS)
+
+Security rule for all Supabase tables:
+
+- **RLS MUST BE ENABLED ON EVERY TABLE**:
+  `alter table public.<table_name> enable row level security;`
+- **Server secret key bypasses RLS**:
+  Next.js Server Components and API routes connect with `SUPABASE_SECRET_KEY` (service_role), which automatically bypasses RLS.
+- **Hardening against public and anon keys**:
+  Because the server bypasses RLS, RLS acts as the frontline shield preventing public or authenticated client-side requests from accessing or modifying data directly:
+  - **Internal / Server-only tables** (e.g. `app_waitlist`):
+    Explicitly revoke all permissions from public, anon, and authenticated roles:
+    `revoke all on public.<table_name> from public, anon, authenticated;`
+    All operations must go through validated server-side API routes.
+  - **User-owned tables** (e.g. `user_vehicles`):
+    Enforce strict RLS policies bound to `(select auth.uid()) = user_id`.
+  - **Public reference tables** (e.g. `stations`, `fuel_prices`):
+    Never allow anon or authenticated roles to insert, update, or delete records. Writes are restricted exclusively to the backend service role.
+
 ## Web state
 
 The production website is functional at:
@@ -455,14 +498,12 @@ Always verify current Google Play wording and provider behavior before submissio
 
 Do not implement these unless explicitly requested:
 
-- login/account;
-- saved vehicles;
-- history;
-- favorites;
-- social features;
-- notifications;
-- native maps;
-- additional monetization features;
+- complex user profile or social features (basic Supabase Auth + saved vehicles already implemented);
+- native maps SDK inside the app (external Maps navigation is intentional);
+- history or favorites;
+- push notifications;
+- background location tracking;
+- additional monetization features or ad formats;
 - unrelated architectural refactors.
 
 ## Git rules
@@ -485,20 +526,31 @@ Production deploys automatically from pushes to main.
 
 ## Development workflow
 
-Work one micro-task at a time.
+### Node version and environment
 
-Before editing:
+- Node.js version: `>= 20.x` (v20 LTS recommended, v24 supported).
+- Package manager: `npm`.
 
-- understand the current implementation;
-- inspect existing code;
-- avoid rewriting working code;
-- avoid introducing new dependencies unless necessary.
+### Basic development commands
 
-After meaningful changes run the relevant checks.
+Web local development server:
 
-Common checks:
+npm run dev
+
+(Runs Next.js App Router at http://localhost:3000)
+
+Production build:
+
+npm run build
+
+Type check:
 
 npx tsc --noEmit
+
+Unit and component tests:
+
+npm test
+npx vitest run <relevant-test-file>
 
 Targeted ESLint:
 
@@ -508,21 +560,25 @@ Diff validation:
 
 git diff --check
 
-Tests:
-
-npx vitest run <relevant-test-file>
-
-Full suite when appropriate:
-
-npm test
-
-Build when appropriate:
-
-npm run build
-
-Mobile build when appropriate:
+Mobile development and build:
 
 npm run mobile:build
+npm run mobile:sync
+npm run mobile:open:android
+npm run mobile:open:ios
+
+### Workflow guidelines
+
+Work one micro-task at a time.
+
+Before editing:
+
+- understand the current implementation;
+- inspect existing code;
+- avoid rewriting working code;
+- avoid introducing new dependencies unless necessary.
+
+After meaningful changes run the relevant checks (type check, targeted tests, git diff --check).
 
 Do not consider a task complete merely because it compiles.
 
@@ -590,21 +646,26 @@ Do not:
 
 Current production state:
 
-- website deployed and functional;
-- homepage indexed;
-- sitemap active;
-- robots.txt active;
+- website deployed and functional at https://rifornio.it;
+- vehicle selector positioned at top with collapsible management and distinct refuel calculator;
+- programmatic local SEO city pages active (/prezzi-carburante/[slug]);
+- app beta waitlist modal and email signup active;
+- interactive results map and pump vs travel savings breakdown active;
+- homepage indexed, sitemap active, robots.txt active;
 - ads.txt present but awaiting the official Adsterra record;
 - GA4 active with consent;
 - one Adsterra 300x250 result banner enabled through environment configuration;
 - support page exists;
-- Android debug app functional;
+- Android debug app functional with privacy policy and support links;
 - Mapbox routing integration functional;
-- route planning implemented locally and awaiting Supabase schema deployment;
-- MIMIT daily import automated through Vercel Cron;
-- no Google Play release uploaded yet.
+- route planning, vehicle profiles, and waitlist migrations created under `supabase/migrations/` and awaiting Supabase schema deployment in production;
+- MIMIT daily import automated through Vercel Cron and hardened against WAF HTML responses / malformed CSV rows;
+- no Google Play release uploaded yet (awaiting physical device verification).
 
-Immediate priority remains completing the Android / Google Play publication path once a physical Android device is available.
+Immediate priorities:
+
+1. Deploy pending Supabase migrations (`supabase/migrations/`) to the production database;
+2. Complete Android physical device verification for the Google Play developer account.
 
 Until then, prefer small reliability, data-quality, documentation, and release-readiness tasks over new product scope.
 ```

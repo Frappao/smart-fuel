@@ -17,9 +17,10 @@ import {
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { RIFORNIO_API_BASE_URL } from './config'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
-import { openStationNavigation } from './navigation/openStationNavigation'
+import MobileFooter from './MobileFooter'
 import MobileSearchMode from './MobileSearchMode'
 import MobileTripCalculator from './MobileTripCalculator'
+import { openStationNavigation } from './navigation/openStationNavigation'
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -287,6 +288,7 @@ export default function MobileCalculator() {
           </ol>
         </section>
       ) : null}
+      <MobileFooter />
     </main>
   )
 }

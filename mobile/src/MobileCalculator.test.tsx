@@ -504,4 +504,14 @@ describe('MobileCalculator', () => {
       'Hai effettuato troppe richieste in poco tempo. Attendi un minuto e riprova.',
     )
   })
+
+  it('renders a prominent link to the privacy policy', () => {
+    render(<MobileCalculator />)
+
+    const privacyLink = screen.getByRole('link', {
+      name: 'Informativa sulla Privacy',
+    })
+    expect(privacyLink).toBeTruthy()
+    expect(privacyLink.getAttribute('href')).toBe('https://rifornio.it/privacy')
+  })
 })

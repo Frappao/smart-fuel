@@ -13,6 +13,7 @@ import { getStationDisplayName } from '../../lib/calculation/rankNearbyStations'
 import type { RankedRouteStationResult } from '../../lib/calculation/rankStationsAlongRoute'
 import { RIFORNIO_API_BASE_URL } from './config'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
+import MobileFooter from './MobileFooter'
 import MobileSearchMode from './MobileSearchMode'
 import { openTripNavigation } from './navigation/openStationNavigation'
 
@@ -265,6 +266,7 @@ export default function MobileTripCalculator({
           </ol>
         </section>
       ) : null}
+      <MobileFooter />
     </main>
   )
 }

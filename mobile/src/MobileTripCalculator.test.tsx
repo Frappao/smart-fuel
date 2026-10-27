@@ -127,4 +127,14 @@ describe('MobileTripCalculator', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Vicino a me' }))
     expect(onSelectNearby).toHaveBeenCalledOnce()
   })
+
+  it('renders a prominent link to the privacy policy in trip mode', () => {
+    render(<MobileTripCalculator onSelectNearby={vi.fn()} />)
+
+    const privacyLink = screen.getByRole('link', {
+      name: 'Informativa sulla Privacy',
+    })
+    expect(privacyLink).toBeTruthy()
+    expect(privacyLink.getAttribute('href')).toBe('https://rifornio.it/privacy')
+  })
 })
