@@ -15,43 +15,43 @@ export default function Home() {
     <ResultsMapProvider>
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-50/80 backdrop-blur-xl saturate-150 dark:border-zinc-800/80 dark:bg-zinc-950/80">
-        <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-6">
+        <nav aria-label="Navigazione principale" className="mx-auto flex h-16 sm:h-20 w-full max-w-7xl items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
             <Link
               href="/prezzi-carburanti"
-              className="text-sm font-medium text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
+              className="text-xs sm:text-sm font-medium text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
             >
               Prezzi Carburanti
             </Link>
             <Link
               href="/come-funziona"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Simulatore: come funziona
             </Link>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <AppBetaButton />
             <AccountButton />
           </div>
         </nav>
       </header>
-      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-8">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-8 sm:gap-10 px-4 py-6 sm:px-6 sm:py-14 lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-8">
         <div
           aria-label="Calcolatore e risultati"
           role="region"
           tabIndex={0}
           className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:pr-4 dark:focus-visible:outline-emerald-400"
         >
-          <div className="flex w-full flex-col gap-8">
+          <div className="flex w-full flex-col gap-6 sm:gap-8">
             <header className="flex items-center justify-between gap-4">
-              <div className="space-y-4">
-                <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              <div className="space-y-3 sm:space-y-4">
+                <h1 className="max-w-xl text-2xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
                   Fai rifornimento dove conviene davvero.
                 </h1>
-                <p className="max-w-xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-300">
+                <p className="max-w-xl text-sm leading-6 sm:text-lg sm:leading-7 text-zinc-600 dark:text-zinc-300">
                   Trova il distributore più conveniente considerando prezzo,
                   distanza e consumo.
                 </p>

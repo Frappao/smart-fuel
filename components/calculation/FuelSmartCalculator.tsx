@@ -25,6 +25,7 @@ import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import { useResultsMap, type MapCoordinates } from '../map/ResultsMapContext'
+import { StationsResultMap } from '../map/StationsResultMap'
 import ShareResultButtons from '../share/ShareResultButtons'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 import {
@@ -146,6 +147,8 @@ interface StationResultCardProps {
   refuelAmount?: number
   fuelType?: string
   isSelf?: boolean
+  mobileMap?: React.ReactNode
+  showAllToggle?: React.ReactNode
 }
 
 function StationResultCard({
@@ -158,6 +161,8 @@ function StationResultCard({
   refuelAmount = 50,
   fuelType = 'Benzina',
   isSelf = true,
+  mobileMap,
+  showAllToggle,
 }: StationResultCardProps) {
   const [show3DTank, setShow3DTank] = useState(false)
   const stationName = getStationDisplayName(result.station)
@@ -286,6 +291,18 @@ function StationResultCard({
           refuelAmount={refuelAmount}
         />
       ) : null}
+
+      {isBestResult && mobileMap ? (
+        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
+          {mobileMap}
+        </div>
+      ) : null}
+
+      {isBestResult && showAllToggle ? (
+        <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
+          {showAllToggle}
+        </div>
+      ) : null}
     </li>
   )
 }
@@ -298,6 +315,7 @@ export default function FuelSmartCalculator() {
   const [originCoords, setOriginCoords] = useState<MapCoordinates | null>(null)
   const [results, setResults] = useState<RankedStationResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [showAllMobileResults, setShowAllMobileResults] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
   const winnerAdvantageLiters =
@@ -375,6 +393,7 @@ export default function FuelSmartCalculator() {
     if (calculationInFlight.current) return
     calculationInFlight.current = true
     setCalculationInput(values)
+    setShowAllMobileResults(false)
     setResults([])
     setError(null)
     setEmptyStateMessage(null)
@@ -529,11 +548,59 @@ export default function FuelSmartCalculator() {
               result={results[0]}
               winnerAdvantageLiters={winnerAdvantageLiters}
               winnerInsight={winnerInsight}
+              mobileMap={
+                resultsMap?.mapData ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                      <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Mappa completa dei distributori
+                      </span>
+                      <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">
+                        Tocca per selezionare
+                      </span>
+                    </div>
+                    <div className="h-[340px] sm:h-[400px] overflow-hidden rounded-xl border border-emerald-300/80 bg-white shadow-xs dark:border-emerald-800/80 dark:bg-zinc-950">
+                      <StationsResultMap
+                        data={resultsMap.mapData}
+                        selectedStationId={resultsMap.selectedStationId}
+                        onSelectStation={resultsMap.setSelectedStationId}
+                      />
+                    </div>
+                  </div>
+                ) : null
+              }
+              showAllToggle={
+                results.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllMobileResults(!showAllMobileResults)}
+                    className="flex min-h-12 w-full items-center justify-between rounded-xl border border-emerald-600/40 bg-emerald-50/80 px-4 py-3 text-xs font-semibold text-emerald-950 shadow-2xs transition active:scale-[0.99] hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm">⛽</span>
+                      <span>
+                        {showAllMobileResults
+                          ? 'Nascondi gli altri distributori'
+                          : `Vedi gli altri ${results.length - 1} distributori in classifica`}
+                      </span>
+                    </span>
+                    <span className="rounded-md bg-emerald-200/80 px-2.5 py-1 text-[11px] font-bold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100">
+                      {showAllMobileResults ? '▲ Chiudi' : '▼ Mostra tutti'}
+                    </span>
+                  </button>
+                ) : null
+              }
             />
           </ol>
 
           {results.length > 1 ? (
-            <ol className="flex min-w-0 flex-col gap-3 sm:gap-4" start={2}>
+            <ol
+              className={`min-w-0 flex-col gap-3 sm:gap-4 ${
+                showAllMobileResults ? 'flex' : 'hidden lg:flex'
+              }`}
+              start={2}
+            >
               {results.slice(1).map((result, index) => (
                 <StationResultCard
                   index={index + 1}

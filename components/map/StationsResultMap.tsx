@@ -41,6 +41,7 @@ interface MapLibreGlobal {
     center: [number, number]
     zoom: number
     attributionControl?: boolean
+    cooperativeGestures?: boolean
   }) => MapLibreMapLike
   NavigationControl: new (options?: {
     showCompass?: boolean
@@ -256,6 +257,7 @@ export function StationsResultMap({
             center: initialCenter,
             zoom: 12,
             attributionControl: false,
+            cooperativeGestures: true,
           })
 
           map.addControl(
@@ -710,7 +712,7 @@ export function HomepageRightColumn({
     <section
       aria-labelledby="homepage-map-title"
       tabIndex={0}
-      className="flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:p-5 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain dark:border-zinc-800 dark:bg-zinc-900/40 dark:focus-visible:outline-emerald-400"
+      className="hidden lg:flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:p-5 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain dark:border-zinc-800 dark:bg-zinc-900/40 dark:focus-visible:outline-emerald-400"
     >
       <StationsResultMap
         data={resultsMap.mapData}

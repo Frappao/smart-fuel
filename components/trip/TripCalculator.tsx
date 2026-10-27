@@ -22,6 +22,7 @@ import {
   type WinnerInsight,
 } from '../calculation/RoadSignPrice'
 import { useResultsMap } from '../map/ResultsMapContext'
+import { StationsResultMap } from '../map/StationsResultMap'
 import ShareResultButtons from '../share/ShareResultButtons'
 import AddressSearchField from './AddressSearchField'
 
@@ -72,6 +73,9 @@ interface TripResultCardProps {
   refuelAmount?: number
   fuelType?: string
   isSelf?: boolean
+  mobileMap?: React.ReactNode
+  showAllToggle?: React.ReactNode
+  isMobileHidden?: boolean
 }
 
 function TripResultCard({
@@ -85,6 +89,9 @@ function TripResultCard({
   refuelAmount = 50,
   fuelType = 'Benzina',
   isSelf = true,
+  mobileMap,
+  showAllToggle,
+  isMobileHidden = false,
 }: TripResultCardProps) {
   const isWinner = index === 0
   const stationName = getStationDisplayName(result.station)
@@ -104,7 +111,7 @@ function TripResultCard({
   return (
     <li
       onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-      className={cardClasses}
+      className={isMobileHidden ? `${cardClasses} hidden lg:block` : cardClasses}
     >
       {isWinner ? (
         <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
@@ -158,6 +165,16 @@ function TripResultCard({
           refuelAmount={refuelAmount}
         />
       ) : null}
+      {isWinner && mobileMap ? (
+        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
+          {mobileMap}
+        </div>
+      ) : null}
+      {isWinner && showAllToggle ? (
+        <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
+          {showAllToggle}
+        </div>
+      ) : null}
     </li>
   )
 }
@@ -179,6 +196,7 @@ export default function TripCalculator() {
     number | null
   >(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showAllMobileResults, setShowAllMobileResults] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
 
@@ -275,6 +293,7 @@ export default function TripCalculator() {
 
     calculationInFlight.current = true
     setLastCalculationInput(values)
+    setShowAllMobileResults(false)
     setIsLoading(true)
     setError(null)
     setEmptyState(null)
@@ -462,6 +481,50 @@ export default function TripCalculator() {
               refuelAmount={lastCalculationInput?.refuelAmount ?? 50}
               result={result}
               winnerInsight={index === 0 ? winnerInsight : null}
+              isMobileHidden={index > 0 && !showAllMobileResults}
+              mobileMap={
+                index === 0 && resultsMap?.mapData ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                      <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Mappa distributori sul percorso
+                      </span>
+                      <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">
+                        Tocca per selezionare
+                      </span>
+                    </div>
+                    <div className="h-[340px] sm:h-[400px] overflow-hidden rounded-xl border border-emerald-300/80 bg-white shadow-xs dark:border-emerald-800/80 dark:bg-zinc-950">
+                      <StationsResultMap
+                        data={resultsMap.mapData}
+                        selectedStationId={resultsMap.selectedStationId}
+                        onSelectStation={resultsMap.setSelectedStationId}
+                      />
+                    </div>
+                  </div>
+                ) : null
+              }
+              showAllToggle={
+                index === 0 && results.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllMobileResults(!showAllMobileResults)}
+                    className="flex min-h-12 w-full items-center justify-between rounded-xl border border-emerald-600/40 bg-emerald-50/80 px-4 py-3 text-xs font-semibold text-emerald-950 shadow-2xs transition active:scale-[0.99] hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm">⛽</span>
+                      <span>
+                        {showAllMobileResults
+                          ? 'Nascondi gli altri distributori'
+                          : `Vedi gli altri ${results.length - 1} distributori lungo il percorso`}
+                      </span>
+                    </span>
+                    <span className="rounded-md bg-emerald-200/80 px-2.5 py-1 text-[11px] font-bold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100">
+                      {showAllMobileResults ? '▲ Chiudi' : '▼ Mostra tutti'}
+                    </span>
+                  </button>
+                ) : null
+              }
             />
           ))}
         </motion.ol>
