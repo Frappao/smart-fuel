@@ -6,6 +6,17 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
+import dynamic from 'next/dynamic'
+
+const VehicleCustomizer3D = dynamic(
+  () => import('../3d/VehicleCustomizer3D'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 w-full animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
+    ),
+  },
+)
 
 import {
   SUPPORTED_FUEL_TYPE_LABELS,
@@ -75,6 +86,7 @@ export default function RefuelForm({
   const [isSelf, setIsSelf] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isManageOpen, setIsManageOpen] = useState(false)
+  const [show3DGarage, setShow3DGarage] = useState(false)
 
   if (selected !== lastSelected) {
     setLastSelected(selected)
@@ -486,8 +498,25 @@ export default function RefuelForm({
               <span className="flex size-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">1</span>
               <h3 id="guest-vehicle-title" className="font-semibold text-base text-zinc-900 dark:text-zinc-100">La tua auto</h3>
             </div>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Profilo e consumi</span>
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => setShow3DGarage(!show3DGarage)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-[0.98] disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            >
+              <span>{show3DGarage ? '▲ Chiudi 3D' : '🚗 Garage 3D'}</span>
+            </button>
           </div>
+
+          {show3DGarage && (
+            <div className="pt-1">
+              <VehicleCustomizer3D
+                vehicleName={vehicleName || 'La tua auto'}
+                fuelType={fuelType}
+                consumptionL100km={toLitersPer100Km(Number(consumption), unit) ?? 6.5}
+              />
+            </div>
+          )}
 
           <ChoiceGroup
             label="Carburante"

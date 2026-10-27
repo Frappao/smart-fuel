@@ -1,7 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { motion } from 'motion/react'
+
+const FuelTank3D = dynamic(() => import('../3d/FuelTank3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-56 w-full animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
+  ),
+})
 
 import {
   fetchNearbyStations,
@@ -151,6 +159,7 @@ function StationResultCard({
   fuelType = 'Benzina',
   isSelf = true,
 }: StationResultCardProps) {
+  const [show3DTank, setShow3DTank] = useState(false)
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
   const isBestResult = index === 0
@@ -227,20 +236,44 @@ function StationResultCard({
           </div>
         ) : null}
       </div>
-      {navigationUrl ? (
-        <a
-          className={
-            isBestResult
-              ? 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/50 dark:focus:ring-emerald-500'
-              : 'mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-emerald-500'
-          }
-          href={navigationUrl}
-          rel="noopener noreferrer"
-          target="_blank"
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        {navigationUrl ? (
+          <a
+            className={
+              isBestResult
+                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/50 dark:focus:ring-emerald-500'
+                : 'inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-400 sm:w-auto dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 dark:focus:ring-emerald-500'
+            }
+            href={navigationUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Apri nel navigatore
+          </a>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setShow3DTank(!show3DTank)
+          }}
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
-          Apri nel navigatore
-        </a>
-      ) : null}
+          <span>{show3DTank ? '▲ Chiudi serbatoio' : '⛽ Serbatoio 3D'}</span>
+        </button>
+      </div>
+
+      {show3DTank && (
+        <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+          <FuelTank3D
+            litersPurchased={result.litersPurchased}
+            travelFuelLiters={result.travelFuelLiters}
+            netFuelLiters={result.netFuelLiters}
+            stationName={stationName}
+          />
+        </div>
+      )}
       {isBestResult ? (
         <ShareResultButtons
           stationName={stationName}

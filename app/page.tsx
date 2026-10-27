@@ -4,6 +4,7 @@ import { ResultsMapProvider } from "../components/map/ResultsMapContext";
 import { HomepageRightColumn } from "../components/map/StationsResultMap";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 import SharedStationBanner from "../components/share/SharedStationBanner";
+import HeroNozzleSection from "../components/3d/HeroNozzleSection";
 
 import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
@@ -25,9 +26,10 @@ export default function Home() {
             </Link>
             <Link
               href="/come-funziona"
-              className="hidden text-sm font-medium text-zinc-600 transition hover:text-emerald-700 sm:inline-block dark:text-zinc-300 dark:hover:text-emerald-400"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
-              Come funziona
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Simulatore: come funziona
             </Link>
           </div>
           <div className="flex items-center gap-2.5">
@@ -44,14 +46,19 @@ export default function Home() {
           className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:pr-4 dark:focus-visible:outline-emerald-400"
         >
           <div className="flex w-full flex-col gap-8">
-            <header className="space-y-4">
-              <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-                Fai rifornimento dove conviene davvero.
-              </h1>
-              <p className="max-w-xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-300">
-                Trova il distributore più conveniente considerando prezzo,
-                distanza e consumo.
-              </p>
+            <header className="flex items-center justify-between gap-4">
+              <div className="space-y-4">
+                <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+                  Fai rifornimento dove conviene davvero.
+                </h1>
+                <p className="max-w-xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-300">
+                  Trova il distributore più conveniente considerando prezzo,
+                  distanza e consumo.
+                </p>
+              </div>
+              <div className="hidden xl:block">
+                <HeroNozzleSection />
+              </div>
             </header>
             <SharedStationBanner />
             <RegistrationPrompt />
@@ -205,7 +212,7 @@ export default function Home() {
               className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
               href="/come-funziona"
             >
-              Scopri nel dettaglio come funziona Rifornio
+              Simula e scopri come funziona Rifornio
             </Link>
             <Link
               className="font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-100 dark:hover:text-emerald-300"
@@ -269,7 +276,7 @@ export default function Home() {
               className="font-medium text-zinc-800 underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:text-zinc-200 dark:hover:text-emerald-300"
               href="/come-funziona"
             >
-              Come funziona
+              Simulatore: come funziona
             </Link>
 
             <Link
