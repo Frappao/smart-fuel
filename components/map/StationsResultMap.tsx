@@ -177,6 +177,7 @@ export function StationsResultMap({
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<MapLibreMapLike | null>(null)
   const markersRef = useRef<MapLibreMarkerLike[]>([])
+  const stationButtonsRef = useRef<Map<number, HTMLButtonElement>>(new Map())
   const [vectorMapReady, setVectorMapReady] = useState(false)
 
   const activeStation = useMemo(
@@ -274,6 +275,7 @@ export function StationsResultMap({
         const map = mapInstanceRef.current
         if (!map) return
 
+        stationButtonsRef.current.clear()
         for (const marker of markersRef.current) {
           marker.remove()
         }
@@ -317,7 +319,7 @@ export function StationsResultMap({
         for (const station of reversedStations) {
           const colors = getTierColors(station.rank, data.stations.length)
           const { main, millesimi } = splitRoadSignPrice(station.fuelPrice)
-          const isSelected = station.id === activeStation?.id
+          const isWinner = station.rank === 1
 
           const btn = document.createElement('button')
           btn.type = 'button'
@@ -338,9 +340,9 @@ export function StationsResultMap({
             'cursor:pointer',
             'font-family:inherit',
             'line-height:1.1',
-            `z-index:${station.rank === 1 ? 30 : isSelected ? 25 : 20 - station.rank}`,
-            `transform:${isSelected ? 'scale(1.12)' : station.rank === 1 ? 'scale(1.06)' : 'scale(1)'}`,
-            'transition:transform 150ms ease',
+            `z-index:${isWinner ? 30 : 20 - station.rank}`,
+            `transform:${isWinner ? 'scale(1.06)' : 'scale(1)'}`,
+            'transition:transform 250ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease',
           ].join(';')
 
           const topRow = document.createElement('span')
@@ -377,6 +379,7 @@ export function StationsResultMap({
             .addTo(map)
 
           markersRef.current.push(marker)
+          stationButtonsRef.current.set(station.id, btn)
           bounds.extend([station.longitude, station.latitude])
         }
 
@@ -397,9 +400,28 @@ export function StationsResultMap({
     return () => {
       cancelled = true
     }
-  }, [data, activeStation?.id, onSelectStation])
+  }, [data, onSelectStation])
 
   useEffect(() => {
+    // Update marker styling seamlessly without destroying/recreating DOM elements
+    for (const station of data.stations) {
+      const btn = stationButtonsRef.current.get(station.id)
+      if (!btn) continue
+      const isSelected = station.id === activeStation?.id
+      const isWinner = station.rank === 1
+      btn.style.zIndex = String(isWinner ? 30 : isSelected ? 28 : 20 - station.rank)
+      btn.style.transform = isSelected
+        ? 'scale(1.16)'
+        : isWinner
+          ? 'scale(1.06)'
+          : 'scale(1)'
+      btn.style.boxShadow = isSelected
+        ? '0 0 0 3px rgba(16,185,129,0.5), 0 8px 18px rgba(0,0,0,0.24)'
+        : isWinner
+          ? '0 4px 14px rgba(5,150,105,0.35)'
+          : '0 4px 12px rgba(0,0,0,0.18)'
+    }
+
     if (!mapInstanceRef.current || !activeStation) return
     try {
       mapInstanceRef.current.flyTo({
@@ -409,7 +431,7 @@ export function StationsResultMap({
     } catch {
       // Ignore flyTo errors if map is not yet loaded
     }
-  }, [activeStation])
+  }, [data.stations, activeStation])
 
   useEffect(() => {
     return () => {
@@ -561,7 +583,7 @@ export function StationsResultMap({
               key={station.id}
               type="button"
               onClick={() => onSelectStation(station.id)}
-              className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+              className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition active:scale-[0.97] cursor-pointer tabular-nums ${
                 isSelected
                   ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm dark:border-emerald-400 dark:bg-emerald-500 dark:text-zinc-950'
                   : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-800/70 dark:text-zinc-200'

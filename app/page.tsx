@@ -13,7 +13,7 @@ export default function Home() {
     <AppBetaProvider>
     <ResultsMapProvider>
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+      <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-50/80 backdrop-blur-xl saturate-150 dark:border-zinc-800/80 dark:bg-zinc-950/80">
         <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-6">
             <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
@@ -89,11 +89,12 @@ export default function Home() {
             </p>
           </div>
 
-          <details className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-            <summary className="cursor-pointer rounded-sm py-1 font-semibold text-zinc-900 marker:text-emerald-600 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
-              Come decide Rifornio
+          <details className="group rounded-2xl border border-zinc-200 bg-white/70 p-4 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700">
+            <summary className="flex cursor-pointer list-none items-center justify-between py-1 font-semibold text-zinc-900 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
+              <span>Come decide Rifornio</span>
+              <span aria-hidden="true" className="text-emerald-600 transition-transform duration-200 group-open:rotate-180 dark:text-emerald-400">▾</span>
             </summary>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
               <p className="text-base leading-7 text-zinc-700 dark:text-zinc-300">
                 I prezzi della benzina utilizzati da Rifornio provengono dagli
                 Open Data ufficiali del Ministero delle Imprese e del Made in
@@ -118,11 +119,12 @@ export default function Home() {
             </div>
           </details>
 
-          <details className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-            <summary className="cursor-pointer rounded-sm py-1 font-semibold text-zinc-900 marker:text-emerald-600 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
-              Un esempio concreto
+          <details className="group rounded-2xl border border-zinc-200 bg-white/70 p-4 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700">
+            <summary className="flex cursor-pointer list-none items-center justify-between py-1 font-semibold text-zinc-900 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
+              <span>Un esempio concreto</span>
+              <span aria-hidden="true" className="text-emerald-600 transition-transform duration-200 group-open:rotate-180 dark:text-emerald-400">▾</span>
             </summary>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
               <p className="text-base leading-7 text-zinc-700 dark:text-zinc-300">
                 Questo esempio è puramente illustrativo e considera un
                 rifornimento da 50 € e un consumo medio di 6 L/100 km.
@@ -133,7 +135,7 @@ export default function Home() {
                   <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                     Distributore A
                   </p>
-                  <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-700 tabular-nums dark:text-zinc-300">
                     <li>Prezzo benzina: 1,80 €/L</li>
                     <li>Distanza stradale di andata: 2 km</li>
                     <li>Viaggio stimato andata/ritorno: 4 km</li>
@@ -149,7 +151,7 @@ export default function Home() {
                   <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                     Distributore B
                   </p>
-                  <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-700 tabular-nums dark:text-zinc-300">
                     <li>Prezzo benzina: 1,76 €/L</li>
                     <li>Distanza stradale di andata: 12 km</li>
                     <li>Viaggio stimato andata/ritorno: 24 km</li>
@@ -170,11 +172,12 @@ export default function Home() {
             </div>
           </details>
 
-          <details className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-            <summary className="cursor-pointer rounded-sm py-1 font-semibold text-zinc-900 marker:text-emerald-600 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
-              Dati, stime e trasparenza
+          <details className="group rounded-2xl border border-zinc-200 bg-white/70 p-4 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700">
+            <summary className="flex cursor-pointer list-none items-center justify-between py-1 font-semibold text-zinc-900 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-600 dark:text-zinc-100 dark:hover:text-emerald-300 dark:focus-visible:outline-emerald-400">
+              <span>Dati, stime e trasparenza</span>
+              <span aria-hidden="true" className="text-emerald-600 transition-transform duration-200 group-open:rotate-180 dark:text-emerald-400">▾</span>
             </summary>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
               <p className="text-base leading-7 text-zinc-700 dark:text-zinc-300">
                 I prezzi sono quelli comunicati attraverso gli Open Data MIMIT.
                 Distanze e consumi sono stime: il consumo reale può cambiare in

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
 
 import {
   fetchTripStations,
@@ -92,18 +93,18 @@ function TripResultCard({
     longitude: result.station.longitude,
   })
 
+  const cardClasses = isWinner
+    ? isSelectedOnMap
+      ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-md ring-2 ring-emerald-600 sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/40 dark:ring-emerald-400 cursor-pointer transition-all duration-150 active:scale-[0.99]'
+      : 'min-w-0 break-words rounded-xl border-2 border-emerald-600/70 bg-emerald-50/60 p-4 shadow-sm sm:p-5 dark:border-emerald-400/70 dark:bg-emerald-950/25 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-600 hover:shadow-xs'
+    : isSelectedOnMap
+      ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50/50 p-4 shadow-md ring-2 ring-emerald-600/80 transition-all duration-150 dark:border-emerald-400 dark:bg-emerald-950/30 dark:ring-emerald-400 cursor-pointer active:scale-[0.99]'
+      : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 transition-all duration-150 hover:border-zinc-300 hover:shadow-xs active:scale-[0.99] cursor-pointer dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700'
+
   return (
     <li
       onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-      className={
-        isWinner
-          ? 'rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 dark:border-emerald-400 dark:bg-emerald-950/30'
-          : `rounded-xl border bg-white p-4 transition dark:bg-zinc-950/40 ${
-              isSelectedOnMap
-                ? 'border-emerald-500 ring-1 ring-emerald-500/40 dark:border-emerald-400'
-                : 'border-zinc-200 dark:border-zinc-800'
-            }`
-      }
+      className={cardClasses}
     >
       {isWinner ? (
         <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
@@ -114,18 +115,18 @@ function TripResultCard({
         {index + 1}. {stationName}
       </h3>
       <div className="mt-3 grid gap-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-        <p>
+        <p className="tabular-nums">
           Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
         </p>
-        <p>
+        <p className="tabular-nums">
           Deviazione aggiuntiva:{' '}
           {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
         </p>
-        <p>
+        <p className="tabular-nums">
           Carburante per la deviazione:{' '}
           {litersFormatter.format(result.detourFuelLiters)} L
         </p>
-        <p className="font-semibold">
+        <p className="font-semibold tabular-nums">
           Litri netti: {litersFormatter.format(result.netFuelLiters)} L
         </p>
         {isWinner && winnerInsight ? (
@@ -335,35 +336,39 @@ export default function TripCalculator() {
       >
         <fieldset className="space-y-3">
           <legend className="text-sm font-medium">Partenza</legend>
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              checked={originMode === 'current'}
-              disabled={isLoading}
-              name="origin-mode"
-              type="radio"
-              onChange={() => {
-                setOriginMode('current')
-                setCustomOrigin(null)
-                setError(null)
-                clearCalculatedJourney()
-              }}
-            />
-            Usa la mia posizione attuale
-          </label>
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              checked={originMode === 'custom'}
-              disabled={isLoading}
-              name="origin-mode"
-              type="radio"
-              onChange={() => {
-                setOriginMode('custom')
-                setError(null)
-                clearCalculatedJourney()
-              }}
-            />
-            Scegli un&apos;altra partenza
-          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label className="relative flex cursor-pointer select-none items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm font-medium transition-all duration-150 has-checked:border-emerald-600 has-checked:bg-emerald-50 has-checked:text-emerald-900 has-checked:shadow-xs active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:has-checked:border-emerald-400 dark:has-checked:bg-emerald-950 dark:has-checked:text-emerald-200">
+              <input
+                checked={originMode === 'current'}
+                disabled={isLoading}
+                name="origin-mode"
+                type="radio"
+                className="size-4 accent-emerald-600"
+                onChange={() => {
+                  setOriginMode('current')
+                  setCustomOrigin(null)
+                  setError(null)
+                  clearCalculatedJourney()
+                }}
+              />
+              <span>Usa la mia posizione attuale</span>
+            </label>
+            <label className="relative flex cursor-pointer select-none items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm font-medium transition-all duration-150 has-checked:border-emerald-600 has-checked:bg-emerald-50 has-checked:text-emerald-900 has-checked:shadow-xs active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:has-checked:border-emerald-400 dark:has-checked:bg-emerald-950 dark:has-checked:text-emerald-200">
+              <input
+                checked={originMode === 'custom'}
+                disabled={isLoading}
+                name="origin-mode"
+                type="radio"
+                className="size-4 accent-emerald-600"
+                onChange={() => {
+                  setOriginMode('custom')
+                  setError(null)
+                  clearCalculatedJourney()
+                }}
+              />
+              <span>Scegli un&apos;altra partenza</span>
+            </label>
+          </div>
         </fieldset>
 
         {originMode === 'custom' ? (
@@ -391,9 +396,26 @@ export default function TripCalculator() {
       </RefuelForm>
 
       {isLoading ? (
-        <p aria-live="polite" className="text-sm text-zinc-600 dark:text-zinc-300">
-          Sto cercando i distributori migliori lungo il percorso...
-        </p>
+        <div className="space-y-3" aria-busy="true">
+          <p
+            aria-live="polite"
+            className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm font-medium leading-6 text-emerald-900 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-200"
+          >
+            <svg aria-hidden="true" className="size-4 animate-spin shrink-0 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span>Sto cercando i distributori migliori lungo il percorso...</span>
+          </p>
+          <div className="rounded-2xl border-2 border-dashed border-emerald-300/80 bg-emerald-50/40 p-5 space-y-3.5 animate-pulse dark:border-emerald-800/60 dark:bg-emerald-950/20">
+            <div className="h-3.5 w-44 rounded bg-emerald-200/80 dark:bg-emerald-800/60" />
+            <div className="h-6 w-3/5 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="h-4 rounded bg-zinc-200/80 dark:bg-zinc-800/80" />
+              <div className="h-4 rounded bg-zinc-200/80 dark:bg-zinc-800/80" />
+            </div>
+          </div>
+        </div>
       ) : null}
       {error ? (
         <p
@@ -409,13 +431,18 @@ export default function TripCalculator() {
         </p>
       ) : null}
       {baseRouteDistanceMeters !== null ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm font-medium text-zinc-600 tabular-nums dark:text-zinc-400">
           Percorso base stimato:{' '}
           {distanceFormatter.format(baseRouteDistanceMeters / 1_000)} km
         </p>
       ) : null}
       {results.length > 0 && journeyCoordinates ? (
-        <ol className="grid gap-4">
+        <motion.ol
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+          className="grid gap-4"
+        >
           {results.map((result, index) => (
             <TripResultCard
               destination={journeyCoordinates.destination}
@@ -437,7 +464,7 @@ export default function TripCalculator() {
               winnerInsight={index === 0 ? winnerInsight : null}
             />
           ))}
-        </ol>
+        </motion.ol>
       ) : null}
     </section>
   )

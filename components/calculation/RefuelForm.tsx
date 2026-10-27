@@ -611,7 +611,7 @@ export default function RefuelForm({
                   setRefuelAmount(String(amount))
                   setErrors(previous => ({ ...previous, refuelAmount: undefined }))
                 }}
-                className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium aria-pressed:border-emerald-600 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:aria-pressed:border-emerald-400 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200"
+                className="min-h-11 rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.96] hover:border-zinc-400 aria-pressed:border-emerald-600 aria-pressed:bg-emerald-50 aria-pressed:text-emerald-800 aria-pressed:shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:aria-pressed:border-emerald-400 dark:aria-pressed:bg-emerald-950 dark:aria-pressed:text-emerald-200"
               >
                 {amount} €
               </button>
@@ -631,9 +631,15 @@ export default function RefuelForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="min-h-12 w-full rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:bg-emerald-400 dark:text-zinc-950 dark:hover:bg-emerald-300"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition-all duration-150 active:scale-[0.98] hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-wait disabled:opacity-60 dark:bg-emerald-400 dark:text-zinc-950 dark:hover:bg-emerald-300"
         >
-          {isLoading ? loadingLabel : submitLabel}
+          {isLoading && (
+            <svg aria-hidden="true" className="size-4 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          )}
+          <span>{isLoading ? loadingLabel : submitLabel}</span>
         </button>
       </section>
     </form>

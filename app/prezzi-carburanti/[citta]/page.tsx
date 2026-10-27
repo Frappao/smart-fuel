@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { formatCityFromSlug, POPULAR_CITIES } from '../../../lib/cities/popularCities'
 import { getCityStations } from '../../../lib/stations/getCityStations'
+import { RoadSignPrice } from '../../../components/calculation/RoadSignPrice'
 
 interface PageProps {
   params: Promise<{ citta: string }>
@@ -129,7 +130,7 @@ export default async function CityFuelPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-zinc-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+      <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-50/80 backdrop-blur-xl saturate-150 dark:border-zinc-800/80 dark:bg-zinc-950/80">
         <nav aria-label="Navigazione principale" className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">
             Rifornio
@@ -176,14 +177,14 @@ export default async function CityFuelPage({ params }: PageProps) {
             <p className="text-xs font-semibold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">Benzina (Self)</p>
             {cityData.stats.benzinaSelf ? (
               <div className="mt-3">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 tabular-nums">
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
-                    {cityData.stats.benzinaSelf.min.toFixed(3)} €
+                    <RoadSignPrice price={cityData.stats.benzinaSelf.min} /> €
                   </span>
                   <span className="text-xs text-zinc-500">prezzo minimo</span>
                 </div>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200">{cityData.stats.benzinaSelf.avg.toFixed(3)} €/L</strong>
+                <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.benzinaSelf.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
@@ -195,14 +196,14 @@ export default async function CityFuelPage({ params }: PageProps) {
             <p className="text-xs font-semibold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">Gasolio / Diesel (Self)</p>
             {cityData.stats.gasolioSelf ? (
               <div className="mt-3">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 tabular-nums">
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
-                    {cityData.stats.gasolioSelf.min.toFixed(3)} €
+                    <RoadSignPrice price={cityData.stats.gasolioSelf.min} /> €
                   </span>
                   <span className="text-xs text-zinc-500">prezzo minimo</span>
                 </div>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200">{cityData.stats.gasolioSelf.avg.toFixed(3)} €/L</strong>
+                <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.gasolioSelf.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
@@ -214,14 +215,14 @@ export default async function CityFuelPage({ params }: PageProps) {
             <p className="text-xs font-semibold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">GPL</p>
             {cityData.stats.gpl ? (
               <div className="mt-3">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 tabular-nums">
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
-                    {cityData.stats.gpl.min.toFixed(3)} €
+                    <RoadSignPrice price={cityData.stats.gpl.min} /> €
                   </span>
                   <span className="text-xs text-zinc-500">prezzo minimo</span>
                 </div>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200">{cityData.stats.gpl.avg.toFixed(3)} €/L</strong>
+                <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
+                  Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.gpl.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
@@ -311,8 +312,8 @@ export default async function CityFuelPage({ params }: PageProps) {
                             <span className="text-zinc-600 dark:text-zinc-300">
                               {p.fuelType} {p.isSelf ? '(Self)' : '(Servito)'}:
                             </span>
-                            <span className="font-bold text-zinc-900 dark:text-zinc-100">
-                              {p.price.toFixed(3)} €/L
+                            <span className="font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                              <RoadSignPrice price={p.price} /> €/L
                             </span>
                           </div>
                         ))

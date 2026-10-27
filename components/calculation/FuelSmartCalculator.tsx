@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
 
 import {
   fetchNearbyStations,
@@ -161,18 +162,18 @@ function StationResultCard({
     result.station.longitude,
   )
 
+  const cardClasses = isBestResult
+    ? isSelectedOnMap
+      ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-md ring-2 ring-emerald-600 sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/40 dark:ring-emerald-400 cursor-pointer transition-all duration-150 active:scale-[0.99]'
+      : 'min-w-0 break-words rounded-xl border-2 border-emerald-600/70 bg-emerald-50/60 p-4 shadow-sm sm:p-5 dark:border-emerald-400/70 dark:bg-emerald-950/25 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-600 hover:shadow-xs'
+    : isSelectedOnMap
+      ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50/50 p-4 shadow-md ring-2 ring-emerald-600/80 transition-all duration-150 dark:border-emerald-400 dark:bg-emerald-950/30 dark:ring-emerald-400 cursor-pointer active:scale-[0.99]'
+      : 'min-w-0 break-words rounded-lg border border-zinc-200 bg-white p-4 transition-all duration-150 hover:border-zinc-300 hover:shadow-xs active:scale-[0.99] cursor-pointer dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700'
+
   return (
     <li
       onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-      className={
-        isBestResult
-          ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50 p-4 shadow-sm sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/30'
-          : `min-w-0 break-words rounded-lg border bg-white p-4 transition dark:bg-zinc-950/40 ${
-              isSelectedOnMap
-                ? 'border-emerald-500 ring-1 ring-emerald-500/40 dark:border-emerald-400'
-                : 'border-zinc-200 dark:border-zinc-800'
-            }`
-      }
+      className={cardClasses}
     >
       {isBestResult ? (
         <p className="text-sm font-semibold leading-5 text-emerald-700 dark:text-emerald-300">
@@ -183,10 +184,10 @@ function StationResultCard({
         {index + 1}. {stationName}
       </h3>
       <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-        <p className={isBestResult ? 'text-lg font-semibold' : undefined}>
+        <p className={isBestResult ? 'text-lg font-semibold tabular-nums' : 'tabular-nums'}>
           Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
         </p>
-        <p className={isBestResult ? 'font-semibold' : undefined}>
+        <p className={isBestResult ? 'font-semibold tabular-nums' : 'tabular-nums'}>
           Distanza stradale stimata A/R:{' '}
           {distanceFormatter.format(travelDistanceKm)} km
         </p>
@@ -195,24 +196,24 @@ function StationResultCard({
             ? `Prezzo comunicato: ${formattedPriceCommunicatedAt}`
             : 'Data prezzo non disponibile'}
         </p>
-        <p>
+        <p className="tabular-nums">
           Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
         </p>
-        <p>
+        <p className="tabular-nums">
           Litri stimati consumati per il viaggio:{' '}
           {litersFormatter.format(result.travelFuelLiters)} L
         </p>
         <p
           className={
             isBestResult
-              ? 'mt-1 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 sm:col-span-2 dark:bg-emerald-900/50 dark:text-emerald-100'
-              : undefined
+              ? 'mt-1 rounded-lg bg-emerald-100 px-3 py-2 text-lg font-bold text-emerald-900 tabular-nums sm:col-span-2 dark:bg-emerald-900/50 dark:text-emerald-100'
+              : 'tabular-nums'
           }
         >
           Litri netti: {litersFormatter.format(result.netFuelLiters)} L
         </p>
         {isBestResult && winnerAdvantageLiters !== null ? (
-          <p className="mt-1 text-sm leading-6 text-emerald-800 sm:col-span-2 dark:text-emerald-200">
+          <p className="mt-1 text-sm leading-6 text-emerald-800 tabular-nums sm:col-span-2 dark:text-emerald-200">
             Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in
             più rispetto al secondo classificato.
           </p>
@@ -431,12 +432,26 @@ export default function FuelSmartCalculator() {
       <RefuelForm onCalculate={handleCalculate} isLoading={isLoading} />
 
       {isLoading ? (
-        <p
-          aria-live="polite"
-          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-        >
-          Sto cercando i distributori più convenienti...
-        </p>
+        <div className="space-y-3" aria-busy="true">
+          <p
+            aria-live="polite"
+            className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm font-medium leading-6 text-emerald-900 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-200"
+          >
+            <svg aria-hidden="true" className="size-4 animate-spin shrink-0 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span>Sto cercando i distributori più convenienti...</span>
+          </p>
+          <div className="rounded-2xl border-2 border-dashed border-emerald-300/80 bg-emerald-50/40 p-5 space-y-3.5 animate-pulse dark:border-emerald-800/60 dark:bg-emerald-950/20">
+            <div className="h-3.5 w-44 rounded bg-emerald-200/80 dark:bg-emerald-800/60" />
+            <div className="h-6 w-3/5 rounded bg-zinc-200 dark:bg-zinc-800" />
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="h-4 rounded bg-zinc-200/80 dark:bg-zinc-800/80" />
+              <div className="h-4 rounded bg-zinc-200/80 dark:bg-zinc-800/80" />
+            </div>
+          </div>
+        </div>
       ) : null}
       {error ? (
         <p
@@ -458,7 +473,12 @@ export default function FuelSmartCalculator() {
       ) : null}
 
       {results.length > 0 ? (
-        <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+          className="flex min-w-0 flex-col gap-3 sm:gap-4"
+        >
           <ol>
             <StationResultCard
               fuelType={
@@ -496,7 +516,7 @@ export default function FuelSmartCalculator() {
               ))}
             </ol>
           ) : null}
-        </div>
+        </motion.div>
       ) : null}
     </section>
   )

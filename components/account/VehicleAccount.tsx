@@ -26,13 +26,13 @@ interface Account {
 }
 const AccountContext = createContext<Account | null>(null)
 export const useVehicleAccount = () => useContext(AccountContext)
-const fieldClass = 'min-h-12 w-full rounded-lg border border-zinc-300 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900'
-const buttonClass = 'min-h-11 rounded-lg border border-emerald-600 px-4 py-2 font-medium disabled:opacity-50'
+const fieldClass = 'min-h-12 w-full rounded-xl border border-zinc-300 bg-white p-3 transition focus:border-emerald-600 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900'
+const buttonClass = 'min-h-11 rounded-xl border border-emerald-600 px-4 py-2 font-medium transition active:scale-[0.98] disabled:opacity-50'
 
 export function AccountButton() {
   const account = useVehicleAccount()
   if (!account) return null
-  return <button type="button" onClick={account.openAccount} aria-haspopup="dialog" className="inline-flex min-h-12 min-w-40 items-center justify-center gap-2.5 rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm transition-colors hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:min-w-48 dark:border-emerald-500/60 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900">
+  return <button type="button" onClick={account.openAccount} aria-haspopup="dialog" className="inline-flex min-h-12 min-w-40 items-center justify-center gap-2.5 rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm transition-all duration-150 active:scale-[0.97] hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:min-w-48 dark:border-emerald-500/60 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900">
     <svg aria-hidden="true" className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></svg>
     {account.user ? 'Il tuo account' : 'Accedi / Registrati'}
   </button>
@@ -46,7 +46,7 @@ export function RegistrationPrompt() {
       <h2 className="font-semibold text-emerald-950 dark:text-emerald-100">Le tue auto, pronte al prossimo rifornimento</h2>
       <p className="text-sm leading-6 text-emerald-800 dark:text-emerald-300">Crea un account e salva carburante e consumi di tutte le tue auto.</p>
     </div>
-    <button type="button" onClick={account.openAccount} className="min-h-12 shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-400 dark:text-emerald-950">Registrati gratis</button>
+    <button type="button" onClick={account.openAccount} className="min-h-12 shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-400 dark:text-zinc-950">Registrati gratis</button>
   </section>
 }
 
@@ -156,7 +156,7 @@ export default function VehicleAccount({ children }: { children: ReactNode }) {
 
   return <AccountContext.Provider value={{ openAccount: () => { dialogRef.current?.showModal(); setAccountOpen(true) }, user, vehicles, selected: vehicles.find(v => v.id === selectedId), select, save, remove, busy }}>
     {children}
-    <dialog ref={dialogRef} onClose={() => setAccountOpen(false)} aria-labelledby="account-dialog-title" className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100" onClick={event => {
+    <dialog ref={dialogRef} onClose={() => setAccountOpen(false)} aria-labelledby="account-dialog-title" className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 transition-all duration-200" onClick={event => {
       if (event.target === event.currentTarget) dialogRef.current?.close()
     }}>
       <div className="p-5 sm:p-6">

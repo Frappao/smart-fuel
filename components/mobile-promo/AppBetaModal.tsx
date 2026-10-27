@@ -10,6 +10,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 
 type AppPlatform = 'android' | 'ios'
 
@@ -150,6 +151,18 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeAppModal()
+      }
+    }
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, closeAppModal])
+
   const contextValue = useMemo(
     () => ({ openAppModal }),
     [openAppModal],
@@ -159,96 +172,120 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
     <AppBetaModalContext.Provider value={contextValue}>
       {children}
 
-      {isOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="app-beta-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeAppModal()
-          }}
-        >
-          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
-            {/* Top Gradient Header */}
-            <div className="relative bg-gradient-to-br from-zinc-900 via-emerald-950 to-emerald-900 px-6 pt-5 pb-6 text-white">
-              {/* Segmented Platform Switch + Close Button */}
-              <div className="flex items-center justify-between gap-2">
-                <div
-                  role="tablist"
-                  aria-label="Scegli il tuo telefono"
-                  className="grid flex-1 grid-cols-2 rounded-full bg-white/10 p-1 backdrop-blur-md"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={platform === 'android'}
-                    onClick={() => {
-                      setPlatform('android')
-                      setErrorMessage(null)
-                    }}
-                    className={`flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${
-                      platform === 'android'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-white/80 hover:text-white'
-                    }`}
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="app-beta-modal-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeAppModal()
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 8 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+            >
+              {/* Top Gradient Header */}
+              <div className="relative bg-gradient-to-br from-zinc-900 via-emerald-950 to-emerald-900 px-6 pt-5 pb-6 text-white">
+                {/* Segmented Platform Switch + Close Button */}
+                <div className="flex items-center justify-between gap-2">
+                  <div
+                    role="tablist"
+                    aria-label="Scegli il tuo telefono"
+                    className="relative grid flex-1 grid-cols-2 rounded-full bg-white/10 p-1 backdrop-blur-md"
                   >
-                    <svg
+                    <motion.div
                       aria-hidden="true"
-                      className="size-4 shrink-0"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
+                      className="pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-xs"
+                      initial={false}
+                      animate={{
+                        x: platform === 'android' ? '0%' : '100%',
+                      }}
+                      transition={{
+                        type: 'spring',
+                        damping: 24,
+                        stiffness: 260,
+                      }}
+                    />
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={platform === 'android'}
+                      onClick={() => {
+                        setPlatform('android')
+                        setErrorMessage(null)
+                      }}
+                      className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] sm:text-sm ${
+                        platform === 'android'
+                          ? 'text-zinc-900'
+                          : 'text-white/80 hover:text-white'
+                      }`}
                     >
-                      <path d="M17.523 15.341a.96.96 0 0 1-.96-.96.96.96 0 0 1 .96-.96.96.96 0 0 1 .96.96.96.96 0 0 1-.96.96m-11.046 0a.96.96 0 0 1-.96-.96.96.96 0 0 1 .96-.96.96.96 0 0 1 .96.96.96.96 0 0 1-.96.96m11.4-5.774 1.915-3.318a.4.4 0 0 0-.146-.546.4.4 0 0 0-.546.146l-1.94 3.36A11.45 11.45 0 0 0 12 8.14a11.45 11.45 0 0 0-5.16 1.069l-1.94-3.36a.4.4 0 0 0-.546-.146.4.4 0 0 0-.146.546L6.123 9.567C2.86 11.34.66 14.68.38 18.6h23.24c-.28-3.92-2.48-7.26-5.743-9.033" />
-                    </svg>
-                    <span>Ho un Android</span>
-                  </button>
+                      <svg
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M17.523 15.341a.96.96 0 0 1-.96-.96.96.96 0 0 1 .96-.96.96.96 0 0 1 .96.96.96.96 0 0 1-.96.96m-11.046 0a.96.96 0 0 1-.96-.96.96.96 0 0 1 .96-.96.96.96 0 0 1 .96.96.96.96 0 0 1-.96.96m11.4-5.774 1.915-3.318a.4.4 0 0 0-.146-.546.4.4 0 0 0-.546.146l-1.94 3.36A11.45 11.45 0 0 0 12 8.14a11.45 11.45 0 0 0-5.16 1.069l-1.94-3.36a.4.4 0 0 0-.546-.146.4.4 0 0 0-.146.546L6.123 9.567C2.86 11.34.66 14.68.38 18.6h23.24c-.28-3.92-2.48-7.26-5.743-9.033" />
+                      </svg>
+                      <span>Ho un Android</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={platform === 'ios'}
+                      onClick={() => {
+                        setPlatform('ios')
+                        setErrorMessage(null)
+                      }}
+                      className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-[0.97] sm:text-sm ${
+                        platform === 'ios'
+                          ? 'text-zinc-900'
+                          : 'text-white/80 hover:text-white'
+                      }`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.87 6.33c.65-.78 1.08-1.86.96-2.95-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.51 2.72-1.29" />
+                      </svg>
+                      <span>Ho un iPhone</span>
+                    </button>
+                  </div>
 
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={platform === 'ios'}
-                    onClick={() => {
-                      setPlatform('ios')
-                      setErrorMessage(null)
-                    }}
-                    className={`flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition sm:text-sm ${
-                      platform === 'ios'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-white/80 hover:text-white'
-                    }`}
+                    onClick={closeAppModal}
+                    aria-label="Chiudi annuncio app"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/80 transition active:scale-[0.92] hover:bg-white/20 hover:text-white"
                   >
                     <svg
                       aria-hidden="true"
-                      className="size-4 shrink-0"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
-                      fill="currentColor"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
                     >
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.87 6.33c.65-.78 1.08-1.86.96-2.95-.93.04-2.06.62-2.72 1.4-.58.68-1.1 1.79-.96 2.84 1.04.08 2.08-.51 2.72-1.29" />
+                      <path d="m6 6 12 12M6 18 18 6" />
                     </svg>
-                    <span>Ho un iPhone</span>
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={closeAppModal}
-                  aria-label="Chiudi annuncio app"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
-                >
-                  <svg
-                    aria-hidden="true"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                  >
-                    <path d="m6 6 12 12M6 18 18 6" />
-                  </svg>
-                </button>
-              </div>
 
               {/* Status Badge + Title */}
               <div className="mt-5">
@@ -457,15 +494,16 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={closeAppModal}
-                  className="text-xs font-semibold text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  className="text-xs font-semibold text-zinc-500 transition active:scale-[0.97] hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                 >
                   Più tardi
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       ) : null}
+      </AnimatePresence>
     </AppBetaModalContext.Provider>
   )
 }

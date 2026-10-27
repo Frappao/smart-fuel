@@ -8,15 +8,15 @@ function SharedStationBannerInner() {
   const searchParams = useSearchParams()
   const [dismissed, setDismissed] = useState(false)
 
-  const isShared = searchParams.get('condividi') === '1'
-  const stationName = searchParams.get('nome')
-  const city = searchParams.get('citta')
-  const brand = searchParams.get('marchio')
-  const rawPrice = searchParams.get('prezzo')
-  const fuelType = searchParams.get('carburante') || 'Benzina'
-  const isSelf = searchParams.get('self') !== '0'
-  const refuelAmount = searchParams.get('importo') || '50'
-  const netLiters = searchParams.get('litri')
+  const isShared = searchParams?.get('condividi') === '1'
+  const stationName = searchParams?.get('nome')
+  const city = searchParams?.get('citta')
+  const brand = searchParams?.get('marchio')
+  const rawPrice = searchParams?.get('prezzo')
+  const fuelType = searchParams?.get('carburante') || 'Benzina'
+  const isSelf = searchParams?.get('self') !== '0'
+  const refuelAmount = searchParams?.get('importo') || '50'
+  const netLiters = searchParams?.get('litri')
 
   const fuelPrice = rawPrice ? parseFloat(rawPrice) : null
 
