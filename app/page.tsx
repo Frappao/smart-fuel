@@ -15,26 +15,48 @@ export default function Home() {
     <ResultsMapProvider>
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-50/80 backdrop-blur-xl saturate-150 dark:border-zinc-800/80 dark:bg-zinc-950/80">
-        <nav aria-label="Navigazione principale" className="mx-auto flex h-16 sm:h-20 w-full max-w-7xl items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-6 lg:px-8">
+        <nav aria-label="Navigazione principale" className="mx-auto flex flex-wrap md:flex-nowrap items-center justify-between w-full max-w-7xl px-3.5 sm:px-6 lg:px-8 py-2.5 md:py-0 md:h-20 gap-x-4 gap-y-2">
           <div className="flex items-center gap-3 sm:gap-6">
-            <Link href="/" className="text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">Rifornio</Link>
+            <Link href="/" className="text-xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+              Rifornio
+            </Link>
+            <div className="hidden md:flex items-center gap-6">
+              <Link
+                href="/prezzi-carburanti"
+                className="text-sm font-medium text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
+              >
+                Prezzi Carburanti
+              </Link>
+              <Link
+                href="/come-funziona"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+              >
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Simulatore: come funziona
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <AppBetaButton />
+            <AccountButton />
+          </div>
+
+          {/* Sub-row for navigation links on mobile (< md) */}
+          <div className="flex md:hidden w-full items-center gap-4 border-t border-zinc-200/50 pt-2 pb-0.5 text-xs font-medium dark:border-zinc-800/50 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Link
               href="/prezzi-carburanti"
-              className="text-xs sm:text-sm font-medium text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
+              className="whitespace-nowrap text-zinc-600 transition hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400"
             >
               Prezzi Carburanti
             </Link>
             <Link
               href="/come-funziona"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Simulatore: come funziona
             </Link>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <AppBetaButton />
-            <AccountButton />
           </div>
         </nav>
       </header>

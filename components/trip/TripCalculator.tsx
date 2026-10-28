@@ -16,11 +16,7 @@ import AdSlot from '../ads/AdSlot'
 import RefuelForm, {
   type RefuelCalculationInput,
 } from '../calculation/RefuelForm'
-import {
-  buildWinnerInsight,
-  RoadSignPrice,
-  type WinnerInsight,
-} from '../calculation/RoadSignPrice'
+import { RoadSignPrice } from '../calculation/RoadSignPrice'
 import { useResultsMap } from '../map/ResultsMapContext'
 import { StationsResultMap } from '../map/StationsResultMap'
 import ShareResultButtons from '../share/ShareResultButtons'
@@ -67,7 +63,6 @@ interface TripResultCardProps {
   index: number
   origin: Coordinates
   destination: Coordinates
-  winnerInsight: WinnerInsight | null
   onSelectOnMap?: (stationId: number) => void
   isSelectedOnMap?: boolean
   refuelAmount?: number
@@ -83,7 +78,6 @@ function TripResultCard({
   index,
   origin,
   destination,
-  winnerInsight,
   onSelectOnMap,
   isSelectedOnMap,
   refuelAmount = 50,
@@ -114,45 +108,117 @@ function TripResultCard({
       className={isMobileHidden ? `${cardClasses} hidden lg:block` : cardClasses}
     >
       {isWinner ? (
-        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-          Migliore lungo questo percorso
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Migliore lungo questo percorso
+          </span>
+        </div>
       ) : null}
-      <h3 className="mt-1 font-semibold">
+      <h3 className={isWinner ? 'mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50' : 'font-semibold text-zinc-900 dark:text-zinc-100'}>
         {index + 1}. {stationName}
       </h3>
-      <div className="mt-3 grid gap-2 text-sm leading-6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-        <p className="tabular-nums">
-          Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
-        </p>
-        <p className="tabular-nums">
-          Deviazione aggiuntiva:{' '}
-          {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
-        </p>
-        <p className="tabular-nums">
-          Carburante per la deviazione:{' '}
-          {litersFormatter.format(result.detourFuelLiters)} L
-        </p>
-        <p className="font-semibold tabular-nums">
-          Litri netti: {litersFormatter.format(result.netFuelLiters)} L
-        </p>
-        {isWinner && winnerInsight ? (
-          <div className="mt-1 rounded-lg border border-emerald-300/80 bg-white/80 px-3.5 py-2.5 text-sm leading-6 text-zinc-800 sm:col-span-2 dark:border-emerald-700/60 dark:bg-zinc-900/60 dark:text-zinc-200">
-            <span className="mr-1.5 inline-block rounded bg-emerald-700 px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white uppercase dark:bg-emerald-400 dark:text-emerald-950">
-              {winnerInsight.badge}
+
+      {/* Unified clean 3-stat hero grid */}
+      <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
+        <div className="rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400">Prezzo</p>
+          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+            <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-500">€/L</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs">
+          <p className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400">Deviazione</p>
+          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+            +{distanceFormatter.format(result.detourDistanceMeters / 1_000)} <span className="text-[11px] sm:text-xs font-normal text-zinc-500">km</span>
+          </p>
+        </div>
+        <div
+          className={
+            isWinner
+              ? 'rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-2.5 sm:p-3 dark:border-emerald-400/40 dark:bg-emerald-400/10 shadow-2xs'
+              : 'rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs'
+          }
+        >
+          <p
+            className={
+              isWinner
+                ? 'text-[11px] sm:text-xs font-semibold text-emerald-800 dark:text-emerald-300'
+                : 'text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400'
+            }
+          >
+            Litri netti
+          </p>
+          <p
+            className={
+              isWinner
+                ? 'mt-0.5 text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums'
+                : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums'
+            }
+          >
+            {litersFormatter.format(result.netFuelLiters)}{' '}
+            <span
+              className={
+                isWinner
+                  ? 'text-[11px] sm:text-xs font-normal text-emerald-700/80 dark:text-emerald-400/80'
+                  : 'text-[11px] sm:text-xs font-normal text-zinc-500'
+              }
+            >
+              L
             </span>
-            <span>{winnerInsight.message}</span>
-          </div>
-        ) : null}
+          </p>
+        </div>
       </div>
-      <a
-        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 sm:w-auto dark:border-emerald-400 dark:text-emerald-200"
-        href={navigationUrl}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        Apri percorso con questa sosta
-      </a>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        <a
+          className={
+            isWinner
+              ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-700 active:scale-[0.98] sm:w-auto dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400'
+              : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] sm:w-auto dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+          }
+          href={navigationUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          Apri percorso con questa sosta
+        </a>
+      </div>
+
+      {/* Mappa in primo piano subito dopo l'azione principale */}
+      {isWinner && mobileMap ? (
+        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
+          {mobileMap}
+        </div>
+      ) : null}
+
+      {/* Dettagli tecnici secondari ordinati in disclosure discreta */}
+      <details className="group mt-3 rounded-lg border border-zinc-200/60 bg-white/60 p-2.5 text-xs text-zinc-600 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-400">
+        <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <span>Dettagli del calcolo</span>
+          <span className="text-[10px] text-zinc-400 group-open:rotate-180 transition-transform">▾</span>
+        </summary>
+        <div className="mt-2 space-y-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <p className="tabular-nums">
+            Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
+          </p>
+          <p className="tabular-nums">
+            Deviazione aggiuntiva:{' '}
+            {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
+          </p>
+          <p className="tabular-nums">
+            Carburante per la deviazione:{' '}
+            {litersFormatter.format(result.detourFuelLiters)} L
+          </p>
+          <p className="tabular-nums">
+            Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
+          </p>
+          <p className="font-semibold tabular-nums">
+            Litri netti: {litersFormatter.format(result.netFuelLiters)} L
+          </p>
+        </div>
+      </details>
+
       {isWinner ? (
         <ShareResultButtons
           stationName={stationName}
@@ -165,11 +231,7 @@ function TripResultCard({
           refuelAmount={refuelAmount}
         />
       ) : null}
-      {isWinner && mobileMap ? (
-        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
-          {mobileMap}
-        </div>
-      ) : null}
+
       {isWinner && showAllToggle ? (
         <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
           {showAllToggle}
@@ -199,23 +261,6 @@ export default function TripCalculator() {
   const [showAllMobileResults, setShowAllMobileResults] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
-
-  const winnerInsight = useMemo(
-    () =>
-      results.length >= 2
-        ? buildWinnerInsight(
-            results.map((r) => ({
-              station: r.station,
-              netFuelLiters: r.netFuelLiters,
-              travelDistanceKm: r.detourDistanceMeters / 1_000,
-              litersPurchased: r.litersPurchased,
-              travelFuelLiters: r.detourFuelLiters,
-            })),
-            'trip',
-          )
-        : null,
-    [results],
-  )
 
   const setMapData = resultsMap?.setMapData
 
@@ -480,7 +525,6 @@ export default function TripCalculator() {
               origin={journeyCoordinates.origin}
               refuelAmount={lastCalculationInput?.refuelAmount ?? 50}
               result={result}
-              winnerInsight={index === 0 ? winnerInsight : null}
               isMobileHidden={index > 0 && !showAllMobileResults}
               mobileMap={
                 index === 0 && resultsMap?.mapData ? (

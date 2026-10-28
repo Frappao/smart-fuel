@@ -39,14 +39,14 @@ export function AccountButton() {
       onClick={account.openAccount}
       aria-haspopup="dialog"
       aria-label={label}
-      className="inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-emerald-800 shadow-sm transition-all duration-150 active:scale-[0.97] hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:min-w-48 dark:border-emerald-500/60 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900"
+      className="inline-flex min-h-10 sm:min-h-11 shrink-0 whitespace-nowrap items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-800 shadow-2xs transition-all duration-150 active:scale-[0.97] hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:border-emerald-500/60 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900"
     >
-      <svg aria-hidden="true" className="size-4 sm:size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg aria-hidden="true" className="size-4 sm:size-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="12" cy="8" r="3.5" />
         <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
       </svg>
-      <span className="hidden sm:inline">{label}</span>
-      <span className="inline sm:hidden">{account.user ? 'Account' : 'Accedi'}</span>
+      <span className="hidden lg:inline">{label}</span>
+      <span className="inline lg:hidden">{account.user ? 'Account' : 'Accedi'}</span>
     </button>
   )
 }

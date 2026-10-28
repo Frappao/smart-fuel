@@ -140,12 +140,6 @@ export default function RefuelForm({
     >
       <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800/60">
         <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
-        {account?.user && selected && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200/60 dark:bg-emerald-950/60 dark:border-emerald-800/60 dark:text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Auto: {selected.name}
-          </span>
-        )}
       </div>
 
       {/* 1. SELEZIONE AUTO ALL'INIZIO DEL CALCOLATORE (PER UTENTI LOGGATI) */}
@@ -189,19 +183,31 @@ export default function RefuelForm({
           {/* Menù a scomparsa per modificare l'auto già selezionata */}
           {selected ? (
             <details
-              className="group rounded-xl border border-zinc-200/80 bg-white/90 transition-all dark:border-zinc-800 dark:bg-zinc-950/80"
+              className="group rounded-xl border border-zinc-200/90 bg-white/90 shadow-2xs transition-all dark:border-zinc-800 dark:bg-zinc-950/80"
               open={isManageOpen}
               onToggle={e => setIsManageOpen(e.currentTarget.open)}
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between p-3 text-xs sm:text-sm font-medium text-zinc-700 hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-400">
-                <span className="flex items-center gap-2">
-                  <span className="text-xs font-normal text-zinc-500">Dati auto:</span>
-                  <strong className="text-zinc-900 dark:text-zinc-100">{selected.name}</strong>
-                  <span className="text-xs text-zinc-500">({fuelType} • {consumption} {unit})</span>
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 underline underline-offset-4 dark:text-emerald-400">
-                  <span className="group-open:hidden">Modifica auto ▾</span>
-                  <span className="hidden group-open:inline">Chiudi modifiche ▴</span>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3.5 text-xs sm:text-sm font-medium select-none hover:bg-zinc-50/70 dark:hover:bg-zinc-900/60 rounded-xl transition-colors">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+                  <svg className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                    <circle cx="7" cy="17" r="2" />
+                    <path d="M9 17h6" />
+                    <circle cx="17" cy="17" r="2" />
+                  </svg>
+                  <span className="font-semibold text-zinc-900 truncate dark:text-zinc-100">
+                    {selected.name}
+                  </span>
+                  <span className="inline-flex shrink-0 items-center rounded-md bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {fuelType} • {consumption} {unit}
+                  </span>
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 group-hover:text-emerald-800 dark:text-emerald-400 dark:group-hover:text-emerald-300">
+                  <span className="group-open:hidden">Modifica auto</span>
+                  <span className="hidden group-open:inline">Chiudi</span>
+                  <svg className="size-3.5 transition-transform duration-200 group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
                 </span>
               </summary>
               <div className="space-y-4 border-t border-zinc-100 p-4 dark:border-zinc-800">
