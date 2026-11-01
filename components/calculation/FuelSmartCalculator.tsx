@@ -322,6 +322,7 @@ function StationResultCard({
 
 export default function FuelSmartCalculator() {
   const calculationInFlight = useRef(false)
+  const resultsRef = useRef<HTMLDivElement>(null)
   const resultsMap = useResultsMap()
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
@@ -385,6 +386,20 @@ export default function FuelSmartCalculator() {
       setMapData?.(null)
     }
   }, [setMapData])
+
+  useEffect(() => {
+    if (results.length > 0 && !isLoading) {
+      const timer = setTimeout(() => {
+        if (typeof resultsRef.current?.scrollIntoView === 'function') {
+          resultsRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [results, isLoading])
 
   async function handleCalculate(values: RefuelCalculationInput) {
     if (calculationInFlight.current) return
@@ -523,10 +538,11 @@ export default function FuelSmartCalculator() {
 
       {results.length > 0 ? (
         <motion.div
+          ref={resultsRef}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-          className="flex min-w-0 flex-col gap-3 sm:gap-4"
+          className="flex min-w-0 flex-col gap-3 sm:gap-4 scroll-mt-6"
         >
           <ol>
             <StationResultCard

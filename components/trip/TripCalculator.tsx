@@ -243,6 +243,7 @@ function TripResultCard({
 
 export default function TripCalculator() {
   const calculationInFlight = useRef(false)
+  const resultsRef = useRef<HTMLOListElement>(null)
   const resultsMap = useResultsMap()
   const [originMode, setOriginMode] = useState<OriginMode>('current')
   const [customOrigin, setCustomOrigin] = useState<GeocodingResult | null>(null)
@@ -315,6 +316,20 @@ export default function TripCalculator() {
       setMapData?.(null)
     }
   }, [setMapData])
+
+  useEffect(() => {
+    if (results.length > 0 && !isLoading) {
+      const timer = setTimeout(() => {
+        if (typeof resultsRef.current?.scrollIntoView === 'function') {
+          resultsRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [results, isLoading])
 
   function clearCalculatedJourney() {
     setResults([])
@@ -502,10 +517,11 @@ export default function TripCalculator() {
       ) : null}
       {results.length > 0 && journeyCoordinates ? (
         <motion.ol
+          ref={resultsRef}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-          className="grid gap-4"
+          className="grid gap-4 scroll-mt-6"
         >
           {results.map((result, index) => (
             <TripResultCard

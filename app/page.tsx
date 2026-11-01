@@ -4,7 +4,7 @@ import { ResultsMapProvider } from "../components/map/ResultsMapContext";
 import { HomepageRightColumn } from "../components/map/StationsResultMap";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 import SharedStationBanner from "../components/share/SharedStationBanner";
-import HeroConvenienceVisual from "../components/hero/HeroConvenienceVisual";
+import HeroBrandBadge from "../components/hero/HeroBrandBadge";
 
 import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
@@ -80,7 +80,7 @@ export default function Home() {
           className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:pr-4"
         >
           <div className="flex w-full flex-col gap-6 sm:gap-8">
-            <header className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
               <div className="space-y-3 sm:space-y-4 max-w-xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 shadow-xs">
                   <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -97,8 +97,9 @@ export default function Home() {
                   distanza stradale effettiva e carburante consumato per il viaggio.
                 </p>
               </div>
-              <div className="hidden xl:block shrink-0">
-                <HeroConvenienceVisual />
+
+              <div className="hidden sm:flex shrink-0">
+                <HeroBrandBadge />
               </div>
             </header>
             <SharedStationBanner />
