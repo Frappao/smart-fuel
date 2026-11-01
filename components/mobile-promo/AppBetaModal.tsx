@@ -35,14 +35,14 @@ export function AppBetaButton() {
       type="button"
       onClick={() => modal.openAppModal()}
       aria-haspopup="dialog"
-      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-600/40 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-500/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:px-3.5 sm:text-sm dark:border-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-200 dark:hover:bg-emerald-400/20"
+      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 hover:border-emerald-500/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 sm:px-3.5 sm:text-sm active:scale-[0.97]"
     >
       <span className="relative flex size-2">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
         <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
       </span>
       <span>App</span>
-      <span className="hidden rounded-md bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase md:inline-block dark:bg-emerald-400 dark:text-emerald-950">
+      <span className="hidden rounded-md bg-emerald-400 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-zinc-950 uppercase md:inline-block">
         Beta
       </span>
     </button>

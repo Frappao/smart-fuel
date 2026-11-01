@@ -164,11 +164,11 @@ function StationResultCard({
 
   const cardClasses = isBestResult
     ? isSelectedOnMap
-      ? 'min-w-0 break-words rounded-2xl border-2 border-emerald-600 bg-emerald-50/70 p-4 shadow-md ring-2 ring-emerald-600 sm:p-5 dark:border-emerald-400 dark:bg-emerald-950/40 dark:ring-emerald-400 cursor-pointer transition-all duration-150 active:scale-[0.99]'
-      : 'min-w-0 break-words rounded-2xl border-2 border-emerald-600/70 bg-emerald-50/50 p-4 shadow-sm sm:p-5 dark:border-emerald-400/70 dark:bg-emerald-950/25 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-600 hover:shadow-xs'
+      ? 'min-w-0 break-words rounded-3xl border-2 border-emerald-500 bg-zinc-900/95 p-5 sm:p-6 shadow-2xl ring-2 ring-emerald-500/50 cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-emerald-500/15'
+      : 'min-w-0 break-words rounded-3xl border-2 border-emerald-500/80 bg-zinc-900/90 p-5 sm:p-6 shadow-2xl ring-1 ring-emerald-500/30 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-400 shadow-emerald-500/10'
     : isSelectedOnMap
-      ? 'min-w-0 break-words rounded-xl border-2 border-emerald-600 bg-emerald-50/40 p-4 shadow-md ring-2 ring-emerald-600/80 transition-all duration-150 dark:border-emerald-400 dark:bg-emerald-950/30 dark:ring-emerald-400 cursor-pointer active:scale-[0.99]'
-      : 'min-w-0 break-words rounded-xl border border-zinc-200 bg-white p-4 transition-all duration-150 hover:border-zinc-300 hover:shadow-xs active:scale-[0.99] cursor-pointer dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700'
+      ? 'min-w-0 break-words rounded-2xl border-2 border-emerald-500 bg-zinc-900/80 p-4 sm:p-5 shadow-lg ring-1 ring-emerald-500/50 transition-all duration-150 cursor-pointer active:scale-[0.99]'
+      : 'min-w-0 break-words rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md p-4 sm:p-5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-900/70 active:scale-[0.99] cursor-pointer'
 
   return (
     <li
@@ -177,42 +177,42 @@ function StationResultCard({
     >
       {isBestResult ? (
         <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/90 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
+            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Ti conviene questo distributore
           </span>
         </div>
       ) : null}
-      <h3 className={isBestResult ? 'mt-2 text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50' : 'font-semibold text-zinc-900 dark:text-zinc-100'}>
+      <h3 className={isBestResult ? 'mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50' : 'font-semibold text-zinc-100 text-base'}>
         {index + 1}. {stationName}
       </h3>
 
       {/* Unified clean 3-stat hero grid */}
       <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
-        <div className="rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400">Prezzo</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
-            <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-500">€/L</span>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
+          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Prezzo</p>
+          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
+            <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-400">€/L</span>
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400">Distanza A/R</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
-            {distanceFormatter.format(travelDistanceKm)} <span className="text-[11px] sm:text-xs font-normal text-zinc-500">km</span>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
+          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Distanza A/R</p>
+          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
+            {distanceFormatter.format(travelDistanceKm)} <span className="text-[11px] sm:text-xs font-normal text-zinc-400">km</span>
           </p>
         </div>
         <div
           className={
             isBestResult
-              ? 'rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-2.5 sm:p-3 dark:border-emerald-400/40 dark:bg-emerald-400/10 shadow-2xs'
-              : 'rounded-xl border border-zinc-200/80 bg-white/90 p-2.5 sm:p-3 dark:border-zinc-800 dark:bg-zinc-900/80 shadow-2xs'
+              ? 'rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10'
+              : 'rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner'
           }
         >
           <p
             className={
               isBestResult
-                ? 'text-[11px] sm:text-xs font-semibold text-emerald-800 dark:text-emerald-300'
-                : 'text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400'
+                ? 'text-[11px] sm:text-xs font-bold text-emerald-300'
+                : 'text-[11px] sm:text-xs font-medium text-zinc-400'
             }
           >
             Litri netti
@@ -220,16 +220,16 @@ function StationResultCard({
           <p
             className={
               isBestResult
-                ? 'mt-0.5 text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums'
-                : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tabular-nums'
+                ? 'mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums'
+                : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums'
             }
           >
             {litersFormatter.format(result.netFuelLiters)}{' '}
             <span
               className={
                 isBestResult
-                  ? 'text-[11px] sm:text-xs font-normal text-emerald-700/80 dark:text-emerald-400/80'
-                  : 'text-[11px] sm:text-xs font-normal text-zinc-500'
+                  ? 'text-[11px] sm:text-xs font-normal text-emerald-300/80'
+                  : 'text-[11px] sm:text-xs font-normal text-zinc-400'
               }
             >
               L
@@ -239,7 +239,7 @@ function StationResultCard({
       </div>
 
       {isBestResult && winnerAdvantageLiters !== null ? (
-        <p className="mt-2.5 text-xs font-medium text-emerald-800 tabular-nums dark:text-emerald-300">
+        <p className="mt-2.5 text-xs font-semibold text-emerald-300 tabular-nums">
           Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato.
         </p>
       ) : null}
@@ -249,8 +249,8 @@ function StationResultCard({
           <a
             className={
               isBestResult
-                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-700 active:scale-[0.98] sm:w-auto dark:bg-emerald-500 dark:text-zinc-950 dark:hover:bg-emerald-400'
-                : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] sm:w-auto dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
+                : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
             }
             href={navigationUrl}
             rel="noopener noreferrer"

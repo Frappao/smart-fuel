@@ -712,7 +712,7 @@ export function HomepageRightColumn({
     <section
       aria-labelledby="homepage-map-title"
       tabIndex={0}
-      className="hidden lg:flex min-w-0 flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:p-5 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain dark:border-zinc-800 dark:bg-zinc-900/40 dark:focus-visible:outline-emerald-400"
+      className="hidden lg:flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-xl p-4 sm:p-5 shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
     >
       <StationsResultMap
         data={resultsMap.mapData}

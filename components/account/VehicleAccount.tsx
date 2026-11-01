@@ -39,9 +39,9 @@ export function AccountButton() {
       onClick={account.openAccount}
       aria-haspopup="dialog"
       aria-label={label}
-      className="inline-flex min-h-10 sm:min-h-11 shrink-0 whitespace-nowrap items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-emerald-600 bg-emerald-50 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-800 shadow-2xs transition-all duration-150 active:scale-[0.97] hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:border-emerald-500/60 dark:bg-emerald-950 dark:text-emerald-200 dark:hover:bg-emerald-900"
+      className="inline-flex min-h-10 sm:min-h-11 shrink-0 whitespace-nowrap items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-zinc-700/80 bg-zinc-900/90 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-zinc-100 shadow-2xs transition-all duration-150 active:scale-[0.97] hover:border-zinc-600 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
     >
-      <svg aria-hidden="true" className="size-4 sm:size-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg aria-hidden="true" className="size-4 sm:size-4.5 shrink-0 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <circle cx="12" cy="8" r="3.5" />
         <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
       </svg>
@@ -54,12 +54,15 @@ export function AccountButton() {
 export function RegistrationPrompt() {
   const account = useVehicleAccount()
   if (!account || account.user) return null
-  return <section aria-label="Salva le tue auto" className="flex flex-col items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-emerald-800 dark:bg-emerald-950/40">
+  return <section aria-label="Salva le tue auto" className="flex flex-col items-start gap-4 rounded-3xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xl p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
     <div className="space-y-1">
-      <h2 className="font-semibold text-emerald-950 dark:text-emerald-100">Le tue auto, pronte al prossimo rifornimento</h2>
-      <p className="text-sm leading-6 text-emerald-800 dark:text-emerald-300">Crea un account e salva carburante e consumi di tutte le tue auto.</p>
+      <div className="flex items-center gap-2">
+        <span className="text-emerald-400 text-sm">✨</span>
+        <h2 className="font-bold text-zinc-100 text-sm sm:text-base">Le tue auto, pronte al prossimo rifornimento</h2>
+      </div>
+      <p className="text-xs sm:text-sm leading-5 text-zinc-400">Crea un account e salva carburante e consumi per calcoli istantanei.</p>
     </div>
-    <button type="button" onClick={account.openAccount} className="min-h-12 shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-400 dark:text-zinc-950">Registrati gratis</button>
+    <button type="button" onClick={account.openAccount} className="min-h-11 shrink-0 rounded-xl bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 text-zinc-100 px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-sm transition active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400">Registrati gratis</button>
   </section>
 }
 
