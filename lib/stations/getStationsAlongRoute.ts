@@ -26,6 +26,8 @@ const MAX_WEB_MERCATOR_LATITUDE = 85.05112878
 // vertices on long journeys. The corridor is expanded by the same amount
 // whenever points are removed so stations near its boundary are not lost.
 const ROUTE_SIMPLIFICATION_TOLERANCE_METERS = 25
+const MAX_ROUTE_VERTICES = 100
+const MAX_ROUTE_SIMPLIFICATION_TOLERANCE_METERS = 1_600
 
 interface ProjectedCoordinate {
   x: number
@@ -127,6 +129,29 @@ function simplifyRoute(
   }
 }
 
+export function simplifyRouteForCorridorSearch(
+  route: RouteLineString,
+  maxVertices = MAX_ROUTE_VERTICES,
+  initialToleranceMeters = ROUTE_SIMPLIFICATION_TOLERANCE_METERS,
+  maxToleranceMeters = MAX_ROUTE_SIMPLIFICATION_TOLERANCE_METERS,
+): { simplifiedRoute: RouteLineString; appliedToleranceMeters: number } {
+  let appliedToleranceMeters = initialToleranceMeters
+  let simplifiedRoute = simplifyRoute(route, appliedToleranceMeters)
+
+  while (
+    simplifiedRoute.coordinates.length > maxVertices &&
+    appliedToleranceMeters < maxToleranceMeters
+  ) {
+    appliedToleranceMeters = Math.min(
+      appliedToleranceMeters * 2,
+      maxToleranceMeters,
+    )
+    simplifiedRoute = simplifyRoute(route, appliedToleranceMeters)
+  }
+
+  return { simplifiedRoute, appliedToleranceMeters }
+}
+
 export async function getStationsAlongRoute(
   route: RouteLineString,
   corridorMeters = 2_000,
@@ -135,17 +160,19 @@ export async function getStationsAlongRoute(
   isSelf = true,
 ): Promise<NearbyStation[]> {
   const supabase = createSupabaseServerClient()
-  const simplifiedRoute = simplifyRoute(
-    route,
-    ROUTE_SIMPLIFICATION_TOLERANCE_METERS,
-  )
+  const { simplifiedRoute, appliedToleranceMeters } =
+    simplifyRouteForCorridorSearch(
+      route,
+      MAX_ROUTE_VERTICES,
+      ROUTE_SIMPLIFICATION_TOLERANCE_METERS,
+    )
   const routeWasSimplified =
     simplifiedRoute.coordinates.length < route.coordinates.length
   const { data, error } = await supabase.rpc('stations_along_route', {
     route_geojson: JSON.stringify(simplifiedRoute),
     corridor_meters:
       corridorMeters +
-      (routeWasSimplified ? ROUTE_SIMPLIFICATION_TOLERANCE_METERS : 0),
+      (routeWasSimplified ? appliedToleranceMeters : 0),
     result_limit: limit,
     requested_fuel_type: fuelType,
     requested_is_self: isSelf,

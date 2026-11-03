@@ -153,4 +153,31 @@ describe('getStationsAlongRoute', () => {
     }
     expect(JSON.parse(rpcArguments.route_geojson)).toEqual(bentRoute)
   })
+
+  it('adaptively increases simplification tolerance when a route exceeds the vertex limit', async () => {
+    const rpc = arrangeSupabaseClient({ data: [], error: null })
+    // Create a route with 150 points with ~40m lateral deviations (larger than 25m, smaller than 50m)
+    const coordinates: Array<[number, number]> = []
+    for (let i = 0; i < 150; i += 1) {
+      // 0.00035 degrees latitude is ~39 meters
+      const latOffset = i % 2 === 0 ? 0 : 0.00035
+      coordinates.push([9 + i * 0.001, 45 + latOffset])
+    }
+    const longRoute = {
+      type: 'LineString' as const,
+      coordinates,
+    }
+
+    await getStationsAlongRoute(longRoute)
+
+    const rpcArguments = vi.mocked(rpc).mock.calls[0]?.[1] as {
+      corridor_meters: number
+      route_geojson: string
+    }
+    const parsedGeoJson = JSON.parse(rpcArguments.route_geojson)
+    // Vertices should be reduced below or equal to 100
+    expect(parsedGeoJson.coordinates.length).toBeLessThanOrEqual(100)
+    // Applied tolerance should be at least 50m, so corridor_meters >= 2050
+    expect(rpcArguments.corridor_meters).toBeGreaterThanOrEqual(2_050)
+  })
 })

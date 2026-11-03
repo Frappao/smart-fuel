@@ -51,6 +51,8 @@ function invalidInputResponse(): Response {
   )
 }
 
+export const maxDuration = 60
+
 export async function POST(request: Request): Promise<Response> {
   let body: unknown
 
@@ -269,7 +271,8 @@ export async function POST(request: Request): Promise<Response> {
       baseRouteDistanceMeters: baseRoute.distanceMeters,
       results,
     })
-  } catch {
+  } catch (error) {
+    console.error('Failed to resolve stations along route:', error)
     return Response.json(
       { error: 'Unable to find stations along this route.' },
       { status: 502 },
