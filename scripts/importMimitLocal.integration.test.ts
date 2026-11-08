@@ -3,11 +3,18 @@ import { join } from 'node:path'
 import { describe, test } from 'vitest'
 
 import { importMimitData } from '../lib/mimit/importMimitData'
+import {
+  getLastSuccessfulImportAt,
+  getMimitFilesLastModified,
+  isImportNeeded,
+} from '../lib/mimit/localImportSchedule'
 import { recordImportRun } from '../lib/mimit/recordImportRun'
 
 // Import MIMIT eseguito dal Mac (IP italiano): il sito MIMIT non accetta
 // connessioni dai datacenter cloud (Vercel/AWS, GitHub/Azure).
-// Lanciato ogni giorno da launchd tramite scripts/install-mimit-launchd.sh.
+// Lanciato da launchd ogni 30 minuti e all'avvio (scripts/install-mimit-launchd.sh):
+// importa solo se MIMIT ha pubblicato file più recenti dell'ultimo import
+// riuscito. FORCE_MIMIT_IMPORT=1 salta il controllo.
 // Usa Vitest come runner perché i moduli importano 'server-only'.
 // Scrive sul database configurato in .env.local.
 
@@ -23,6 +30,32 @@ describe.skipIf(process.env.RUN_LOCAL_MIMIT_IMPORT !== '1')(
 
         if (existsSync(envFile)) {
           process.loadEnvFile(envFile)
+        }
+
+        if (process.env.FORCE_MIMIT_IMPORT !== '1') {
+          const filesLastModified = await getMimitFilesLastModified()
+
+          if (!filesLastModified) {
+            console.info(
+              '[mimit] sito MIMIT non raggiungibile (Mac offline?): riprovo al prossimo giro',
+            )
+            return
+          }
+
+          const lastSuccessfulImportAt = await getLastSuccessfulImportAt()
+
+          if (!isImportNeeded(filesLastModified, lastSuccessfulImportAt)) {
+            console.info(
+              `[mimit] niente da fare: file MIMIT del ${filesLastModified.toISOString()} ` +
+                `già importato il ${lastSuccessfulImportAt?.toISOString()}`,
+            )
+            return
+          }
+
+          console.info(
+            `[mimit] nuovi file MIMIT del ${filesLastModified.toISOString()} ` +
+              `(ultimo import riuscito: ${lastSuccessfulImportAt?.toISOString() ?? 'nessuno'})`,
+          )
         }
 
         const startedAt = new Date()

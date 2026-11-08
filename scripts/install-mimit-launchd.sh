@@ -3,9 +3,11 @@
 # l'import MIMIT dal Mac: il sito MIMIT non risponde ai datacenter cloud,
 # quindi il cron Vercel non riesce a scaricare i CSV.
 #
-# Orari: 9:30 (il file MIMIT "prezzo_alle_8" esce verso le 8:45) e 14:00
-# come recupero. Se il Mac dorme a quell'ora, launchd esegue al risveglio;
-# se è spento, il run viene saltato. L'import è idempotente.
+# Pianificazione: ogni 30 minuti e all'avvio/login. Ogni giro controlla la
+# data dei CSV MIMIT e importa solo se sono più recenti dell'ultimo import
+# riuscito, quindi l'import vero avviene una volta al giorno (dopo le ~8:45),
+# appena il Mac è acceso e connesso. Se il Mac dorme, launchd esegue al
+# risveglio. Il log viene ruotato oltre 1 MB.
 #
 # Log: ~/Library/Logs/rifornio-import-mimit.log
 # Storico: tabella public.import_runs (source = 'mimit-mac')
@@ -40,28 +42,17 @@ cat > "$PLIST" <<PLIST
   <array>
     <string>/bin/zsh</string>
     <string>-c</string>
-    <string>echo "=== \$(date '+%Y-%m-%d %H:%M:%S') ==="; cd "$REPO" &amp;&amp; "$NPM" run import:mimit:local</string>
+    <string>if [ -f "$LOG" ] &amp;&amp; [ \$(stat -f%z "$LOG") -gt 1000000 ]; then mv -f "$LOG" "$LOG.1"; fi; echo "=== \$(date '+%Y-%m-%d %H:%M:%S') ==="; cd "$REPO" &amp;&amp; "$NPM" run --silent import:mimit:local</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
     <string>$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
-  <key>StartCalendarInterval</key>
-  <array>
-    <dict>
-      <key>Hour</key>
-      <integer>9</integer>
-      <key>Minute</key>
-      <integer>30</integer>
-    </dict>
-    <dict>
-      <key>Hour</key>
-      <integer>14</integer>
-      <key>Minute</key>
-      <integer>0</integer>
-    </dict>
-  </array>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+  <key>RunAtLoad</key>
+  <true/>
   <key>StandardOutPath</key>
   <string>$LOG</string>
   <key>StandardErrorPath</key>
@@ -74,6 +65,6 @@ plutil -lint "$PLIST" >/dev/null
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST"
 
-echo "Agente $LABEL installato: ogni giorno alle 9:30 e alle 14:00."
+echo "Agente $LABEL installato: controllo ogni 30 minuti e all'avvio (import solo se MIMIT ha file nuovi)."
 echo "Prova subito:   launchctl kickstart $DOMAIN/$LABEL"
 echo "Log:            $LOG"
