@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "import:mimit:local": "RUN_LOCAL_MIMIT_IMPORT=1 vitest run scripts/importMimitLocal.integration.test.ts",
     "mobile:build": "tsc --project mobile/tsconfig.json && vite build --config mobile/vite.config.mts",
     "mobile:sync": "npm run mobile:build && cap sync",
     "mobile:open:android": "cap open android",

@@ -3,6 +3,7 @@ import 'server-only'
 import { createSupabaseServerClient } from '../supabase/server'
 
 export interface ImportRunRecord {
+  source?: string
   startedAt: Date
   finishedAt: Date
   status: 'success' | 'error'
@@ -22,7 +23,7 @@ export async function recordImportRun(run: ImportRunRecord): Promise<void> {
   try {
     const supabase = createSupabaseServerClient()
     const { error } = await supabase.from('import_runs').insert({
-      source: 'mimit',
+      source: run.source ?? 'mimit',
       started_at: run.startedAt.toISOString(),
       finished_at: run.finishedAt.toISOString(),
       duration_ms: run.finishedAt.getTime() - run.startedAt.getTime(),
