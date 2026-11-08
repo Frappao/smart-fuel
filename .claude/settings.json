@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx next:*)",
+      "Bash(npx cap:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(node:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx supabase:*)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel:*)",
+      "Bash(rm -rf:*)"
+    ],
+    "deny": [
+      "Read(./.env.local)",
+      "Read(./.env.test)",
+      "Read(./.env.production*)",
+      "Read(./.vercel/**)",
+      "Read(./android/keystore.properties)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(RUN_FULL_MIMIT_IMPORT=1:*)"
+    ]
+  }
+}
