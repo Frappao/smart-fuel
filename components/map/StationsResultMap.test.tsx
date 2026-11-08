@@ -6,14 +6,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ResultsMapProvider, useResultsMap } from './ResultsMapContext'
 import { HomepageRightColumn } from './StationsResultMap'
 
-function TestMapTrigger() {
+function TestMapTrigger({ mode }: { mode: 'nearby' | 'trip' }) {
   const map = useResultsMap()
   return (
     <button
       type="button"
       onClick={() =>
         map?.setMapData({
-          mode: 'nearby',
+          mode,
           fuelType: 'Benzina',
           isSelf: true,
           origin: { latitude: 45.4642, longitude: 9.19 },
@@ -50,10 +50,38 @@ describe('HomepageRightColumn & StationsResultMap', () => {
     cleanup()
   })
 
-  it('shows the static guide before calculation and replaces it with the map after calculation', () => {
+  function renderColumn(mode: 'nearby' | 'trip') {
     render(
       <ResultsMapProvider>
-        <TestMapTrigger />
+        <TestMapTrigger mode={mode} />
+        <HomepageRightColumn
+          defaultGuide={
+            <section aria-labelledby="homepage-guide-title">
+              <h2 id="homepage-guide-title">
+                Il prezzo più basso non è sempre la scelta migliore
+              </h2>
+            </section>
+          }
+        />
+      </ResultsMapProvider>,
+    )
+  }
+
+  it('keeps the guide for nearby results, whose map lives in the full-width results view', () => {
+    renderColumn('nearby')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simula risultati' }))
+
+    expect(
+      screen.getByText('Il prezzo più basso non è sempre la scelta migliore'),
+    ).toBeTruthy()
+    expect(screen.queryByText(/Distributori calcolati/)).toBeNull()
+  })
+
+  it('shows the static guide before calculation and replaces it with the map after a trip calculation', () => {
+    render(
+      <ResultsMapProvider>
+        <TestMapTrigger mode="trip" />
         <HomepageRightColumn
           defaultGuide={
             <section aria-labelledby="homepage-guide-title">

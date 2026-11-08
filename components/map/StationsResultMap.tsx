@@ -8,6 +8,7 @@ import {
   type ResultsMapData,
 } from './ResultsMapContext'
 import { formatStationLocation } from '../../lib/stations/formatStationText'
+import type { RouteLineString } from '../../lib/maps/getMapboxDirections'
 
 interface MapLibreBoundsLike {
   extend: (lngLat: [number, number]) => void
@@ -20,12 +21,33 @@ interface MapLibreMarkerLike {
   getElement: () => HTMLElement
 }
 
+interface MapLibrePadding {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+interface MapLibreGeoJsonSourceLike {
+  setData: (data: unknown) => void
+}
+
 interface MapLibreMapLike {
   addControl: (control: unknown, position?: string) => void
   fitBounds: (
     bounds: MapLibreBoundsLike,
-    options?: { padding?: number; maxZoom?: number; duration?: number },
+    options?: {
+      padding?: number | MapLibrePadding
+      maxZoom?: number
+      duration?: number
+    },
   ) => void
+  addSource: (id: string, source: unknown) => void
+  getSource: (id: string) => MapLibreGeoJsonSourceLike | undefined
+  addLayer: (layer: unknown) => void
+  getLayer: (id: string) => unknown
+  removeLayer: (id: string) => void
+  removeSource: (id: string) => void
   flyTo: (options: {
     center: [number, number]
     zoom?: number
@@ -237,6 +259,56 @@ function applyMarkerCollisions(
   }
 }
 
+const ROUTE_SOURCE_ID = 'rifornio-winner-route'
+const ROUTE_CASING_LAYER_ID = 'rifornio-winner-route-casing'
+const ROUTE_LINE_LAYER_ID = 'rifornio-winner-route-line'
+
+// Nella variante "focus" la scheda del vincente copre la parte sinistra della
+// mappa su desktop: l'inquadratura lascia libero quello spazio.
+function getFocusPadding(container: HTMLElement | null): MapLibrePadding {
+  const width = container?.clientWidth ?? 0
+  if (width >= 900) {
+    return { top: 96, bottom: 72, left: 440, right: 80 }
+  }
+  // Spazio per il cartello (ancorato in basso, sporge verso l'alto), i
+  // controlli di zoom e l'attribuzione OpenStreetMap in basso.
+  return { top: 88, bottom: 88, left: 48, right: 64 }
+}
+
+function syncRouteLayer(map: MapLibreMapLike, geometry: RouteLineString | null) {
+  const existingSource = map.getSource(ROUTE_SOURCE_ID)
+
+  if (!geometry) {
+    if (map.getLayer(ROUTE_LINE_LAYER_ID)) map.removeLayer(ROUTE_LINE_LAYER_ID)
+    if (map.getLayer(ROUTE_CASING_LAYER_ID)) map.removeLayer(ROUTE_CASING_LAYER_ID)
+    if (existingSource) map.removeSource(ROUTE_SOURCE_ID)
+    return
+  }
+
+  const feature = { type: 'Feature', properties: {}, geometry }
+
+  if (existingSource) {
+    existingSource.setData(feature)
+    return
+  }
+
+  map.addSource(ROUTE_SOURCE_ID, { type: 'geojson', data: feature })
+  map.addLayer({
+    id: ROUTE_CASING_LAYER_ID,
+    type: 'line',
+    source: ROUTE_SOURCE_ID,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#065f46', 'line-width': 9, 'line-opacity': 0.9 },
+  })
+  map.addLayer({
+    id: ROUTE_LINE_LAYER_ID,
+    type: 'line',
+    source: ROUTE_SOURCE_ID,
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#10b981', 'line-width': 5 },
+  })
+}
+
 function shortBrandLabel(station: MapStationItem): string {
   const raw = station.brand?.trim() || station.displayName.trim()
   if (raw.length <= 10) {
@@ -250,13 +322,32 @@ export function StationsResultMap({
   selectedStationId,
   onSelectStation,
   embedded = false,
+  variant = 'full',
+  routeGeometry = null,
 }: {
   data: ResultsMapData
   selectedStationId: number | null
   onSelectStation: (stationId: number) => void
   /** Dentro la scheda del vincitore (mobile): il titolo lo dà il contenitore. */
   embedded?: boolean
+  /**
+   * "focus": solo la mappa, a tutta altezza del contenitore. Il vincente è
+   * l'unico cartello evidenziato, gli altri restano piccoli e sbiaditi come
+   * contesto, senza legenda, selettori o scheda di dettaglio.
+   */
+  variant?: 'full' | 'focus'
+  /** Percorso stradale reale fino al vincente (mai una linea in linea d'aria). */
+  routeGeometry?: RouteLineString | null
 }) {
+  const isFocus = variant === 'focus'
+  const routeGeometryRef = useRef<RouteLineString | null>(routeGeometry)
+  // Ultima inquadratura della vista focalizzata, da ripetere quando il
+  // contenitore cambia dimensione (rotazione, passaggio mobile/desktop).
+  const refitFocusRef = useRef<() => void>(() => {})
+
+  useEffect(() => {
+    routeGeometryRef.current = routeGeometry
+  }, [routeGeometry])
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<MapLibreMapLike | null>(null)
   const markersRef = useRef<MapLibreMarkerLike[]>([])
@@ -286,6 +377,7 @@ export function StationsResultMap({
     const observer = new ResizeObserver(() => {
       try {
         mapInstanceRef.current?.resize()
+        refitFocusRef.current()
         runCollisionsRef.current()
       } catch {
         // La mappa potrebbe non essere ancora pronta
@@ -433,6 +525,7 @@ export function StationsResultMap({
           const colors = getTierColors(station, winnerNetFuelLiters)
           const { main, millesimi } = splitRoadSignPrice(station.fuelPrice)
           const isWinner = station.rank === 1
+          const isContextOnly = isFocus && !isWinner
 
           const btn = document.createElement('button')
           btn.type = 'button'
@@ -455,9 +548,18 @@ export function StationsResultMap({
             'font-family:inherit',
             'line-height:1.1',
             `z-index:${isWinner ? 30 : 20 - station.rank}`,
-            `transform:${isWinner ? 'scale(1.06)' : 'scale(1)'}`,
+            `transform:${isWinner ? (isFocus ? 'scale(1.2)' : 'scale(1.06)') : isContextOnly ? 'scale(0.82)' : 'scale(1)'}`,
+            isContextOnly ? 'opacity:0.6' : 'opacity:1',
             'transition:transform 250ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease',
           ].join(';')
+
+          if (isFocus) {
+            // Nella vista focalizzata i cartelli sono solo contesto visivo:
+            // le azioni stanno nella scheda del vincente.
+            btn.tabIndex = -1
+            btn.style.cursor = 'default'
+            btn.style.pointerEvents = 'none'
+          }
 
           const compactRow = document.createElement('span')
           compactRow.className = 'rifornio-map-marker-compact'
@@ -488,9 +590,11 @@ export function StationsResultMap({
           btn.appendChild(compactRow)
           btn.appendChild(topRow)
           btn.appendChild(priceRow)
-          btn.addEventListener('click', () => {
-            onSelectStation(station.id)
-          })
+          if (!isFocus) {
+            btn.addEventListener('click', () => {
+              onSelectStation(station.id)
+            })
+          }
 
           const marker = new maplibregl.Marker({
             element: btn,
@@ -501,15 +605,33 @@ export function StationsResultMap({
 
           markersRef.current.push(marker)
           stationButtonsRef.current.set(station.id, btn)
-          bounds.extend([station.longitude, station.latitude])
+          // Nella vista focalizzata l'inquadratura è posizione → vincente:
+          // gli altri cartelli restano visibili solo se rientrano.
+          if (!isFocus || isWinner) {
+            bounds.extend([station.longitude, station.latitude])
+          }
+        }
+
+        if (isFocus) {
+          for (const point of routeGeometryRef.current?.coordinates ?? []) {
+            bounds.extend(point)
+          }
         }
 
         if (data.stations.length > 0) {
           map.fitBounds(bounds, {
-            padding: 48,
-            maxZoom: 14,
+            padding: isFocus ? getFocusPadding(mapContainerRef.current) : 48,
+            maxZoom: isFocus ? 15 : 14,
             duration: 500,
           })
+          if (isFocus) {
+            refitFocusRef.current = () =>
+              map.fitBounds(bounds, {
+                padding: getFocusPadding(mapContainerRef.current),
+                maxZoom: 15,
+                duration: 0,
+              })
+          }
         }
 
         if (!collisionListenerAttachedRef.current) {
@@ -527,7 +649,40 @@ export function StationsResultMap({
     return () => {
       cancelled = true
     }
-  }, [data, onSelectStation])
+  }, [data, onSelectStation, isFocus])
+
+  // Percorso stradale del vincente: disegnato quando lo stile è pronto e
+  // quando arriva (o sparisce) la geometria; l'inquadratura lo include.
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const maplibregl = typeof window === 'undefined' ? undefined : window.maplibregl
+    if (!isFocus || !vectorMapReady || !map || !maplibregl) return
+
+    try {
+      syncRouteLayer(map, routeGeometry)
+
+      if (routeGeometry) {
+        const bounds = new maplibregl.LngLatBounds()
+        for (const point of routeGeometry.coordinates) bounds.extend(point)
+        const winner = data.stations[0]
+        if (winner) bounds.extend([winner.longitude, winner.latitude])
+        if (data.origin) bounds.extend([data.origin.longitude, data.origin.latitude])
+        map.fitBounds(bounds, {
+          padding: getFocusPadding(mapContainerRef.current),
+          maxZoom: 15,
+          duration: 500,
+        })
+        refitFocusRef.current = () =>
+          map.fitBounds(bounds, {
+            padding: getFocusPadding(mapContainerRef.current),
+            maxZoom: 15,
+            duration: 0,
+          })
+      }
+    } catch {
+      // Se lo stile non è pronto il percorso resta semplicemente non disegnato.
+    }
+  }, [isFocus, vectorMapReady, routeGeometry, data])
 
   useEffect(() => {
     runCollisionsRef.current = () =>
@@ -543,6 +698,7 @@ export function StationsResultMap({
     for (const station of data.stations) {
       const btn = stationButtonsRef.current.get(station.id)
       if (!btn) continue
+      if (isFocus) continue
       const isSelected = station.id === activeStation?.id
       const isWinner = station.rank === 1
       btn.style.zIndex = String(isWinner ? 30 : isSelected ? 28 : 20 - station.rank)
@@ -558,7 +714,7 @@ export function StationsResultMap({
           : '0 4px 12px rgba(0,0,0,0.18)'
     }
 
-    if (!mapInstanceRef.current || !activeStation) return
+    if (isFocus || !mapInstanceRef.current || !activeStation) return
     try {
       mapInstanceRef.current.flyTo({
         center: [activeStation.longitude, activeStation.latitude],
@@ -567,7 +723,7 @@ export function StationsResultMap({
     } catch {
       // Ignore flyTo errors if map is not yet loaded
     }
-  }, [data.stations, activeStation])
+  }, [data.stations, activeStation, isFocus])
 
   useEffect(() => {
     return () => {
@@ -581,6 +737,50 @@ export function StationsResultMap({
       }
     }
   }, [])
+
+  if (isFocus) {
+    return (
+      // isolate: i cartelli (z-index alti) restano sotto la scheda del vincente.
+      <div className="relative isolate h-full w-full overflow-hidden bg-zinc-900">
+        <div
+          ref={mapContainerRef}
+          aria-label="Mappa con il percorso stradale verso il distributore più conveniente"
+          className="!absolute inset-0 h-full w-full"
+        />
+        {!vectorMapReady ? (
+          <div className="absolute inset-0 bg-[radial-gradient(#10b98122_1px,transparent_1px)] [background-size:16px_16px]">
+            {projectedPoints.origin ? (
+              <span
+                style={{
+                  left: `${projectedPoints.origin.x}%`,
+                  top: `${projectedPoints.origin.y}%`,
+                }}
+                className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-blue-600 ring-4 ring-blue-500/25"
+              />
+            ) : null}
+            {[...projectedPoints.stations].reverse().map(({ station, x, y }) => {
+              const isWinner = station.rank === 1
+              return (
+                <span
+                  key={station.id}
+                  aria-hidden="true"
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 px-2 py-1 text-xs font-extrabold ${
+                    isWinner
+                      ? 'z-10 scale-110 border-emerald-700 bg-emerald-600 text-white'
+                      : 'scale-90 border-zinc-500 bg-zinc-100 text-zinc-700 opacity-60'
+                  }`}
+                >
+                  {isWinner ? '★ ' : ''}
+                  <RoadSignPrice price={station.fuelPrice} />
+                </span>
+              )
+            })}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className={`flex flex-col ${embedded ? 'gap-3' : 'h-full gap-4'}`}>
@@ -816,7 +1016,13 @@ export function HomepageRightColumn({
     resultsMap?.mapData && resultsMap.mapData.stations.length > 0,
   )
 
-  if (!hasMapResults || !resultsMap?.mapData) {
+  // Nella ricerca "vicino a me" la mappa vive nella vista risultati a tutta
+  // larghezza (FuelSmartCalculator): qui resta la guida.
+  if (
+    !hasMapResults ||
+    !resultsMap?.mapData ||
+    resultsMap.mapData.mode === 'nearby'
+  ) {
     return <>{defaultGuide}</>
   }
 

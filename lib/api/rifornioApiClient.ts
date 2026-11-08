@@ -43,6 +43,19 @@ export interface RouteMatrixResponse {
   routes: unknown[]
 }
 
+export interface RoutePathRequest {
+  origin: Coordinates
+  destination: Coordinates
+}
+
+export interface RoutePathResponse {
+  distanceMeters: number
+  geometry: {
+    type: 'LineString'
+    coordinates: [number, number][]
+  }
+}
+
 export interface GeocodingResult {
   id: string
   label: string
@@ -90,6 +103,26 @@ function isNearbyStationsResponse(
 
 function isRouteMatrixResponse(value: unknown): value is RouteMatrixResponse {
   return isRecord(value) && Array.isArray(value.routes)
+}
+
+function isRoutePathResponse(value: unknown): value is RoutePathResponse {
+  return (
+    isRecord(value) &&
+    typeof value.distanceMeters === 'number' &&
+    Number.isFinite(value.distanceMeters) &&
+    isRecord(value.geometry) &&
+    value.geometry.type === 'LineString' &&
+    Array.isArray(value.geometry.coordinates) &&
+    value.geometry.coordinates.length >= 2 &&
+    value.geometry.coordinates.every(
+      (point) =>
+        Array.isArray(point) &&
+        typeof point[0] === 'number' &&
+        Number.isFinite(point[0]) &&
+        typeof point[1] === 'number' &&
+        Number.isFinite(point[1]),
+    )
+  )
 }
 
 function isGeocodingResponse(value: unknown): value is GeocodingResponse {
@@ -170,6 +203,24 @@ export async function fetchRouteMatrix(
 
   if (!isRouteMatrixResponse(responseBody)) {
     throw new Error('Route matrix request returned an invalid response.')
+  }
+
+  return responseBody
+}
+
+export async function fetchRoutePath(
+  request: RoutePathRequest,
+  baseUrl?: string,
+): Promise<RoutePathResponse> {
+  const response = await fetch(buildApiUrl('/api/route-path', baseUrl), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  const responseBody = await readResponseJson(response, 'Route path request')
+
+  if (!isRoutePathResponse(responseBody)) {
+    throw new Error('Route path request returned an invalid response.')
   }
 
   return responseBody

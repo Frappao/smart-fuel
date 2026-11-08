@@ -1,6 +1,6 @@
 import Link from "next/link";
 import FuelSearchCalculator from "../components/calculation/FuelSearchCalculator";
-import { ResultsMapProvider } from "../components/map/ResultsMapContext";
+import { NEARBY_RESULTS_SLOT_ID, ResultsMapProvider } from "../components/map/ResultsMapContext";
 import { HomepageRightColumn } from "../components/map/StationsResultMap";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 import SharedStationBanner from "../components/share/SharedStationBanner";
@@ -119,6 +119,11 @@ export default async function Home() {
           </div>
         </div>
 
+        {/* Vista risultati "vicino a me" a tutta larghezza (mappa + vincente),
+            riempita da FuelSmartCalculator; vuota finché non c'è un calcolo. */}
+        <div id={NEARBY_RESULTS_SLOT_ID} className="min-w-0 empty:hidden lg:col-span-2" />
+
+        <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:self-stretch">
         <HomepageRightColumn
           defaultGuide={
             <section
@@ -286,6 +291,7 @@ export default async function Home() {
             </section>
           }
         />
+        </div>
       </main>
 
       <footer className="relative z-10 border-t border-zinc-900 bg-zinc-950/90">

@@ -5,6 +5,7 @@ import {
   fetchGeocodingResults,
   fetchNearbyStations,
   fetchRouteMatrix,
+  fetchRoutePath,
   fetchTripStations,
 } from './rifornioApiClient'
 
@@ -78,6 +79,37 @@ describe('Rifornio API client', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
+  })
+
+  it('sends the route path request and validates the returned geometry', async () => {
+    const request = {
+      origin: { latitude: 45.4642, longitude: 9.19 },
+      destination: { latitude: 45.47, longitude: 9.18 },
+    }
+    const body = {
+      distanceMeters: 1_200,
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [9.19, 45.4642],
+          [9.18, 45.47],
+        ],
+      },
+    }
+    arrangeResponse(body)
+
+    await expect(fetchRoutePath(request)).resolves.toEqual(body)
+    expect(fetchMock).toHaveBeenCalledWith('/api/route-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+
+    arrangeResponse({ distanceMeters: 1, geometry: { type: 'Point' } })
+
+    await expect(fetchRoutePath(request)).rejects.toThrow(
+      'Route path request returned an invalid response.',
+    )
   })
 
   it('sends geocoding queries as JSON with POST', async () => {

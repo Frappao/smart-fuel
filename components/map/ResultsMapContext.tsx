@@ -9,6 +9,9 @@ import {
   type ReactNode,
 } from 'react'
 
+/** Contenitore a tutta larghezza della homepage per la vista risultati "vicino a me". */
+export const NEARBY_RESULTS_SLOT_ID = 'nearby-results-slot'
+
 export interface MapCoordinates {
   latitude: number
   longitude: number

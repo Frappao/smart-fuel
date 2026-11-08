@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedFuelType } from '../../lib/fuels/supportedFuelTypes'
@@ -39,6 +46,10 @@ function submitForm(
     { target: { value: '10' } },
   )
   fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+}
+
+function findWinnerHeading(name: string) {
+  return screen.findByRole('heading', { level: 3, name })
 }
 
 interface RankingScenarioStation {
@@ -230,7 +241,7 @@ describe('FuelSmartCalculator', () => {
 
     submitForm()
 
-    expect(await screen.findByText('1. Near Expensive')).toBeTruthy()
+    expect(await findWinnerHeading('Near Expensive')).toBeTruthy()
     expect(getCurrentPosition).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -249,16 +260,12 @@ describe('FuelSmartCalculator', () => {
         { latitude: 45.46, longitude: 9.22 },
       ],
     })
-    expect(
-      screen.getAllByRole('heading', { level: 3, name: /^\d+\./ }).map((heading) =>
-        heading.textContent,
-      ),
-    ).toEqual([
-      '1. Near Expensive',
-      '2. Cheap Fuel',
-    ])
+    // Il vincente è l'unica scheda in primo piano, senza numero di posizione;
+    // le alternative restano consultabili in un elenco richiudibile.
 
-    const firstResult = screen.getByText('1. Near Expensive').closest('li')
+    const firstResult = screen.getByRole('article', {
+      name: 'Distributore più conveniente',
+    })
     const secondResult = screen.getByText('2. Cheap Fuel').closest('li')
     const bannerAdSlots = screen.getAllByLabelText(
       'Banner pubblicitario 300x250',
@@ -267,32 +274,49 @@ describe('FuelSmartCalculator', () => {
     const form = screen
       .getByRole('button', { name: 'Calcola convenienza' })
       .closest('form')
-    const firstResultsList = firstResult?.closest('ol')
-    const remainingResultsList = secondResult?.closest('ol')
+    const remainingResultsList = screen.getByRole('list', {
+      name: 'Altri distributori in classifica',
+    })
+    const resultsSection = screen.getByRole('region', {
+      name: 'Risultato della ricerca',
+    })
 
+    expect(
+      within(resultsSection)
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      'Near Expensive',
+      '2. Cheap Fuel',
+    ])
     expect(bannerAdSlots).toHaveLength(1)
     expect(bannerAdSlot.nextElementSibling).toBe(form)
-    expect(firstResultsList?.nextElementSibling).toBe(remainingResultsList)
-    // La condivisione viene dopo l'intera classifica, non dentro la card vincente.
-    expect(remainingResultsList?.nextElementSibling).toBe(
+    expect(firstResult.contains(remainingResultsList)).toBe(true)
+    expect(remainingResultsList.closest('details')?.open).toBe(false)
+    expect(secondResult?.closest('ol')).toBe(remainingResultsList)
+    // La condivisione viene dopo la vista risultati, non dentro la card vincente.
+    expect(resultsSection.lastElementChild).toBe(
       screen.getByLabelText('Condividi questo risultato'),
     )
     expect(
-      firstResult?.querySelector('[aria-label="Condividi questo risultato"]'),
+      firstResult.querySelector('[aria-label="Condividi questo risultato"]'),
     ).toBeNull()
-    expect(firstResult?.textContent).toContain(
-      'Ti conviene questo distributore',
-    )
-    expect(firstResult?.textContent).toContain(
+    expect(firstResult.textContent).toContain('Conviene qui')
+    expect(
+      screen.getByLabelText(
+        'Mappa con il percorso stradale verso il distributore più conveniente',
+      ),
+    ).toBeTruthy()
+    expect(firstResult.textContent).toContain(
       'Distanza stradale stimata A/R: 2,0 km',
     )
-    expect(firstResult?.textContent).toContain(
+    expect(firstResult.textContent).toContain(
       'Prezzo comunicato: 18/08/2026, 08:42',
     )
-    expect(firstResult?.textContent).toContain(
+    expect(firstResult.textContent).toContain(
       'Litri stimati consumati per il viaggio: 0,20 L',
     )
-    expect(firstResult?.textContent).toContain('Litri netti: 31,05 L')
+    expect(firstResult.textContent).toContain('Litri netti: 31,05 L')
     expect(secondResult?.textContent).toContain(
       'Distanza stradale stimata A/R: 40,0 km',
     )
@@ -305,14 +329,15 @@ describe('FuelSmartCalculator', () => {
         /^Hai circa 1,72 L netti in più rispetto al secondo classificato \(≈ 2,75\s€ di carburante\)\.$/,
       ),
     ).toBeTruthy()
-    expect(screen.getAllByText('Ti conviene questo distributore')).toHaveLength(
-      1,
-    )
-    const navigationLinks = screen.getAllByRole('link', {
-      name: 'Apri nel navigatore',
+    const winnerNavigationLink = screen.getByRole('link', {
+      name: 'Portami qui',
     })
+    const navigationLinks = [
+      winnerNavigationLink,
+      ...screen.getAllByRole('link', { name: 'Apri nel navigatore' }),
+    ]
     const winnerNavigationUrl = new URL(
-      navigationLinks[0].getAttribute('href') ?? '',
+      winnerNavigationLink.getAttribute('href') ?? '',
     )
 
     expect(navigationLinks).toHaveLength(2)
@@ -329,6 +354,30 @@ describe('FuelSmartCalculator', () => {
     expect(screen.queryByText(/Middle Station/)).toBeNull()
     expect(screen.queryByText(/No Price/)).toBeNull()
     expect(screen.queryByText(/Invalid Coordinates/)).toBeNull()
+  })
+
+  it('requests the real road route to the winner only after ranking', async () => {
+    arrangeRankingScenario([
+      { id: 1, name: 'Winner Station', netFuelLiters: 30, routeDistanceMeters: 1_000 },
+      { id: 2, name: 'Second Station', netFuelLiters: 29, routeDistanceMeters: 2_000 },
+    ])
+    // Il percorso non arriva: la vista resta utilizzabile, senza linea.
+    arrangeApiResponse({ error: 'Unable to retrieve the route path.' }, false)
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await findWinnerHeading('Winner Station')).toBeTruthy()
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('/api/route-path')
+    expect(
+      JSON.parse((fetchMock.mock.calls[2]?.[1] as RequestInit).body as string),
+    ).toEqual({
+      origin: { latitude: 45.4642, longitude: 9.19 },
+      destination: { latitude: 45.46 + 1 / 1_000, longitude: 9.19 + 1 / 1_000 },
+    })
+    expect(screen.getByRole('link', { name: 'Portami qui' })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('keeps net fuel liters as the primary ranking criterion', async () => {
@@ -350,7 +399,7 @@ describe('FuelSmartCalculator', () => {
 
     submitForm()
 
-    expect(await screen.findByText('1. Far Better Station')).toBeTruthy()
+    expect(await findWinnerHeading('Far Better Station')).toBeTruthy()
     expect(screen.getByText('2. Near Worse Station')).toBeTruthy()
   })
 
@@ -373,7 +422,7 @@ describe('FuelSmartCalculator', () => {
 
     submitForm()
 
-    expect(await screen.findByText('1. Near Tied Station')).toBeTruthy()
+    expect(await findWinnerHeading('Near Tied Station')).toBeTruthy()
     expect(screen.getByText('2. Far Tied Station')).toBeTruthy()
   })
 
@@ -397,7 +446,7 @@ describe('FuelSmartCalculator', () => {
     submitForm()
 
     expect(
-      await screen.findByText('1. Near Equivalent Station'),
+      await findWinnerHeading('Near Equivalent Station'),
     ).toBeTruthy()
     expect(screen.getByText('2. Far Microscopic Advantage')).toBeTruthy()
     expect(
@@ -541,6 +590,7 @@ describe('FuelSmartCalculator', () => {
     expect(
       screen.queryByRole('link', { name: 'Apri nel navigatore' }),
     ).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Portami qui' })).toBeNull()
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
@@ -573,7 +623,7 @@ describe('FuelSmartCalculator', () => {
 
     submitForm()
 
-    expect(await screen.findByText('1. Only Station')).toBeTruthy()
+    expect(await findWinnerHeading('Only Station')).toBeTruthy()
     expect(
       screen.queryByText(/netti in più rispetto al secondo classificato/),
     ).toBeNull()
@@ -583,22 +633,22 @@ describe('FuelSmartCalculator', () => {
     [
       'a descriptive name',
       { name: 'Stazione Centro', brand: 'Q8', city: 'Milano' },
-      '1. Stazione Centro',
+      'Stazione Centro',
     ],
     [
       'the brand when the name is numeric',
       { name: ' 7412 ', brand: 'Q8', city: 'Milano' },
-      '1. Q8',
+      'Q8',
     ],
     [
       'the city fallback when the numeric name has no brand',
       { name: '7412', brand: null, city: 'Milano' },
-      '1. Distributore a Milano',
+      'Distributore a Milano',
     ],
     [
       'the generic fallback when no descriptive data is available',
       { name: '7412', brand: '   ', city: null },
-      '1. Distributore',
+      'Distributore',
     ],
   ])('shows %s', async (_case, stationLabels, expectedHeading) => {
     arrangeApiResponse({
@@ -627,7 +677,7 @@ describe('FuelSmartCalculator', () => {
 
     submitForm()
 
-    expect(await screen.findByText(expectedHeading)).toBeTruthy()
+    expect(await findWinnerHeading(expectedHeading)).toBeTruthy()
   })
 
   it('shows a readable geolocation error without calling the API', async () => {

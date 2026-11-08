@@ -260,6 +260,11 @@ The production endpoint is protected by a Vercel WAF rate limit.
 
 Do not remove or bypass that protection without an explicit task.
 
+The nearby results view draws the real road route to the winning station
+(display only, never used for ranking) through:
+
+- POST /api/route-path (single origin → destination, max 50 km straight-line)
+
 Route planning additionally uses:
 
 - POST /api/geocode

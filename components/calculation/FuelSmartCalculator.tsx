@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
+import { createPortal } from 'react-dom'
 import { motion } from 'motion/react'
 
 import {
   fetchNearbyStations,
   fetchRouteMatrix,
+  fetchRoutePath,
 } from '../../lib/api/rifornioApiClient'
+import type { RouteLineString } from '../../lib/maps/getMapboxDirections'
 import {
   getStationDisplayName,
   rankNearbyStations,
@@ -21,7 +23,12 @@ import {
 } from '../../lib/stations/formatStationText'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
-import { useResultsMap, type MapCoordinates } from '../map/ResultsMapContext'
+import {
+  NEARBY_RESULTS_SLOT_ID,
+  useResultsMap,
+  type MapCoordinates,
+  type ResultsMapData,
+} from '../map/ResultsMapContext'
 import { StationsResultMap } from '../map/StationsResultMap'
 import ShareResultButtons from '../share/ShareResultButtons'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
@@ -45,6 +52,9 @@ const euroFormatter = new Intl.NumberFormat('it-IT', {
 })
 
 const rankedResultsLimit = 10
+
+// Nella vista focalizzata i cartelli non sono selezionabili.
+function ignoreStationSelection() {}
 
 function haveEquivalentDisplayedNetFuelLiters(
   first: RankedStationResult,
@@ -137,17 +147,6 @@ function getGoogleMapsNavigationUrl(
   return navigationUrl.toString()
 }
 
-interface StationResultCardProps {
-  result: RankedStationResult
-  index: number
-  winnerAdvantageLiters: number | null
-  winnerNetFuelLiters?: number
-  onSelectOnMap?: (stationId: number) => void
-  isSelectedOnMap?: boolean
-  mobileMap?: React.ReactNode
-  showAllToggle?: React.ReactNode
-}
-
 function StationIdentity({
   result,
   stationName,
@@ -238,141 +237,56 @@ function CalculationDetails({
   )
 }
 
-function StationResultCard({
+
+function AlternativeResultRow({
   result,
   index,
-  winnerAdvantageLiters,
   winnerNetFuelLiters,
-  onSelectOnMap,
-  isSelectedOnMap,
-  mobileMap,
-  showAllToggle,
-}: StationResultCardProps) {
+}: {
+  result: RankedStationResult
+  index: number
+  winnerNetFuelLiters: number
+}) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
-  const isBestResult = index === 0
+  const litersBehindWinner = Math.max(
+    0,
+    winnerNetFuelLiters - result.netFuelLiters,
+  )
   const navigationUrl = getGoogleMapsNavigationUrl(
     result.station.latitude,
     result.station.longitude,
   )
 
-  if (!isBestResult) {
-    const litersBehindWinner =
-      winnerNetFuelLiters === undefined
-        ? null
-        : Math.max(0, winnerNetFuelLiters - result.netFuelLiters)
-
-    return (
-      <li
-        onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-        className={`min-w-0 cursor-pointer rounded-2xl border px-3.5 py-3 transition-colors duration-150 sm:px-4 ${
-          isSelectedOnMap
-            ? 'border-emerald-500/80 bg-zinc-900/90 ring-1 ring-emerald-500/40'
-            : 'border-zinc-800/80 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/70'
-        }`}
-      >
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-semibold text-zinc-100 sm:text-base">
-              {index + 1}. {stationName}
-            </h3>
-            <StationIdentity result={result} stationName={stationName} />
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-sm font-bold text-zinc-100 tabular-nums">
-              {litersFormatter.format(result.netFuelLiters)}{' '}
-              <span className="text-xs font-normal text-zinc-400">L netti</span>
-            </p>
-            {litersBehindWinner !== null ? (
-              <p className="text-xs font-medium text-amber-300/90 tabular-nums">
-                −{litersFormatter.format(litersBehindWinner)} L dal 1°
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400 tabular-nums">
-          <span>
-            <RoadSignPrice price={result.station.fuelPrice} /> €/L
-          </span>
-          <span>{distanceFormatter.format(travelDistanceKm)} km A/R</span>
-          {navigationUrl ? (
-            <a
-              className="ml-auto inline-flex min-h-9 items-center rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 font-semibold text-zinc-100 transition hover:border-zinc-600 hover:bg-zinc-800"
-              href={navigationUrl}
-              onClick={(event) => event.stopPropagation()}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Apri nel navigatore
-            </a>
-          ) : null}
-        </div>
-
-        <CalculationDetails
-          compact
-          result={result}
-          travelDistanceKm={travelDistanceKm}
-        />
-      </li>
-    )
-  }
-
-  const cardClasses = isSelectedOnMap
-    ? 'min-w-0 break-words rounded-3xl border-2 border-emerald-500 bg-zinc-900/95 p-5 sm:p-6 shadow-2xl ring-2 ring-emerald-500/50 cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-emerald-500/15'
-    : 'min-w-0 break-words rounded-3xl border-2 border-emerald-500/80 bg-zinc-900/90 p-5 sm:p-6 shadow-2xl ring-1 ring-emerald-500/30 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-400 shadow-emerald-500/10'
-
   return (
-    <li
-      onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-      className={cardClasses}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
-          <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Ti conviene questo distributore
-        </span>
-      </div>
-      <h3 className="mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50">
-        {index + 1}. {stationName}
-      </h3>
-      <StationIdentity result={result} stationName={stationName} />
-
-      <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Prezzo</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
-            <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-400">€/L</span>
-          </p>
+    <li className="min-w-0 border-t border-zinc-800/80 py-3 first:border-t-0">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-semibold text-zinc-100">
+            {index + 1}. {stationName}
+          </h3>
+          <StationIdentity result={result} stationName={stationName} />
         </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Distanza A/R</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
-            {distanceFormatter.format(travelDistanceKm)} <span className="text-[11px] sm:text-xs font-normal text-zinc-400">km</span>
-          </p>
-        </div>
-        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10">
-          <p className="text-[11px] sm:text-xs font-bold text-emerald-300">Litri netti</p>
-          <p className="mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums">
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-bold text-zinc-100 tabular-nums">
             {litersFormatter.format(result.netFuelLiters)}{' '}
-            <span className="text-[11px] sm:text-xs font-normal text-emerald-300/80">L</span>
+            <span className="text-xs font-normal text-zinc-400">L netti</span>
+          </p>
+          <p className="text-xs font-medium text-amber-300/90 tabular-nums">
+            −{litersFormatter.format(litersBehindWinner)} L dal 1°
           </p>
         </div>
       </div>
 
-      {winnerAdvantageLiters !== null ? (
-        <p className="mt-2.5 text-xs font-semibold text-emerald-300 tabular-nums">
-          Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato
-          {' '}(≈ {euroFormatter.format(winnerAdvantageLiters * result.station.fuelPrice)} di carburante).
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400 tabular-nums">
+        <span>
+          <RoadSignPrice price={result.station.fuelPrice} /> €/L
+        </span>
+        <span>{distanceFormatter.format(travelDistanceKm)} km A/R</span>
         {navigationUrl ? (
           <a
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto"
+            className="ml-auto inline-flex min-h-9 items-center rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 font-semibold text-zinc-100 transition hover:border-zinc-600 hover:bg-zinc-800"
             href={navigationUrl}
-            onClick={(event) => event.stopPropagation()}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -381,34 +295,131 @@ function StationResultCard({
         ) : null}
       </div>
 
-      {/* Mappa in primo piano subito dopo l'azione principale */}
-      {mobileMap ? (
-        <div className="mt-4 pt-3 border-t border-emerald-800/60 lg:hidden" onClick={(e) => e.stopPropagation()}>
-          {mobileMap}
+      <CalculationDetails
+        compact
+        result={result}
+        travelDistanceKm={travelDistanceKm}
+      />
+    </li>
+  )
+}
+
+function WinnerCard({
+  result,
+  winnerAdvantageLiters,
+  alternatives,
+}: {
+  result: RankedStationResult
+  winnerAdvantageLiters: number | null
+  alternatives: RankedStationResult[]
+}) {
+  const stationName = getStationDisplayName(result.station)
+  const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
+  const navigationUrl = getGoogleMapsNavigationUrl(
+    result.station.latitude,
+    result.station.longitude,
+  )
+
+  return (
+    <article
+      aria-label="Distributore più conveniente"
+      className="min-w-0 break-words"
+    >
+      <p className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+        <span aria-hidden="true" className="size-1.5 rounded-full bg-emerald-400" />
+        Conviene qui
+      </p>
+      <h3 className="mt-1 text-xl font-bold tracking-tight text-zinc-50 sm:text-2xl">
+        {stationName}
+      </h3>
+      <StationIdentity result={result} stationName={stationName} />
+
+      <dl className="mt-3.5 grid grid-cols-3 gap-2 text-left">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-2.5">
+          <dt className="text-[11px] font-medium text-zinc-400">Prezzo</dt>
+          <dd className="mt-0.5 text-sm font-bold text-zinc-100 tabular-nums">
+            <RoadSignPrice price={result.station.fuelPrice} />{' '}
+            <span className="text-[11px] font-normal text-zinc-400">€/L</span>
+          </dd>
         </div>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-2.5">
+          <dt className="text-[11px] font-medium text-zinc-400">Strada A/R</dt>
+          <dd className="mt-0.5 text-sm font-bold text-zinc-100 tabular-nums">
+            {distanceFormatter.format(travelDistanceKm)}{' '}
+            <span className="text-[11px] font-normal text-zinc-400">km</span>
+          </dd>
+        </div>
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-2.5">
+          <dt className="text-[11px] font-bold text-emerald-300">Litri netti</dt>
+          <dd className="mt-0.5 text-sm font-extrabold text-emerald-300 tabular-nums">
+            {litersFormatter.format(result.netFuelLiters)}{' '}
+            <span className="text-[11px] font-normal text-emerald-300/80">L</span>
+          </dd>
+        </div>
+      </dl>
+
+      {winnerAdvantageLiters !== null ? (
+        <p className="mt-2.5 text-xs font-semibold text-emerald-300 tabular-nums">
+          Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato
+          {' '}(≈ {euroFormatter.format(winnerAdvantageLiters * result.station.fuelPrice)} di carburante).
+        </p>
+      ) : null}
+
+      {navigationUrl ? (
+        <a
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+          href={navigationUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <svg aria-hidden="true" className="size-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z" />
+          </svg>
+          Portami qui
+        </a>
       ) : null}
 
       <CalculationDetails result={result} travelDistanceKm={travelDistanceKm} />
 
-      {showAllToggle ? (
-        <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
-          {showAllToggle}
-        </div>
+      {alternatives.length > 0 ? (
+        <details className="group mt-2 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-xs">
+          <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-zinc-300 select-none hover:text-zinc-100">
+            <span>
+              Vedi {alternatives.length === 1 ? "l'altro distributore" : `gli altri ${alternatives.length}`} in classifica
+            </span>
+            <span aria-hidden="true" className="text-[10px] text-zinc-400 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <ol
+            aria-label="Altri distributori in classifica"
+            className="mt-2 border-t border-zinc-800 pt-1"
+            start={2}
+          >
+            {alternatives.map((alternative, index) => (
+              <AlternativeResultRow
+                index={index + 1}
+                key={alternative.station.id}
+                result={alternative}
+                winnerNetFuelLiters={result.netFuelLiters}
+              />
+            ))}
+          </ol>
+        </details>
       ) : null}
-    </li>
+    </article>
   )
 }
 
 export default function FuelSmartCalculator() {
   const calculationInFlight = useRef(false)
-  const resultsRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLElement>(null)
   const resultsMap = useResultsMap()
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
   const [originCoords, setOriginCoords] = useState<MapCoordinates | null>(null)
   const [results, setResults] = useState<RankedStationResult[]>([])
+  const [winnerRoute, setWinnerRoute] = useState<RouteLineString | null>(null)
+  const routeRequestId = useRef(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [showAllMobileResults, setShowAllMobileResults] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
   const winnerAdvantageLiters =
@@ -419,15 +430,10 @@ export default function FuelSmartCalculator() {
 
   const setMapData = resultsMap?.setMapData
 
-  useEffect(() => {
-    if (!setMapData) return
+  const mapData = useMemo<ResultsMapData | null>(() => {
+    if (results.length === 0) return null
 
-    if (results.length === 0) {
-      setMapData(null)
-      return
-    }
-
-    setMapData({
+    return {
       mode: 'nearby',
       fuelType: calculationInput
         ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
@@ -457,8 +463,12 @@ export default function FuelSmartCalculator() {
           distanceSummary: `Distanza A/R: ${distanceFormatter.format(travelKm)} km`,
         }
       }),
-    })
-  }, [results, originCoords, calculationInput, setMapData])
+    }
+  }, [results, originCoords, calculationInput])
+
+  useEffect(() => {
+    setMapData?.(mapData)
+  }, [mapData, setMapData])
 
   useEffect(() => {
     return () => {
@@ -480,12 +490,33 @@ export default function FuelSmartCalculator() {
     }
   }, [results, isLoading])
 
+  // Percorso stradale reale fino al vincente, solo per disegnarlo sulla mappa.
+  // Se non arriva la mappa mostra i soli cartelli: mai una linea in linea d'aria.
+  async function loadWinnerRoute(
+    origin: MapCoordinates,
+    destination: MapCoordinates,
+  ) {
+    const requestId = routeRequestId.current
+
+    try {
+      const response = await fetchRoutePath({ origin, destination })
+      if (requestId === routeRequestId.current) {
+        setWinnerRoute(response.geometry)
+      }
+    } catch {
+      if (requestId === routeRequestId.current) {
+        setWinnerRoute(null)
+      }
+    }
+  }
+
   async function handleCalculate(values: RefuelCalculationInput) {
     if (calculationInFlight.current) return
     calculationInFlight.current = true
     setCalculationInput(values)
-    setShowAllMobileResults(false)
     setResults([])
+    setWinnerRoute(null)
+    routeRequestId.current += 1
     setError(null)
     setEmptyStateMessage(null)
     setIsLoading(true)
@@ -556,6 +587,14 @@ export default function FuelSmartCalculator() {
       }
 
       setResults(rankedResults)
+
+      const winner = rankedResults[0]
+      if (winner) {
+        void loadWinnerRoute(
+          { latitude: position.latitude, longitude: position.longitude },
+          { latitude: winner.station.latitude, longitude: winner.station.longitude },
+        )
+      }
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -567,6 +606,59 @@ export default function FuelSmartCalculator() {
       setIsLoading(false)
     }
   }
+
+  const resultsView =
+    results.length > 0 && mapData ? (
+      <motion.section
+        ref={resultsRef}
+        aria-label="Risultato della ricerca"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+        className="flex min-w-0 flex-col gap-3 scroll-mt-24 sm:gap-4"
+      >
+        <div className="relative min-w-0 overflow-hidden rounded-3xl border border-zinc-800/80 bg-zinc-900 shadow-2xl lg:h-[min(80vh,760px)] lg:min-h-[560px]">
+          <div className="h-[50vh] min-h-[300px] max-h-[460px] lg:absolute lg:inset-0 lg:h-full lg:max-h-none">
+            <StationsResultMap
+              variant="focus"
+              data={mapData}
+              selectedStationId={results[0].station.id}
+              onSelectStation={ignoreStationSelection}
+              routeGeometry={winnerRoute}
+            />
+          </div>
+          <div className="relative z-10 border-t border-emerald-500/40 bg-zinc-950 p-5 sm:p-6 lg:absolute lg:top-4 lg:left-4 lg:mt-0 lg:max-h-[calc(100%-2rem)] lg:w-[380px] lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:border lg:bg-zinc-950/95 lg:p-5 lg:shadow-2xl">
+            <WinnerCard
+              alternatives={results.slice(1)}
+              result={results[0]}
+              winnerAdvantageLiters={winnerAdvantageLiters}
+            />
+          </div>
+        </div>
+
+        <ShareResultButtons
+          stationName={getStationDisplayName(results[0].station)}
+          brand={results[0].station.brand}
+          city={results[0].station.city}
+          fuelPrice={results[0].station.fuelPrice}
+          netFuelLiters={results[0].netFuelLiters}
+          fuelType={
+            calculationInput
+              ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
+              : 'Benzina'
+          }
+          isSelf={calculationInput?.isSelf ?? true}
+          refuelAmount={calculationInput?.refuelAmount ?? 50}
+        />
+      </motion.section>
+    ) : null
+
+  // Sulla homepage la vista risultati occupa tutta la larghezza della pagina
+  // (slot sotto calcolatore e guida); altrove resta in linea.
+  const resultsSlot =
+    resultsView && typeof document !== 'undefined'
+      ? document.getElementById(NEARBY_RESULTS_SLOT_ID)
+      : null
 
   return (
     <section className="flex min-w-0 flex-col gap-6 sm:gap-8">
@@ -615,109 +707,11 @@ export default function FuelSmartCalculator() {
         </p>
       ) : null}
 
-      {results.length > 0 ? (
-        <motion.div
-          ref={resultsRef}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-          className="flex min-w-0 flex-col gap-3 sm:gap-4 scroll-mt-6"
-        >
-          <ol>
-            <StationResultCard
-              index={0}
-              isSelectedOnMap={
-                resultsMap?.selectedStationId === results[0].station.id
-              }
-              onSelectOnMap={resultsMap?.setSelectedStationId}
-              result={results[0]}
-              winnerAdvantageLiters={winnerAdvantageLiters}
-              mobileMap={
-                resultsMap?.mapData ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                      <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Mappa completa dei distributori
-                      </span>
-                      <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">
-                        Tocca per selezionare
-                      </span>
-                    </div>
-                    <StationsResultMap
-                      embedded
-                      data={resultsMap.mapData}
-                      selectedStationId={resultsMap.selectedStationId}
-                      onSelectStation={resultsMap.setSelectedStationId}
-                    />
-                  </div>
-                ) : null
-              }
-              showAllToggle={
-                results.length > 1 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllMobileResults(!showAllMobileResults)}
-                    aria-expanded={showAllMobileResults}
-                    className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-zinc-700/80 bg-zinc-900 px-4 py-3 text-left text-sm font-semibold text-zinc-100 transition active:scale-[0.99] hover:bg-zinc-800"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>
-                        {showAllMobileResults
-                          ? 'Nascondi gli altri distributori'
-                          : `Vedi gli altri ${results.length - 1} distributori in classifica`}
-                      </span>
-                    </span>
-                    <span aria-hidden="true" className={`text-emerald-400 transition-transform ${showAllMobileResults ? 'rotate-180' : ''}`}>
-                      ▾
-                    </span>
-                  </button>
-                ) : null
-              }
-            />
-          </ol>
-
-          {results.length > 1 ? (
-            <ol
-              aria-label="Altri distributori in classifica"
-              className={`min-w-0 flex-col gap-2.5 ${
-                showAllMobileResults ? 'flex' : 'hidden lg:flex'
-              }`}
-              start={2}
-            >
-              {results.slice(1).map((result, index) => (
-                <StationResultCard
-                  index={index + 1}
-                  isSelectedOnMap={
-                    resultsMap?.selectedStationId === result.station.id
-                  }
-                  key={result.station.id}
-                  onSelectOnMap={resultsMap?.setSelectedStationId}
-                  result={result}
-                  winnerAdvantageLiters={winnerAdvantageLiters}
-                  winnerNetFuelLiters={results[0].netFuelLiters}
-                />
-              ))}
-            </ol>
-          ) : null}
-
-          <ShareResultButtons
-            className="mt-1"
-            stationName={getStationDisplayName(results[0].station)}
-            brand={results[0].station.brand}
-            city={results[0].station.city}
-            fuelPrice={results[0].station.fuelPrice}
-            netFuelLiters={results[0].netFuelLiters}
-            fuelType={
-              calculationInput
-                ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
-                : 'Benzina'
-            }
-            isSelf={calculationInput?.isSelf ?? true}
-            refuelAmount={calculationInput?.refuelAmount ?? 50}
-          />
-        </motion.div>
-      ) : null}
+      {resultsView
+        ? resultsSlot
+          ? createPortal(resultsView, resultsSlot)
+          : resultsView
+        : null}
     </section>
   )
 }
