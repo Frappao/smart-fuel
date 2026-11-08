@@ -1,9 +1,17 @@
 @import "tailwindcss";
 
+/*
+ * Rifornio ha un unico tema scuro. La variante `dark:` è legata alla classe
+ * `.dark` sempre presente su <html> (app/layout.tsx) invece che a
+ * prefers-color-scheme, così il sito appare identico anche con il sistema
+ * operativo in modalità chiara.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  color-scheme: light dark;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  color-scheme: dark;
   interpolate-size: allow-keywords;
 
   /* Apple-inspired Critically Damped Spring (damping 1.0, response ~0.35s) */
@@ -21,13 +29,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
