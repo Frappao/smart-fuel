@@ -12,7 +12,7 @@ export default function FuelSearchCalculator() {
   const [mode, setMode] = useState<SearchMode>('nearby')
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-4 sm:gap-6">
       <div
         aria-label="Tipo di ricerca"
         className="relative grid grid-cols-2 rounded-2xl bg-zinc-900/90 border border-zinc-800/80 p-1.5 shadow-inner"

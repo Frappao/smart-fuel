@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  useEffect,
   useRef,
   useState,
   type FormEvent,
@@ -87,6 +88,23 @@ export default function RefuelForm({
   const [errors, setErrors] = useState<FormErrors>({})
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [show3DGarage, setShow3DGarage] = useState(false)
+  const submitButtonRef = useRef<HTMLButtonElement>(null)
+  // Su mobile il pulsante di calcolo resta sotto la piega: mostriamo una copia
+  // fissa in basso finché il pulsante vero non entra nello schermo.
+  const [isSubmitBelowFold, setIsSubmitBelowFold] = useState(false)
+
+  useEffect(() => {
+    const button = submitButtonRef.current
+    if (!button || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setIsSubmitBelowFold(
+        !entry.isIntersecting && entry.boundingClientRect.top > 0,
+      )
+    })
+    observer.observe(button)
+    return () => observer.disconnect()
+  }, [])
 
   if (selected !== lastSelected) {
     setLastSelected(selected)
@@ -138,13 +156,13 @@ export default function RefuelForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800/60">
+      <div className="sr-only sm:not-sr-only sm:flex sm:items-center sm:justify-between sm:border-b sm:border-zinc-100 sm:pb-3 sm:dark:border-zinc-800/60">
         <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
       </div>
 
       {/* 1. SELEZIONE AUTO ALL'INIZIO DEL CALCOLATORE (PER UTENTI LOGGATI) */}
       {account?.user && (
-        <section aria-labelledby="vehicle-selector-title" className="flex min-w-0 flex-col gap-3.5 rounded-3xl border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:backdrop-blur-xl shadow-xl">
+        <section aria-labelledby="vehicle-selector-title" className="flex min-w-0 flex-col gap-3.5 rounded-3xl border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 dark:border-zinc-800/80 dark:bg-zinc-900/60 md:dark:backdrop-blur-xl shadow-xl">
           <div className="flex items-center justify-between border-b border-zinc-200/80 pb-2.5 dark:border-zinc-800/80">
             <div className="flex items-center gap-2">
               <span className="flex size-6 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" aria-hidden="true">🚗</span>
@@ -498,7 +516,7 @@ export default function RefuelForm({
 
       {/* 2. PROFILO AUTO PER UTENTI NON REGISTRATI (GUEST) */}
       {!account?.user && (
-        <section aria-labelledby="guest-vehicle-title" className="flex min-w-0 flex-col gap-4 rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:backdrop-blur-xl shadow-xl">
+        <section aria-labelledby="guest-vehicle-title" className="flex min-w-0 flex-col gap-4 rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5 dark:border-zinc-800/80 dark:bg-zinc-900/60 md:dark:backdrop-blur-xl shadow-xl">
           <div className="flex items-center justify-between border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
             <div className="flex items-center gap-2.5">
               <span className="flex size-6 items-center justify-center rounded-full bg-zinc-200 text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">1</span>
@@ -589,7 +607,7 @@ export default function RefuelForm({
       {children}
 
       {/* 3. IL CALCOLATORE: QUESTO RIFORNIMENTO (DISTINTO E SEPARATO) */}
-      <section aria-labelledby="refuel-details-title" className="flex min-w-0 flex-col gap-5 rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-6 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:backdrop-blur-xl shadow-xl">
+      <section aria-labelledby="refuel-details-title" className="flex min-w-0 flex-col gap-5 rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-6 dark:border-zinc-800/80 dark:bg-zinc-900/60 md:dark:backdrop-blur-xl shadow-xl">
         <div className="flex items-center justify-between border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
           <div className="flex items-center gap-2.5">
             <span className="flex size-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-500 dark:text-zinc-950">
@@ -664,6 +682,7 @@ export default function RefuelForm({
         </p>
 
         <button
+          ref={submitButtonRef}
           type="submit"
           disabled={isLoading}
           className="flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-4 py-3.5 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-wait disabled:opacity-60"
@@ -677,6 +696,18 @@ export default function RefuelForm({
           <span>{isLoading ? loadingLabel : submitLabel}</span>
         </button>
       </section>
+
+      {isSubmitBelowFold ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800/80 bg-zinc-950/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 px-4 py-3 text-base font-bold text-zinc-950 shadow-lg shadow-emerald-500/20 transition-transform duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoading ? loadingLabel : submitLabel}
+          </button>
+        </div>
+      ) : null}
     </form>
   )
 }

@@ -77,6 +77,11 @@ describe('HomepageRightColumn & StationsResultMap', () => {
       screen.queryByText('Il prezzo più basso non è sempre la scelta migliore'),
     ).toBeNull()
     expect(screen.getByText('Distributori calcolati (1)')).toBeTruthy()
-    expect(screen.getByText('Q8 Saronno')).toBeTruthy()
+    // Il vincitore ha già la sua scheda nei risultati: sotto la mappa compare
+    // solo il selettore, senza ripetere il dettaglio.
+    expect(
+      screen.getAllByRole('button', { name: /#1 Q8/ }).length,
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('#1 in classifica')).toBeNull()
   })
 })

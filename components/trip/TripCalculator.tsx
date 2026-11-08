@@ -100,7 +100,7 @@ function TripResultCard({
       : 'min-w-0 break-words rounded-3xl border-2 border-emerald-500/80 bg-zinc-900/90 p-5 sm:p-6 shadow-2xl ring-1 ring-emerald-500/30 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-400 shadow-emerald-500/10'
     : isSelectedOnMap
       ? 'min-w-0 break-words rounded-2xl border-2 border-emerald-500 bg-zinc-900/80 p-4 sm:p-5 shadow-lg ring-1 ring-emerald-500/50 transition-all duration-150 cursor-pointer active:scale-[0.99]'
-      : 'min-w-0 break-words rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md p-4 sm:p-5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-900/70 active:scale-[0.99] cursor-pointer'
+      : 'min-w-0 break-words rounded-2xl border border-zinc-800/80 bg-zinc-900/50 md:backdrop-blur-md p-4 sm:p-5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-900/70 active:scale-[0.99] cursor-pointer'
 
   return (
     <li
@@ -544,7 +544,7 @@ export default function TripCalculator() {
               isMobileHidden={index > 0 && !showAllMobileResults}
               mobileMap={
                 index === 0 && resultsMap?.mapData ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                       <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
                         <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -554,13 +554,12 @@ export default function TripCalculator() {
                         Tocca per selezionare
                       </span>
                     </div>
-                    <div className="h-[340px] sm:h-[400px] overflow-hidden rounded-xl border border-emerald-300/80 bg-white shadow-xs dark:border-emerald-800/80 dark:bg-zinc-950">
-                      <StationsResultMap
-                        data={resultsMap.mapData}
-                        selectedStationId={resultsMap.selectedStationId}
-                        onSelectStation={resultsMap.setSelectedStationId}
-                      />
-                    </div>
+                    <StationsResultMap
+                      embedded
+                      data={resultsMap.mapData}
+                      selectedStationId={resultsMap.selectedStationId}
+                      onSelectStation={resultsMap.setSelectedStationId}
+                    />
                   </div>
                 ) : null
               }

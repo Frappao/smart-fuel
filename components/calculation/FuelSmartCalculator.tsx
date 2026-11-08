@@ -37,6 +37,13 @@ const litersFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 2,
 })
 
+const euroFormatter = new Intl.NumberFormat('it-IT', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 const rankedResultsLimit = 10
 
 function haveEquivalentDisplayedNetFuelLiters(
@@ -355,7 +362,8 @@ function StationResultCard({
 
       {winnerAdvantageLiters !== null ? (
         <p className="mt-2.5 text-xs font-semibold text-emerald-300 tabular-nums">
-          Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato.
+          Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato
+          {' '}(≈ {euroFormatter.format(winnerAdvantageLiters * result.station.fuelPrice)} di carburante).
         </p>
       ) : null}
 
@@ -626,7 +634,7 @@ export default function FuelSmartCalculator() {
               winnerAdvantageLiters={winnerAdvantageLiters}
               mobileMap={
                 resultsMap?.mapData ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300">
                       <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
                         <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -636,13 +644,12 @@ export default function FuelSmartCalculator() {
                         Tocca per selezionare
                       </span>
                     </div>
-                    <div className="h-[340px] sm:h-[400px] overflow-hidden rounded-xl border border-emerald-300/80 bg-white shadow-xs dark:border-emerald-800/80 dark:bg-zinc-950">
-                      <StationsResultMap
-                        data={resultsMap.mapData}
-                        selectedStationId={resultsMap.selectedStationId}
-                        onSelectStation={resultsMap.setSelectedStationId}
-                      />
-                    </div>
+                    <StationsResultMap
+                      embedded
+                      data={resultsMap.mapData}
+                      selectedStationId={resultsMap.selectedStationId}
+                      onSelectStation={resultsMap.setSelectedStationId}
+                    />
                   </div>
                 ) : null
               }

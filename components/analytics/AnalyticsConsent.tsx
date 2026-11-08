@@ -107,7 +107,7 @@ export default function AnalyticsConsent() {
     <div
       role="dialog"
       aria-label="Preferenze Analytics"
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-3xl border border-zinc-200/80 bg-white/90 p-5 shadow-2xl backdrop-blur-xl saturate-150 transition-all dark:border-zinc-700/80 dark:bg-zinc-900/90"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-2xl transition-all md:bg-white/90 md:backdrop-blur-xl md:saturate-150 dark:border-zinc-700/80 dark:bg-zinc-900 md:dark:bg-zinc-900/90"
     >
       <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
         Analytics

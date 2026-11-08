@@ -84,3 +84,10 @@ body {
   padding: 1px 5px !important;
   border-radius: 9999px !important;
 }
+
+/* I marker dei distributori hanno z-index fino a 30: i controlli MapLibre
+   (zoom, attribuzione OSM) devono restare sopra e sempre leggibili. */
+.maplibregl-map .maplibregl-ctrl-top-right,
+.maplibregl-map .maplibregl-ctrl-bottom-right {
+  z-index: 40;
+}

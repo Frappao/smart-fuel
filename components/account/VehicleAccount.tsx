@@ -54,7 +54,7 @@ export function AccountButton() {
 export function RegistrationPrompt() {
   const account = useVehicleAccount()
   if (!account || account.user) return null
-  return <section aria-label="Salva le tue auto" className="flex flex-col items-start gap-4 rounded-3xl border border-zinc-800/80 bg-zinc-900/60 backdrop-blur-xl p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
+  return <section aria-label="Salva le tue auto" className="flex flex-col items-start gap-4 rounded-3xl border border-zinc-800/80 bg-zinc-900/60 md:backdrop-blur-xl p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
     <div className="space-y-1">
       <div className="flex items-center gap-2">
         <span className="text-emerald-400 text-sm">✨</span>

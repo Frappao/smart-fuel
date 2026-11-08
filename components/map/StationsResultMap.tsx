@@ -42,8 +42,9 @@ interface MapLibreGlobal {
     style: string
     center: [number, number]
     zoom: number
-    attributionControl?: boolean
+    attributionControl?: boolean | { compact?: boolean }
     cooperativeGestures?: boolean
+    locale?: Record<string, string>
   }) => MapLibreMapLike
   NavigationControl: new (options?: {
     showCompass?: boolean
@@ -66,6 +67,24 @@ const MAPLIBRE_CSS_URL =
 const MAPLIBRE_JS_URL =
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'
 const OPENFREEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
+
+// Testi dell'interfaccia MapLibre in italiano (di default sono in inglese).
+const MAPLIBRE_LOCALE_IT: Record<string, string> = {
+  'AttributionControl.ToggleAttribution': 'Mostra o nascondi attribuzioni',
+  'AttributionControl.MapFeedback': 'Segnala un problema della mappa',
+  'CooperativeGesturesHandler.WindowsHelpText':
+    'Usa Ctrl + rotellina per ingrandire la mappa',
+  'CooperativeGesturesHandler.MacHelpText':
+    'Usa ⌘ + rotellina per ingrandire la mappa',
+  'CooperativeGesturesHandler.MobileHelpText':
+    'Usa due dita per spostare la mappa',
+  'Map.Title': 'Mappa',
+  'Marker.Title': 'Indicatore sulla mappa',
+  'NavigationControl.ResetBearing': 'Ripristina orientamento a nord',
+  'NavigationControl.ZoomIn': 'Ingrandisci',
+  'NavigationControl.ZoomOut': 'Riduci',
+  'Popup.Close': 'Chiudi',
+}
 
 const fuelLitersFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 2,
@@ -230,10 +249,13 @@ export function StationsResultMap({
   data,
   selectedStationId,
   onSelectStation,
+  embedded = false,
 }: {
   data: ResultsMapData
   selectedStationId: number | null
   onSelectStation: (stationId: number) => void
+  /** Dentro la scheda del vincitore (mobile): il titolo lo dà il contenitore. */
+  embedded?: boolean
 }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<MapLibreMapLike | null>(null)
@@ -341,8 +363,11 @@ export function StationsResultMap({
             style: OPENFREEMAP_STYLE_URL,
             center: initialCenter,
             zoom: 12,
-            attributionControl: false,
+            // Attribuzione OSM/OpenFreeMap obbligatoria (licenza ODbL): compatta,
+            // ma sempre presente.
+            attributionControl: { compact: true },
             cooperativeGestures: true,
+            locale: MAPLIBRE_LOCALE_IT,
           })
 
           map.addControl(
@@ -558,20 +583,16 @@ export function StationsResultMap({
   }, [])
 
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200">
-            <span className="size-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-            Mappa convenienza reale
-          </span>
+    <div className={`flex flex-col ${embedded ? 'gap-3' : 'h-full gap-4'}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {embedded ? null : (
           <h2
             id="homepage-map-title"
-            className="mt-1 text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl dark:text-zinc-100"
+            className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl dark:text-zinc-100"
           >
             Distributori calcolati ({data.stations.length})
           </h2>
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 font-semibold text-white">
@@ -590,7 +611,7 @@ export function StationsResultMap({
       </div>
 
       {/* Map Viewport */}
-      <div className="relative min-h-[280px] flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 shadow-inner sm:min-h-[320px] dark:border-zinc-800 dark:bg-zinc-950">
+      <div className={`relative overflow-hidden rounded-xl ${embedded ? 'h-[300px] sm:h-[360px]' : 'min-h-[280px] flex-1 sm:min-h-[320px]'} border border-zinc-200 bg-zinc-100 shadow-inner dark:border-zinc-800 dark:bg-zinc-950`}>
         <div
           ref={mapContainerRef}
           aria-label="Mappa interattiva dei distributori"
@@ -712,7 +733,8 @@ export function StationsResultMap({
       </div>
 
       {/* Selected Station Detail Card */}
-      {activeStation ? (
+      {/* Il vincitore ha già la sua scheda: il dettaglio serve solo per gli altri. */}
+      {activeStation && activeStation.rank !== 1 ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800/80 dark:bg-emerald-950/30">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

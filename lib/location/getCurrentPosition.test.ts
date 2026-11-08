@@ -15,6 +15,8 @@ function stubGeolocationError(code: number) {
   vi.stubGlobal('navigator', {
     geolocation: { getCurrentPosition: browserGetCurrentPosition },
   })
+
+  return browserGetCurrentPosition
 }
 
 describe('getCurrentPosition', () => {
@@ -58,23 +60,59 @@ describe('getCurrentPosition', () => {
     vi.stubGlobal('navigator', {})
 
     await expect(getCurrentPosition()).rejects.toThrow(
-      'Geolocation is not available in this browser.',
+      'La geolocalizzazione non è disponibile in questo browser.',
     )
   })
 
   it('explains when location permission is denied', async () => {
-    stubGeolocationError(1)
+    const browserGetCurrentPosition = stubGeolocationError(1)
 
     await expect(getCurrentPosition()).rejects.toThrow(
-      /location permission was denied/i,
+      /accesso alla posizione negato/i,
     )
+    // Con il permesso negato non si riprova.
+    expect(browserGetCurrentPosition).toHaveBeenCalledTimes(1)
   })
 
   it('explains when the position is unavailable', async () => {
-    stubGeolocationError(2)
+    const browserGetCurrentPosition = stubGeolocationError(2)
 
     await expect(getCurrentPosition()).rejects.toThrow(
-      /location could not be determined/i,
+      /non è stato possibile determinare la tua posizione/i,
+    )
+    expect(browserGetCurrentPosition).toHaveBeenCalledTimes(2)
+  })
+
+  it('falls back to low accuracy when high accuracy is unavailable (Mac)', async () => {
+    const browserGetCurrentPosition = vi.fn(
+      (
+        success: PositionCallback,
+        error: PositionErrorCallback | null | undefined,
+        options?: PositionOptions,
+      ) => {
+        if (options?.enableHighAccuracy) {
+          error?.({ code: 2, message: 'kCLErrorLocationUnknown' } as GeolocationPositionError)
+          return
+        }
+        success({
+          coords: { latitude: 41.9, longitude: 12.5, accuracy: 65 },
+        } as GeolocationPosition)
+      },
+    )
+
+    vi.stubGlobal('navigator', {
+      geolocation: { getCurrentPosition: browserGetCurrentPosition },
+    })
+
+    await expect(getCurrentPosition()).resolves.toEqual({
+      latitude: 41.9,
+      longitude: 12.5,
+      accuracy: 65,
+    })
+    expect(browserGetCurrentPosition).toHaveBeenLastCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+      { enableHighAccuracy: false, timeout: 15_000, maximumAge: 300_000 },
     )
   })
 
@@ -82,7 +120,7 @@ describe('getCurrentPosition', () => {
     stubGeolocationError(3)
 
     await expect(getCurrentPosition()).rejects.toThrow(
-      /location request timed out/i,
+      /troppo tempo/i,
     )
   })
 })

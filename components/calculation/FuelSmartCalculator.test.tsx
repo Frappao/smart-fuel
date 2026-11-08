@@ -302,7 +302,7 @@ describe('FuelSmartCalculator', () => {
     expect(secondResult?.textContent).toContain('Litri netti: 29,33 L')
     expect(
       screen.getByText(
-        'Hai circa 1,72 L netti in più rispetto al secondo classificato.',
+        /^Hai circa 1,72 L netti in più rispetto al secondo classificato \(≈ 2,75\s€ di carburante\)\.$/,
       ),
     ).toBeTruthy()
     expect(screen.getAllByText('Ti conviene questo distributore')).toHaveLength(
