@@ -17,7 +17,7 @@ export default function PriceUpdateNotice({
 
   return (
     <div className="space-y-1 text-xs leading-5">
-      <p className="text-zinc-500">
+      <p className="text-zinc-400">
         Prezzi aggiornati al{' '}
         <time dateTime={latestCommunicatedAt ?? undefined} className="tabular-nums text-zinc-400">
           {status.label}

@@ -60,3 +60,27 @@ body {
     -webkit-backdrop-filter: none !important;
   }
 }
+
+/* Cartelli della mappa risultati: quando si sovrappongono, quelli peggio
+   classificati diventano un bollino con il solo numero (vedi StationsResultMap). */
+.rifornio-map-marker-compact {
+  display: none;
+}
+
+.rifornio-map-marker[data-compact] .rifornio-map-marker-full {
+  display: none;
+}
+
+.rifornio-map-marker[data-compact] .rifornio-map-marker-compact {
+  display: block;
+  min-width: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.rifornio-map-marker[data-compact] {
+  padding: 1px 5px !important;
+  border-radius: 9999px !important;
+}

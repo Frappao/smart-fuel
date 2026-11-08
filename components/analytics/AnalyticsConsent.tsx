@@ -2,8 +2,8 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 
-const CONSENT_KEY = "rifornio-analytics-consent";
-const CONSENT_EVENT = "rifornio-analytics-consent-change";
+export const CONSENT_KEY = "rifornio-analytics-consent";
+export const CONSENT_EVENT = "rifornio-analytics-consent-change";
 
 const GA_MEASUREMENT_ID = "G-0323M57ZQP";
 const GA_SCRIPT_ID = "rifornio-ga4";

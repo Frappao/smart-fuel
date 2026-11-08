@@ -181,14 +181,14 @@ export default async function CityFuelPage({ params }: PageProps) {
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     <RoadSignPrice price={cityData.stats.benzinaSelf.min} /> €
                   </span>
-                  <span className="text-xs text-zinc-500">prezzo minimo</span>
+                  <span className="text-xs text-zinc-400">prezzo minimo</span>
                 </div>
                 <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
                   Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.benzinaSelf.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-zinc-500">Prezzo non disponibile oggi</p>
+              <p className="mt-3 text-sm text-zinc-400">Prezzo non disponibile oggi</p>
             )}
           </div>
 
@@ -200,14 +200,14 @@ export default async function CityFuelPage({ params }: PageProps) {
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     <RoadSignPrice price={cityData.stats.gasolioSelf.min} /> €
                   </span>
-                  <span className="text-xs text-zinc-500">prezzo minimo</span>
+                  <span className="text-xs text-zinc-400">prezzo minimo</span>
                 </div>
                 <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
                   Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.gasolioSelf.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-zinc-500">Prezzo non disponibile oggi</p>
+              <p className="mt-3 text-sm text-zinc-400">Prezzo non disponibile oggi</p>
             )}
           </div>
 
@@ -219,14 +219,14 @@ export default async function CityFuelPage({ params }: PageProps) {
                   <span className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">
                     <RoadSignPrice price={cityData.stats.gpl.min} /> €
                   </span>
-                  <span className="text-xs text-zinc-500">prezzo minimo</span>
+                  <span className="text-xs text-zinc-400">prezzo minimo</span>
                 </div>
                 <p className="mt-2 text-sm text-zinc-600 tabular-nums dark:text-zinc-400">
                   Media a {cityName}: <strong className="text-zinc-800 dark:text-zinc-200"><RoadSignPrice price={cityData.stats.gpl.avg} /> €/L</strong>
                 </p>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-zinc-500">Nessun impianto GPL segnalato</p>
+              <p className="mt-3 text-sm text-zinc-400">Nessun impianto GPL segnalato</p>
             )}
           </div>
         </section>

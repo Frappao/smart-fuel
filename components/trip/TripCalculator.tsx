@@ -194,7 +194,7 @@ function TripResultCard({
 
       {/* Dettagli tecnici secondari ordinati in disclosure discreta */}
       <details className="group mt-3 rounded-lg border border-zinc-200/60 bg-white/60 p-2.5 text-xs text-zinc-600 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-400">
-        <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+        <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
           <span>Dettagli del calcolo</span>
           <span className="text-[10px] text-zinc-400 group-open:rotate-180 transition-transform">▾</span>
         </summary>

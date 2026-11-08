@@ -1,4 +1,5 @@
 import type { NearbyStation } from '../api/rifornioApiClient'
+import { toDisplayCase } from '../stations/formatStationText'
 import { calculateConvenience } from './calculateConvenience'
 
 export interface PricedNearbyStation extends NearbyStation {
@@ -75,7 +76,7 @@ function getDescriptiveLabel(value: string | null): string | null {
     return null
   }
 
-  return normalizedValue
+  return toDisplayCase(normalizedValue)
 }
 
 export function getStationDisplayName(

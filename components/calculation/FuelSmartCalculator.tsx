@@ -15,6 +15,10 @@ import {
   type RankedStationResult,
 } from '../../lib/calculation/rankNearbyStations'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
+import {
+  formatStationLocation,
+  toDisplayCase,
+} from '../../lib/stations/formatStationText'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import { useResultsMap, type MapCoordinates } from '../map/ResultsMapContext'
@@ -130,64 +134,203 @@ interface StationResultCardProps {
   result: RankedStationResult
   index: number
   winnerAdvantageLiters: number | null
+  winnerNetFuelLiters?: number
   onSelectOnMap?: (stationId: number) => void
   isSelectedOnMap?: boolean
-  refuelAmount?: number
-  fuelType?: string
-  isSelf?: boolean
   mobileMap?: React.ReactNode
   showAllToggle?: React.ReactNode
+}
+
+function StationIdentity({
+  result,
+  stationName,
+}: {
+  result: RankedStationResult
+  stationName: string
+}) {
+  const brand = toDisplayCase(result.station.brand?.trim() || null)
+  const showBrand =
+    brand !== null &&
+    !stationName.toLocaleLowerCase('it-IT').includes(brand.toLocaleLowerCase('it-IT'))
+  const location = formatStationLocation(
+    result.station.address,
+    result.station.city,
+  )
+
+  if (!showBrand && !location) {
+    return null
+  }
+
+  return (
+    <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-zinc-400">
+      {showBrand ? (
+        <span className="shrink-0 rounded-md border border-zinc-700/80 bg-zinc-800/70 px-1.5 py-0.5 font-semibold text-zinc-200">
+          {brand}
+        </span>
+      ) : null}
+      {location ? <span className="truncate">{location}</span> : null}
+    </p>
+  )
+}
+
+function CalculationDetails({
+  result,
+  travelDistanceKm,
+  compact = false,
+}: {
+  result: RankedStationResult
+  travelDistanceKm: number
+  compact?: boolean
+}) {
+  const formattedPriceCommunicatedAt = formatPriceCommunicatedAt(
+    result.station.communicatedAt,
+  )
+
+  return (
+    <details
+      className={
+        compact
+          ? 'group mt-2 text-xs text-zinc-300'
+          : 'group mt-3 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-xs text-zinc-300'
+      }
+      onClick={(event) => event.stopPropagation()}
+    >
+      <summary
+        className={
+          compact
+            ? 'inline-flex cursor-pointer list-none items-center gap-1 py-1 font-medium select-none text-zinc-400 hover:text-zinc-100'
+            : 'flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-300 hover:text-zinc-100'
+        }
+      >
+        <span>Dettagli del calcolo</span>
+        <span aria-hidden="true" className="text-[10px] text-zinc-400 transition-transform group-open:rotate-180">▾</span>
+      </summary>
+      <div className="mt-2 space-y-1 border-t border-zinc-800 pt-2 text-zinc-400">
+        <p className="tabular-nums">
+          Distanza stradale stimata A/R: {distanceFormatter.format(travelDistanceKm)} km
+        </p>
+        <p className="tabular-nums">
+          Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
+        </p>
+        <p className="tabular-nums">
+          Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
+        </p>
+        <p className="tabular-nums">
+          Litri stimati consumati per il viaggio: {litersFormatter.format(result.travelFuelLiters)} L
+        </p>
+        <p className="tabular-nums">
+          Litri netti: {litersFormatter.format(result.netFuelLiters)} L
+        </p>
+        <p>
+          {formattedPriceCommunicatedAt
+            ? `Prezzo comunicato: ${formattedPriceCommunicatedAt}`
+            : 'Data prezzo non disponibile'}
+        </p>
+      </div>
+    </details>
+  )
 }
 
 function StationResultCard({
   result,
   index,
   winnerAdvantageLiters,
+  winnerNetFuelLiters,
   onSelectOnMap,
   isSelectedOnMap,
-  refuelAmount = 50,
-  fuelType = 'Benzina',
-  isSelf = true,
   mobileMap,
   showAllToggle,
 }: StationResultCardProps) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
   const isBestResult = index === 0
-  const formattedPriceCommunicatedAt = formatPriceCommunicatedAt(
-    result.station.communicatedAt,
-  )
   const navigationUrl = getGoogleMapsNavigationUrl(
     result.station.latitude,
     result.station.longitude,
   )
 
-  const cardClasses = isBestResult
-    ? isSelectedOnMap
-      ? 'min-w-0 break-words rounded-3xl border-2 border-emerald-500 bg-zinc-900/95 p-5 sm:p-6 shadow-2xl ring-2 ring-emerald-500/50 cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-emerald-500/15'
-      : 'min-w-0 break-words rounded-3xl border-2 border-emerald-500/80 bg-zinc-900/90 p-5 sm:p-6 shadow-2xl ring-1 ring-emerald-500/30 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-400 shadow-emerald-500/10'
-    : isSelectedOnMap
-      ? 'min-w-0 break-words rounded-2xl border-2 border-emerald-500 bg-zinc-900/80 p-4 sm:p-5 shadow-lg ring-1 ring-emerald-500/50 transition-all duration-150 cursor-pointer active:scale-[0.99]'
-      : 'min-w-0 break-words rounded-2xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-md p-4 sm:p-5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-900/70 active:scale-[0.99] cursor-pointer'
+  if (!isBestResult) {
+    const litersBehindWinner =
+      winnerNetFuelLiters === undefined
+        ? null
+        : Math.max(0, winnerNetFuelLiters - result.netFuelLiters)
+
+    return (
+      <li
+        onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
+        className={`min-w-0 cursor-pointer rounded-2xl border px-3.5 py-3 transition-colors duration-150 sm:px-4 ${
+          isSelectedOnMap
+            ? 'border-emerald-500/80 bg-zinc-900/90 ring-1 ring-emerald-500/40'
+            : 'border-zinc-800/80 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/70'
+        }`}
+      >
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-semibold text-zinc-100 sm:text-base">
+              {index + 1}. {stationName}
+            </h3>
+            <StationIdentity result={result} stationName={stationName} />
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-bold text-zinc-100 tabular-nums">
+              {litersFormatter.format(result.netFuelLiters)}{' '}
+              <span className="text-xs font-normal text-zinc-400">L netti</span>
+            </p>
+            {litersBehindWinner !== null ? (
+              <p className="text-xs font-medium text-amber-300/90 tabular-nums">
+                −{litersFormatter.format(litersBehindWinner)} L dal 1°
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400 tabular-nums">
+          <span>
+            <RoadSignPrice price={result.station.fuelPrice} /> €/L
+          </span>
+          <span>{distanceFormatter.format(travelDistanceKm)} km A/R</span>
+          {navigationUrl ? (
+            <a
+              className="ml-auto inline-flex min-h-9 items-center rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 font-semibold text-zinc-100 transition hover:border-zinc-600 hover:bg-zinc-800"
+              href={navigationUrl}
+              onClick={(event) => event.stopPropagation()}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Apri nel navigatore
+            </a>
+          ) : null}
+        </div>
+
+        <CalculationDetails
+          compact
+          result={result}
+          travelDistanceKm={travelDistanceKm}
+        />
+      </li>
+    )
+  }
+
+  const cardClasses = isSelectedOnMap
+    ? 'min-w-0 break-words rounded-3xl border-2 border-emerald-500 bg-zinc-900/95 p-5 sm:p-6 shadow-2xl ring-2 ring-emerald-500/50 cursor-pointer transition-all duration-150 active:scale-[0.99] shadow-emerald-500/15'
+    : 'min-w-0 break-words rounded-3xl border-2 border-emerald-500/80 bg-zinc-900/90 p-5 sm:p-6 shadow-2xl ring-1 ring-emerald-500/30 cursor-pointer transition-all duration-150 active:scale-[0.99] hover:border-emerald-400 shadow-emerald-500/10'
 
   return (
     <li
       onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
       className={cardClasses}
     >
-      {isBestResult ? (
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Ti conviene questo distributore
-          </span>
-        </div>
-      ) : null}
-      <h3 className={isBestResult ? 'mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50' : 'font-semibold text-zinc-100 text-base'}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
+          <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Ti conviene questo distributore
+        </span>
+      </div>
+      <h3 className="mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50">
         {index + 1}. {stationName}
       </h3>
+      <StationIdentity result={result} stationName={stationName} />
 
-      {/* Unified clean 3-stat hero grid */}
       <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
           <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Prezzo</p>
@@ -201,44 +344,16 @@ function StationResultCard({
             {distanceFormatter.format(travelDistanceKm)} <span className="text-[11px] sm:text-xs font-normal text-zinc-400">km</span>
           </p>
         </div>
-        <div
-          className={
-            isBestResult
-              ? 'rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10'
-              : 'rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner'
-          }
-        >
-          <p
-            className={
-              isBestResult
-                ? 'text-[11px] sm:text-xs font-bold text-emerald-300'
-                : 'text-[11px] sm:text-xs font-medium text-zinc-400'
-            }
-          >
-            Litri netti
-          </p>
-          <p
-            className={
-              isBestResult
-                ? 'mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums'
-                : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums'
-            }
-          >
+        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10">
+          <p className="text-[11px] sm:text-xs font-bold text-emerald-300">Litri netti</p>
+          <p className="mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums">
             {litersFormatter.format(result.netFuelLiters)}{' '}
-            <span
-              className={
-                isBestResult
-                  ? 'text-[11px] sm:text-xs font-normal text-emerald-300/80'
-                  : 'text-[11px] sm:text-xs font-normal text-zinc-400'
-              }
-            >
-              L
-            </span>
+            <span className="text-[11px] sm:text-xs font-normal text-emerald-300/80">L</span>
           </p>
         </div>
       </div>
 
-      {isBestResult && winnerAdvantageLiters !== null ? (
+      {winnerAdvantageLiters !== null ? (
         <p className="mt-2.5 text-xs font-semibold text-emerald-300 tabular-nums">
           Hai circa {litersFormatter.format(winnerAdvantageLiters)} L netti in più rispetto al secondo classificato.
         </p>
@@ -247,12 +362,9 @@ function StationResultCard({
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
         {navigationUrl ? (
           <a
-            className={
-              isBestResult
-                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
-                : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
-            }
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto"
             href={navigationUrl}
+            onClick={(event) => event.stopPropagation()}
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -262,56 +374,15 @@ function StationResultCard({
       </div>
 
       {/* Mappa in primo piano subito dopo l'azione principale */}
-      {isBestResult && mobileMap ? (
-        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
+      {mobileMap ? (
+        <div className="mt-4 pt-3 border-t border-emerald-800/60 lg:hidden" onClick={(e) => e.stopPropagation()}>
           {mobileMap}
         </div>
       ) : null}
 
-      {/* Dettagli tecnici secondari ordinati in disclosure discreta */}
-      <details className="group mt-3 rounded-lg border border-zinc-200/60 bg-white/60 p-2.5 text-xs text-zinc-600 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-400">
-        <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
-          <span>Dettagli del calcolo</span>
-          <span className="text-[10px] text-zinc-400 group-open:rotate-180 transition-transform">▾</span>
-        </summary>
-        <div className="mt-2 space-y-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-          <p className="tabular-nums">
-            Distanza stradale stimata A/R: {distanceFormatter.format(travelDistanceKm)} km
-          </p>
-          <p className="tabular-nums">
-            Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
-          </p>
-          <p className="tabular-nums">
-            Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
-          </p>
-          <p className="tabular-nums">
-            Litri stimati consumati per il viaggio: {litersFormatter.format(result.travelFuelLiters)} L
-          </p>
-          <p className="tabular-nums">
-            Litri netti: {litersFormatter.format(result.netFuelLiters)} L
-          </p>
-          <p>
-            {formattedPriceCommunicatedAt
-              ? `Prezzo comunicato: ${formattedPriceCommunicatedAt}`
-              : 'Data prezzo non disponibile'}
-          </p>
-        </div>
-      </details>
+      <CalculationDetails result={result} travelDistanceKm={travelDistanceKm} />
 
-      {isBestResult ? (
-        <ShareResultButtons
-          stationName={stationName}
-          brand={result.station.brand}
-          city={result.station.city}
-          fuelPrice={result.station.fuelPrice}
-          netFuelLiters={result.netFuelLiters}
-          fuelType={fuelType}
-          isSelf={isSelf}
-          refuelAmount={refuelAmount}
-        />
-      ) : null}
-
-      {isBestResult && showAllToggle ? (
+      {showAllToggle ? (
         <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
           {showAllToggle}
         </div>
@@ -546,18 +617,11 @@ export default function FuelSmartCalculator() {
         >
           <ol>
             <StationResultCard
-              fuelType={
-                calculationInput
-                  ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
-                  : 'Benzina'
-              }
               index={0}
-              isSelf={calculationInput?.isSelf ?? true}
               isSelectedOnMap={
                 resultsMap?.selectedStationId === results[0].station.id
               }
               onSelectOnMap={resultsMap?.setSelectedStationId}
-              refuelAmount={calculationInput?.refuelAmount ?? 50}
               result={results[0]}
               winnerAdvantageLiters={winnerAdvantageLiters}
               mobileMap={
@@ -587,18 +651,18 @@ export default function FuelSmartCalculator() {
                   <button
                     type="button"
                     onClick={() => setShowAllMobileResults(!showAllMobileResults)}
-                    className="flex min-h-12 w-full items-center justify-between rounded-xl border border-emerald-600/40 bg-emerald-50/80 px-4 py-3 text-xs font-semibold text-emerald-950 shadow-2xs transition active:scale-[0.99] hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                    aria-expanded={showAllMobileResults}
+                    className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-zinc-700/80 bg-zinc-900 px-4 py-3 text-left text-sm font-semibold text-zinc-100 transition active:scale-[0.99] hover:bg-zinc-800"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="text-sm">⛽</span>
                       <span>
                         {showAllMobileResults
                           ? 'Nascondi gli altri distributori'
                           : `Vedi gli altri ${results.length - 1} distributori in classifica`}
                       </span>
                     </span>
-                    <span className="rounded-md bg-emerald-200/80 px-2.5 py-1 text-[11px] font-bold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100">
-                      {showAllMobileResults ? '▲ Chiudi' : '▼ Mostra tutti'}
+                    <span aria-hidden="true" className={`text-emerald-400 transition-transform ${showAllMobileResults ? 'rotate-180' : ''}`}>
+                      ▾
                     </span>
                   </button>
                 ) : null
@@ -608,7 +672,8 @@ export default function FuelSmartCalculator() {
 
           {results.length > 1 ? (
             <ol
-              className={`min-w-0 flex-col gap-3 sm:gap-4 ${
+              aria-label="Altri distributori in classifica"
+              className={`min-w-0 flex-col gap-2.5 ${
                 showAllMobileResults ? 'flex' : 'hidden lg:flex'
               }`}
               start={2}
@@ -623,10 +688,27 @@ export default function FuelSmartCalculator() {
                   onSelectOnMap={resultsMap?.setSelectedStationId}
                   result={result}
                   winnerAdvantageLiters={winnerAdvantageLiters}
+                  winnerNetFuelLiters={results[0].netFuelLiters}
                 />
               ))}
             </ol>
           ) : null}
+
+          <ShareResultButtons
+            className="mt-1"
+            stationName={getStationDisplayName(results[0].station)}
+            brand={results[0].station.brand}
+            city={results[0].station.city}
+            fuelPrice={results[0].station.fuelPrice}
+            netFuelLiters={results[0].netFuelLiters}
+            fuelType={
+              calculationInput
+                ? SUPPORTED_FUEL_TYPE_LABELS[calculationInput.fuelType]
+                : 'Benzina'
+            }
+            isSelf={calculationInput?.isSelf ?? true}
+            refuelAmount={calculationInput?.refuelAmount ?? 50}
+          />
         </motion.div>
       ) : null}
     </section>

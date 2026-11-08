@@ -26,7 +26,7 @@ export default async function Home() {
         <div className="absolute -top-48 left-1/2 -translate-x-1/2 h-[550px] w-[850px] rounded-full bg-emerald-500/10 blur-[140px]" />
       </div>
 
-      <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl saturate-150">
+      <header className="relative md:sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl saturate-150">
         <nav aria-label="Navigazione principale" className="mx-auto flex flex-wrap md:flex-nowrap items-center justify-between w-full max-w-7xl px-3.5 sm:px-6 lg:px-8 py-2.5 md:py-0 md:h-20 gap-x-4 gap-y-2">
           <div className="flex items-center gap-3 sm:gap-6">
             <Link href="/" className="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-emerald-400 transition hover:opacity-90">
@@ -79,17 +79,17 @@ export default async function Home() {
         </nav>
       </header>
 
-      <main className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 gap-8 sm:gap-10 px-4 py-6 sm:px-6 sm:py-10 lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:flex-none lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-12 lg:overflow-hidden lg:px-8 lg:py-6">
+      <main className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 gap-8 sm:gap-10 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-start lg:gap-12 lg:px-8 lg:py-8">
         <div
           aria-label="Calcolatore e risultati"
           role="region"
           tabIndex={0}
-          className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain lg:pr-4"
+          className="min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
         >
           <div className="flex w-full flex-col gap-6 sm:gap-8">
             <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
               <div className="space-y-3 sm:space-y-4 max-w-xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 shadow-xs">
+                <div className="hidden sm:inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 shadow-xs">
                   <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Calcolo basato su litri netti e consumo reale</span>
                 </div>
@@ -111,8 +111,8 @@ export default async function Home() {
               </div>
             </header>
             <SharedStationBanner />
-            <RegistrationPrompt />
             <FuelSearchCalculator />
+            <RegistrationPrompt />
           </div>
         </div>
 
@@ -121,7 +121,7 @@ export default async function Home() {
             <section
               aria-labelledby="homepage-guide-title"
               tabIndex={0}
-              className="min-w-0 space-y-4 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-xl p-5 sm:p-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 shadow-2xl lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
+              className="min-w-0 space-y-4 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-xl p-5 sm:p-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 shadow-2xl lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
             >
           <div className="space-y-2.5">
             <p className="text-xs font-bold tracking-wider uppercase text-emerald-400">
@@ -286,7 +286,7 @@ export default async function Home() {
       </main>
 
       <footer className="relative z-10 border-t border-zinc-900 bg-zinc-950/90">
-        <div className="mx-auto w-full max-w-7xl space-y-2 px-4 py-8 text-xs leading-6 text-zinc-500 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl space-y-2 px-4 py-8 text-xs leading-6 text-zinc-400 sm:px-6 lg:px-8">
           <p className="font-semibold text-zinc-300">
             Rifornio
           </p>

@@ -273,7 +273,13 @@ describe('FuelSmartCalculator', () => {
     expect(bannerAdSlots).toHaveLength(1)
     expect(bannerAdSlot.nextElementSibling).toBe(form)
     expect(firstResultsList?.nextElementSibling).toBe(remainingResultsList)
-    expect(remainingResultsList?.nextElementSibling).toBeNull()
+    // La condivisione viene dopo l'intera classifica, non dentro la card vincente.
+    expect(remainingResultsList?.nextElementSibling).toBe(
+      screen.getByLabelText('Condividi questo risultato'),
+    )
+    expect(
+      firstResult?.querySelector('[aria-label="Condividi questo risultato"]'),
+    ).toBeNull()
     expect(firstResult?.textContent).toContain(
       'Ti conviene questo distributore',
     )

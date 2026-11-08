@@ -7,6 +7,7 @@ import {
   type MapStationItem,
   type ResultsMapData,
 } from './ResultsMapContext'
+import { formatStationLocation } from '../../lib/stations/formatStationText'
 
 interface MapLibreBoundsLike {
   extend: (lngLat: [number, number]) => void
@@ -32,6 +33,7 @@ interface MapLibreMapLike {
   }) => void
   on: (event: string, callback: () => void) => void
   remove: () => void
+  resize: () => void
 }
 
 interface MapLibreGlobal {
@@ -115,13 +117,22 @@ function loadMapLibre(): Promise<MapLibreGlobal | null> {
   return mapLibreLoaderPromise
 }
 
-function getTierColors(rank: number, total: number): {
+// Le fasce dipendono da quanti litri netti si perdono rispetto al primo
+// classificato, non dalla posizione: con distacchi minimi (pochi centesimi)
+// tutti i distributori restano "convenienti" invece di diventare "cari".
+const CONVENIENT_MAX_GAP_RATIO = 0.01
+const MEDIUM_MAX_GAP_RATIO = 0.03
+
+function getTierColors(
+  station: Pick<MapStationItem, 'rank' | 'netFuelLiters'>,
+  winnerNetFuelLiters: number,
+): {
   badgeBg: string
   badgeBorder: string
   badgeText: string
   tierLabel: string
 } {
-  if (rank === 1) {
+  if (station.rank === 1) {
     return {
       badgeBg: '#059669',
       badgeBorder: '#047857',
@@ -130,9 +141,13 @@ function getTierColors(rank: number, total: number): {
     }
   }
 
-  const ratio = total <= 2 ? (rank === 1 ? 0 : 1) : (rank - 1) / (total - 1)
+  const gapRatio =
+    winnerNetFuelLiters > 0
+      ? Math.max(0, winnerNetFuelLiters - station.netFuelLiters) /
+        winnerNetFuelLiters
+      : 0
 
-  if (ratio <= 0.4) {
+  if (gapRatio <= CONVENIENT_MAX_GAP_RATIO) {
     return {
       badgeBg: '#ecfdf5',
       badgeBorder: '#10b981',
@@ -141,7 +156,7 @@ function getTierColors(rank: number, total: number): {
     }
   }
 
-  if (ratio <= 0.75) {
+  if (gapRatio <= MEDIUM_MAX_GAP_RATIO) {
     return {
       badgeBg: '#fffbeb',
       badgeBorder: '#f59e0b',
@@ -155,6 +170,51 @@ function getTierColors(rank: number, total: number): {
     badgeBorder: '#f43f5e',
     badgeText: '#881337',
     tierLabel: 'Meno conveniente',
+  }
+}
+
+function rectsOverlap(first: DOMRect, second: DOMRect, gap = 2): boolean {
+  return !(
+    first.right + gap <= second.left ||
+    second.right + gap <= first.left ||
+    first.bottom + gap <= second.top ||
+    second.bottom + gap <= first.top
+  )
+}
+
+// Quando due cartelli si sovrappongono, quello peggio classificato si riduce
+// a un piccolo bollino con il solo numero: il prezzo resta leggibile nel
+// cartello migliore e nella lista sotto la mappa.
+function applyMarkerCollisions(
+  stations: MapStationItem[],
+  buttons: Map<number, HTMLButtonElement>,
+  selectedStationId: number | null,
+) {
+  const ordered = [...stations].sort((first, second) => {
+    if (first.id === selectedStationId) return -1
+    if (second.id === selectedStationId) return 1
+    return first.rank - second.rank
+  })
+
+  for (const station of ordered) {
+    buttons.get(station.id)?.removeAttribute('data-compact')
+  }
+
+  const placed: DOMRect[] = []
+
+  for (const station of ordered) {
+    const button = buttons.get(station.id)
+    if (!button) continue
+
+    const rect = button.getBoundingClientRect()
+    if (rect.width === 0 && rect.height === 0) continue
+
+    if (placed.some((other) => rectsOverlap(rect, other))) {
+      button.setAttribute('data-compact', 'true')
+      placed.push(button.getBoundingClientRect())
+    } else {
+      placed.push(rect)
+    }
   }
 }
 
@@ -179,6 +239,8 @@ export function StationsResultMap({
   const mapInstanceRef = useRef<MapLibreMapLike | null>(null)
   const markersRef = useRef<MapLibreMarkerLike[]>([])
   const stationButtonsRef = useRef<Map<number, HTMLButtonElement>>(new Map())
+  const collisionListenerAttachedRef = useRef(false)
+  const runCollisionsRef = useRef<() => void>(() => {})
   const [vectorMapReady, setVectorMapReady] = useState(false)
 
   const activeStation = useMemo(
@@ -188,6 +250,29 @@ export function StationsResultMap({
       null,
     [data.stations, selectedStationId],
   )
+
+  const activeStationLocation = activeStation
+    ? formatStationLocation(activeStation.address, activeStation.city)
+    : null
+
+  // La mappa può nascere in un contenitore nascosto o ridimensionato
+  // (rotazione del tablet, cambio di layout): MapLibre va avvisato.
+  useEffect(() => {
+    const container = mapContainerRef.current
+    if (!container || typeof ResizeObserver === 'undefined') return
+
+    const observer = new ResizeObserver(() => {
+      try {
+        mapInstanceRef.current?.resize()
+        runCollisionsRef.current()
+      } catch {
+        // La mappa potrebbe non essere ancora pronta
+      }
+    })
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [])
 
   // Compute relative 2D projection coordinates for immediate/fallback interactive rendering
   const projectedPoints = useMemo(() => {
@@ -317,14 +402,16 @@ export function StationsResultMap({
           bounds.extend([data.destination.longitude, data.destination.latitude])
         }
 
+        const winnerNetFuelLiters = data.stations[0]?.netFuelLiters ?? 0
         const reversedStations = [...data.stations].reverse()
         for (const station of reversedStations) {
-          const colors = getTierColors(station.rank, data.stations.length)
+          const colors = getTierColors(station, winnerNetFuelLiters)
           const { main, millesimi } = splitRoadSignPrice(station.fuelPrice)
           const isWinner = station.rank === 1
 
           const btn = document.createElement('button')
           btn.type = 'button'
+          btn.className = 'rifornio-map-marker'
           btn.setAttribute(
             'aria-label',
             `${station.rank}. ${station.displayName} - ${station.fuelPrice.toFixed(3)} €/L`,
@@ -347,7 +434,12 @@ export function StationsResultMap({
             'transition:transform 250ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease',
           ].join(';')
 
+          const compactRow = document.createElement('span')
+          compactRow.className = 'rifornio-map-marker-compact'
+          compactRow.textContent = String(station.rank)
+
           const topRow = document.createElement('span')
+          topRow.className = 'rifornio-map-marker-full'
           topRow.style.cssText =
             'font-size:9px;font-weight:700;letter-spacing:0.02em;opacity:0.9;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
           topRow.textContent =
@@ -356,6 +448,7 @@ export function StationsResultMap({
               : `#${station.rank} ${shortBrandLabel(station)}`
 
           const priceRow = document.createElement('span')
+          priceRow.className = 'rifornio-map-marker-full'
           priceRow.style.cssText =
             'font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;'
           priceRow.textContent = main
@@ -367,6 +460,7 @@ export function StationsResultMap({
             priceRow.appendChild(sup)
           }
 
+          btn.appendChild(compactRow)
           btn.appendChild(topRow)
           btn.appendChild(priceRow)
           btn.addEventListener('click', () => {
@@ -392,6 +486,12 @@ export function StationsResultMap({
             duration: 500,
           })
         }
+
+        if (!collisionListenerAttachedRef.current) {
+          collisionListenerAttachedRef.current = true
+          map.on('moveend', () => runCollisionsRef.current())
+        }
+        runCollisionsRef.current()
       } catch {
         // Keep interactive SVG fallback if WebGL is unavailable in the current environment
       }
@@ -403,6 +503,15 @@ export function StationsResultMap({
       cancelled = true
     }
   }, [data, onSelectStation])
+
+  useEffect(() => {
+    runCollisionsRef.current = () =>
+      applyMarkerCollisions(
+        data.stations,
+        stationButtonsRef.current,
+        activeStation?.id ?? null,
+      )
+  }, [data.stations, activeStation])
 
   useEffect(() => {
     // Update marker styling seamlessly without destroying/recreating DOM elements
@@ -485,7 +594,7 @@ export function StationsResultMap({
         <div
           ref={mapContainerRef}
           aria-label="Mappa interattiva dei distributori"
-          className="absolute inset-0 h-full w-full"
+          className="!absolute inset-0 h-full w-full"
         />
 
         {/* Immediate interactive radar/map layer before vector tiles finish loading */}
@@ -531,7 +640,10 @@ export function StationsResultMap({
                 .map(({ station, x, y }) => {
                   const isSelected = station.id === activeStation?.id
                   const isWinner = station.rank === 1
-                  const tier = getTierColors(station.rank, data.stations.length)
+                  const tier = getTierColors(
+                    station,
+                    data.stations[0]?.netFuelLiters ?? 0,
+                  )
 
                   return (
                     <button
@@ -617,11 +729,9 @@ export function StationsResultMap({
               <h3 className="mt-1 truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
                 {activeStation.displayName}
               </h3>
-              {activeStation.address || activeStation.city ? (
+              {activeStationLocation ? (
                 <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
-                  {[activeStation.address, activeStation.city]
-                    .filter(Boolean)
-                    .join(' · ')}
+                  {activeStationLocation}
                 </p>
               ) : null}
             </div>
@@ -690,7 +800,7 @@ export function HomepageRightColumn({
 
   if (showGuideOverride) {
     return (
-      <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-y-auto">
+      <div className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 dark:border-emerald-800 dark:bg-emerald-950/40">
           <span className="text-xs font-medium text-emerald-900 dark:text-emerald-200">
             Mappa dei distributori pronta
@@ -712,7 +822,7 @@ export function HomepageRightColumn({
     <section
       aria-labelledby="homepage-map-title"
       tabIndex={0}
-      className="hidden lg:flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-xl p-4 sm:p-5 shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 lg:min-h-0 lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
+      className="hidden lg:flex min-w-0 flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/50 backdrop-blur-xl p-4 sm:p-5 shadow-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
     >
       <StationsResultMap
         data={resultsMap.mapData}

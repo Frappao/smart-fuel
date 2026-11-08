@@ -12,6 +12,8 @@ import {
 } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 
+import { CONSENT_EVENT, CONSENT_KEY } from '../analytics/AnalyticsConsent'
+
 type AppPlatform = 'android' | 'ios'
 
 const DISMISSED_STORAGE_KEY = 'rifornio_app_promo_dismissed_v1'
@@ -81,24 +83,46 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // Auto-show once in real browser sessions after 2.2 seconds if not yet dismissed
+    // Auto-show once if not yet dismissed, but never on top of the analytics
+    // consent banner: wait until the visitor has answered it.
     if (typeof window === 'undefined') return
+    let consentAlreadyAnswered = false
     try {
       if (window.localStorage.getItem(DISMISSED_STORAGE_KEY) === '1') {
         return
       }
+      consentAlreadyAnswered = window.localStorage.getItem(CONSENT_KEY) !== null
     } catch {
       return
     }
 
-    const timer = window.setTimeout(() => {
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        setPlatform('ios')
-      }
-      setIsOpen(true)
-    }, 2200)
+    let timer: number | undefined
 
-    return () => window.clearTimeout(timer)
+    function scheduleOpen(delayMs: number) {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          setPlatform('ios')
+        }
+        setIsOpen(true)
+      }, delayMs)
+    }
+
+    function handleConsentAnswered() {
+      window.removeEventListener(CONSENT_EVENT, handleConsentAnswered)
+      scheduleOpen(1500)
+    }
+
+    if (consentAlreadyAnswered) {
+      scheduleOpen(2200)
+    } else {
+      window.addEventListener(CONSENT_EVENT, handleConsentAnswered)
+    }
+
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener(CONSENT_EVENT, handleConsentAnswered)
+    }
   }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

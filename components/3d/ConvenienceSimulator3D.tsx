@@ -1760,7 +1760,7 @@ export default function ConvenienceSimulator3D({
             }}
             className="accent-emerald-600"
           />
-          <span className="text-[11px] text-zinc-500">Un importo più alto ammortizza meglio i km percorsi.</span>
+          <span className="text-[11px] text-zinc-400">Un importo più alto ammortizza meglio i km percorsi.</span>
         </div>
 
         {/* Consumo */}
@@ -1783,7 +1783,7 @@ export default function ConvenienceSimulator3D({
             }}
             className="accent-emerald-600"
           />
-          <span className="text-[11px] text-zinc-500">Auto più assetate subiscono maggiormente le deviazioni.</span>
+          <span className="text-[11px] text-zinc-400">Auto più assetate subiscono maggiormente le deviazioni.</span>
         </div>
 
         {/* Distanza Lontana */}
@@ -1808,7 +1808,7 @@ export default function ConvenienceSimulator3D({
             }}
             className="accent-amber-500"
           />
-          <span className="text-[11px] text-zinc-500">Allunga o accorcia fisicamente la strada 3D verso B.</span>
+          <span className="text-[11px] text-zinc-400">Allunga o accorcia fisicamente la strada 3D verso B.</span>
         </div>
 
         {/* Prezzo Lontana */}
@@ -1831,7 +1831,7 @@ export default function ConvenienceSimulator3D({
             }}
             className="accent-amber-500"
           />
-          <span className="text-[11px] text-zinc-500">
+          <span className="text-[11px] text-zinc-400">
             Prezzo più basso di {((priceNear - priceFar) * 100).toFixed(1)} c€ rispetto ad A.
           </span>
         </div>

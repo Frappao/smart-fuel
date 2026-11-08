@@ -133,7 +133,7 @@ export default function RefuelForm({
 
   return (
     <form
-      className="flex w-full flex-col gap-5 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950"
+      className="flex w-full flex-col gap-5 sm:rounded-2xl sm:border sm:border-zinc-200 sm:bg-white sm:p-6 sm:shadow-xs sm:dark:border-zinc-800 sm:dark:bg-zinc-950"
       aria-busy={isLoading}
       noValidate
       onSubmit={handleSubmit}
@@ -175,7 +175,7 @@ export default function RefuelForm({
             ]}
           />
           {account.busy && (
-            <p className="text-xs text-zinc-500 animate-pulse" role="status">
+            <p className="text-xs text-zinc-400 animate-pulse" role="status">
               Aggiornamento auto in corso…
             </p>
           )}
@@ -269,7 +269,7 @@ export default function RefuelForm({
                     id="average-consumption"
                     ref={consumptionRef}
                     disabled={isLoading}
-                    placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+                    placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6,5'}
                     inputMode="decimal"
                     className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
                     type="number"
@@ -425,7 +425,7 @@ export default function RefuelForm({
                   id="average-consumption"
                   ref={consumptionRef}
                   disabled={isLoading}
-                  placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+                  placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6,5'}
                   inputMode="decimal"
                   className="min-h-12 w-full min-w-0 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-emerald-400 dark:focus:ring-emerald-500"
                   type="number"
@@ -555,7 +555,7 @@ export default function RefuelForm({
               id="average-consumption"
               ref={consumptionRef}
               disabled={isLoading}
-              placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6.5'}
+              placeholder={unit === 'km/L' ? 'Es. 15' : 'Es. 6,5'}
               inputMode="decimal"
               className="min-h-12 w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-base outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20"
               type="number"

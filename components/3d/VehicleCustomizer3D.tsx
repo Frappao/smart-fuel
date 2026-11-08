@@ -410,7 +410,7 @@ export default function VehicleCustomizer3D({
         className="relative h-64 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-zinc-100 shadow-inner sm:h-72 dark:border-zinc-800 dark:from-zinc-950 dark:to-zinc-900"
       >
         {!isSupported ? (
-          <div className="flex h-full items-center justify-center p-4 text-xs text-zinc-500">
+          <div className="flex h-full items-center justify-center p-4 text-xs text-zinc-400">
             Visualizzazione 3D non disponibile
           </div>
         ) : (
