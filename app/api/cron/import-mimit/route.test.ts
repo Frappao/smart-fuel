@@ -4,16 +4,24 @@ vi.mock('../../../../lib/mimit/importMimitData', () => ({
   importMimitData: vi.fn(),
 }))
 
+vi.mock('../../../../lib/mimit/recordImportRun', () => ({
+  recordImportRun: vi.fn(),
+}))
+
 import { importMimitData } from '../../../../lib/mimit/importMimitData'
+import { recordImportRun } from '../../../../lib/mimit/recordImportRun'
 import { GET } from './route'
 
 const mockedImportMimitData = vi.mocked(importMimitData)
+const mockedRecordImportRun = vi.mocked(recordImportRun)
 
 describe('GET /api/cron/import-mimit', () => {
   const originalCronSecret = process.env.CRON_SECRET
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -93,5 +101,52 @@ describe('GET /api/cron/import-mimit', () => {
       },
     })
     expect(mockedImportMimitData).toHaveBeenCalledOnce()
+  })
+
+  test('records a successful run in import_runs', async () => {
+    process.env.CRON_SECRET = 'test-secret'
+    mockedImportMimitData.mockResolvedValue({
+      stations: { totalParsed: 10, totalImported: 10 },
+      fuelPrices: { totalParsed: 30, totalImported: 28, totalSkipped: 2 },
+    })
+
+    await GET(
+      new Request('https://rifornio.it/api/cron/import-mimit', {
+        headers: { authorization: 'Bearer test-secret' },
+      }),
+    )
+
+    expect(mockedRecordImportRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'success',
+        stationsImported: 10,
+        fuelPricesImported: 28,
+        fuelPricesSkipped: 2,
+      }),
+    )
+  })
+
+  test('returns 500 and records the error when the import fails', async () => {
+    process.env.CRON_SECRET = 'test-secret'
+    mockedImportMimitData.mockRejectedValue(
+      new Error('Download CSV failed after 3 attempts: fetch failed'),
+    )
+
+    const response = await GET(
+      new Request('https://rifornio.it/api/cron/import-mimit', {
+        headers: { authorization: 'Bearer test-secret' },
+      }),
+    )
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unable to import MIMIT data.',
+    })
+    expect(mockedRecordImportRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'error',
+        errorMessage: 'Download CSV failed after 3 attempts: fetch failed',
+      }),
+    )
   })
 })

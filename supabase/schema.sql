@@ -250,3 +250,22 @@ create policy vehicles_insert on public.user_vehicles for insert to authenticate
 create policy vehicles_update on public.user_vehicles for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy vehicles_delete on public.user_vehicles for delete to authenticated using ((select auth.uid()) = user_id);
 commit;
+
+-- MIMIT import run history (internal, server-only).
+begin;
+create table if not exists public.import_runs (
+  id bigint generated always as identity primary key,
+  source text not null default 'mimit',
+  started_at timestamptz not null,
+  finished_at timestamptz not null default now(),
+  duration_ms integer,
+  status text not null check (status in ('success', 'error')),
+  stations_imported integer,
+  fuel_prices_imported integer,
+  fuel_prices_skipped integer,
+  error_message text
+);
+create index if not exists import_runs_started_at_idx on public.import_runs (started_at desc);
+alter table public.import_runs enable row level security;
+revoke all on public.import_runs from public, anon, authenticated;
+commit;

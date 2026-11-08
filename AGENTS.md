@@ -298,6 +298,7 @@ Schema definitions and migrations are stored in:
   - `20260930_add_stations_along_route.sql`: adds `public.stations_along_route` RPC for corridor searches along driving routes.
   - `202610210001_user_vehicles.sql`: creates `public.user_vehicles` table with user-scoped RLS policies.
   - `202610230001_app_waitlist.sql`: creates `public.app_waitlist` table with RLS enabled and direct access revoked.
+  - `202611080001_import_runs.sql`: creates `public.import_runs` (MIMIT cron run history) with RLS enabled and direct access revoked; written by `/api/cron/import-mimit`.
 
 ### How to apply migrations
 
@@ -310,7 +311,7 @@ Migrations are applied manually:
 5. Alternatively, if Supabase CLI is linked to the project:
    `npx supabase migration up` or `npx supabase db push`.
 
-Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`) are currently pending execution on the production database.
+Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`, `import_runs`) are currently pending execution on the production database.
 
 ### Supabase security and Row Level Security (RLS)
 

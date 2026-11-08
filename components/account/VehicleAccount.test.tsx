@@ -18,6 +18,9 @@ vi.mock('../../lib/supabase/client', () => ({ createSupabaseClient: () => ({
     signInWithOAuth: mocks.oauth, signInWithOtp: mocks.otp, verifyOtp: mocks.verify, signOut: mocks.signOut,
   }, from: mocks.from,
 }) }))
+vi.mock('../../lib/mimit/getLatestPriceUpdate', () => ({
+  getLatestPriceUpdate: async () => null,
+}))
 
 const vehicles = [
   { id: 'a', name: 'Panda', consumption: 20, consumption_unit: 'km/L', fuel_type: 'Benzina' },
@@ -39,7 +42,7 @@ describe('vehicle account', () => {
   afterEach(cleanup)
 
   it('shows registration on the homepage and opens the account dialog from the header', async () => {
-    render(<Home />)
+    render(await Home())
     const navigation = screen.getByRole('navigation', { name: 'Navigazione principale' })
     const accountButton = within(navigation).getByRole('button', { name: 'Accedi / Registrati' })
     expect(screen.getByRole('button', { name: 'Registrati gratis' })).toBeTruthy()

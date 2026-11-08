@@ -5,10 +5,17 @@ import { HomepageRightColumn } from "../components/map/StationsResultMap";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 import SharedStationBanner from "../components/share/SharedStationBanner";
 import HeroBrandBadge from "../components/hero/HeroBrandBadge";
+import PriceUpdateNotice from "../components/hero/PriceUpdateNotice";
+import { getLatestPriceUpdate } from "../lib/mimit/getLatestPriceUpdate";
 
 import VehicleAccount, { AccountButton, RegistrationPrompt } from "../components/account/VehicleAccount";
 
-export default function Home() {
+// ISR: la data dell'ultimo aggiornamento prezzi viene riletta al massimo ogni ora.
+export const revalidate = 3600;
+
+export default async function Home() {
+  const latestPriceUpdate = await getLatestPriceUpdate();
+
   return (
     <VehicleAccount>
     <AppBetaProvider>
@@ -96,6 +103,7 @@ export default function Home() {
                   Trova il distributore più conveniente confrontando prezzo al litro,
                   distanza stradale effettiva e carburante consumato per il viaggio.
                 </p>
+                <PriceUpdateNotice latestCommunicatedAt={latestPriceUpdate} />
               </div>
 
               <div className="hidden sm:flex shrink-0">
