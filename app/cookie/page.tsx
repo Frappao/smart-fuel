@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Cookie | Rifornio",
   description:
-    "Informazioni sull'uso di cookie, pubblicità, Google Analytics e tecnologie simili su Rifornio.",
+    "Informazioni sull'uso di cookie, pubblicità, Google Analytics, Vercel Web Analytics e tecnologie simili su Rifornio.",
   alternates: {
     canonical: "/cookie",
   },
@@ -53,6 +53,12 @@ export default function CookiePage() {
           </p>
 
           <p>
+            Rifornio utilizza inoltre Vercel Web Analytics, uno strumento di
+            statistiche aggregate che non usa cookie e non richiede la scelta
+            nel banner: è descritto nella sezione dedicata.
+          </p>
+
+          <p>
             Rifornio non utilizza attualmente strumenti di session replay,
             sistemi di autenticazione o strumenti di pagamento. Il banner
             pubblicitario Adsterra è descritto nella sezione dedicata.
@@ -79,6 +85,35 @@ export default function CookiePage() {
             Quando è consentita la memorizzazione per finalità analytics, Google
             Analytics può utilizzare cookie proprietari, tra cui{" "}
             <code>_ga</code>, per distinguere utenti e sessioni.
+          </p>
+        </section>
+
+        <section className={sectionClassName}>
+          <h2 className={headingClassName}>
+            Statistiche senza cookie: Vercel Web Analytics
+          </h2>
+
+          <p>
+            Rifornio utilizza Vercel Web Analytics per contare in forma
+            aggregata le visite alle pagine. Secondo la documentazione di
+            Vercel, lo strumento non imposta cookie e non raccoglie identificativi che permettano di seguire l&apos;utente
+            su altri siti: il visitatore viene riconosciuto tramite un valore
+            derivato dalla richiesta (hash) che viene scartato dopo 24 ore.
+          </p>
+
+          <p>
+            Per questo motivo Vercel Web Analytics è attivo indipendentemente
+            dalla scelta espressa nel banner, che riguarda solo Google
+            Analytics. Dell&apos;indirizzo della pagina viene inviato solo il
+            percorso, senza parametri, tranne <code>condividi</code> e{" "}
+            <code>utm_*</code>. Maggiori dettagli sono nella{" "}
+            <Link
+              className="font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300"
+              href="/privacy"
+            >
+              privacy policy
+            </Link>
+            .
           </p>
         </section>
 

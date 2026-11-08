@@ -217,6 +217,39 @@ export default function PrivacyPage() {
         </section>
 
         <section className={sectionClassName}>
+          <h2 className={headingClassName}>
+            Statistiche aggregate: Vercel Web Analytics
+          </h2>
+
+          <p>
+            Oltre a Google Analytics, Rifornio utilizza Vercel Web Analytics,
+            fornito da Vercel come parte dell&apos;hosting, per contare in forma
+            aggregata le visite alle pagine del sito.
+          </p>
+
+          <p>
+            Secondo la documentazione di Vercel, questo strumento non utilizza
+            cookie e non raccoglie identificativi personali che permettano di
+            seguire l&apos;utente su altri siti o applicazioni. Il visitatore
+            viene riconosciuto tramite un valore derivato dalla richiesta
+            (hash), che viene scartato automaticamente dopo 24 ore. I dati sono
+            usati solo per statistiche aggregate.
+          </p>
+
+          <p>
+            Per ogni visualizzazione possono essere registrati: data e ora,
+            pagina visitata, sito di provenienza, posizione geografica
+            approssimativa (paese, regione, città), sistema operativo, browser e
+            tipo di dispositivo. Rifornio invia a Vercel solo il percorso della
+            pagina: gli eventuali parametri dell&apos;indirizzo vengono rimossi,
+            tranne quelli che indicano un link condiviso o la campagna di
+            provenienza (<code>condividi</code> e <code>utm_*</code>). La
+            posizione GPS usata per la ricerca dei distributori non viene inviata
+            a questo strumento.
+          </p>
+        </section>
+
+        <section className={sectionClassName}>
           <h2 className={headingClassName}>Preferenza Analytics</h2>
 
           <p>
