@@ -173,6 +173,27 @@ export default function CookiePage() {
           </p>
 
           <p>
+            Per non dover reinserire ogni volta i dati del rifornimento,
+            Rifornio salva nel localStorage, con la chiave{" "}
+            <code>rifornio_refuel_preferences_v1</code>, gli ultimi valori usati
+            nel calcolo: carburante, unità e valore del consumo medio, self o
+            servito e importo del rifornimento. Questi valori restano solo sul
+            dispositivo, non vengono inviati ai server di Rifornio e non
+            includono la posizione.
+          </p>
+
+          <p>
+            Se la proposta dell&apos;app viene chiusa, la chiave{" "}
+            <code>rifornio_app_promo_dismissed_v1</code> ricorda questa scelta
+            per non mostrarla di nuovo.
+          </p>
+
+          <p>
+            Entrambi i valori si possono eliminare cancellando i dati del sito
+            relativi a Rifornio dalle impostazioni del browser.
+          </p>
+
+          <p>
             Rifornio non utilizza sessionStorage per conservare preferenze o
             dati dell&apos;utente.
           </p>
