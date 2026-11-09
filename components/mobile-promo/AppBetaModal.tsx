@@ -7,12 +7,11 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-
-import { CONSENT_EVENT, CONSENT_KEY } from '../analytics/AnalyticsConsent'
 
 type AppPlatform = 'android' | 'ios'
 
@@ -51,6 +50,85 @@ export function AppBetaButton() {
   )
 }
 
+function subscribeToNothing() {
+  return () => {}
+}
+
+function readPromoDismissed(): boolean {
+  try {
+    return window.localStorage.getItem(DISMISSED_STORAGE_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Proposta dell'app mostrata dopo un risultato: il valore di Rifornio è già
+ * stato dimostrato e non interrompe chi sta compilando il form. Sparisce per
+ * sempre se viene chiusa o dopo che il popup è stato aperto e chiuso.
+ */
+export function AppBetaInlineOffer() {
+  const modal = useAppBetaModal()
+  const isStoredDismissed = useSyncExternalStore(
+    subscribeToNothing,
+    readPromoDismissed,
+    () => true,
+  )
+  const [isDismissed, setIsDismissed] = useState(false)
+
+  if (!modal || isStoredDismissed || isDismissed) return null
+
+  return (
+    <aside
+      aria-label="App Rifornio"
+      className="flex min-w-0 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3.5 sm:gap-4 sm:p-4"
+    >
+      <span
+        aria-hidden="true"
+        className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 sm:flex bg-emerald-500/10 text-emerald-300"
+      >
+        <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+          <path d="M11 18.5h2" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-zinc-100">
+          Rifornio anche sul telefono
+        </p>
+        <p className="text-xs leading-5 text-zinc-400">
+          L&apos;app Android è in prova: chiedi l&apos;accesso in anteprima.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => modal.openAppModal()}
+        aria-haspopup="dialog"
+        className="inline-flex min-h-10 shrink-0 items-center rounded-xl bg-emerald-500 px-3.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+      >
+        Prova l&apos;app
+      </button>
+      <button
+        type="button"
+        aria-label="Non mostrare più la proposta dell'app"
+        onClick={() => {
+          setIsDismissed(true)
+          try {
+            window.localStorage.setItem(DISMISSED_STORAGE_KEY, '1')
+          } catch {
+            // Ignore storage errors in private mode
+          }
+        }}
+        className="-mr-1 inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+      >
+        <svg aria-hidden="true" className="size-4" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+        </svg>
+      </button>
+    </aside>
+  )
+}
+
 export function AppBetaProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [platform, setPlatform] = useState<AppPlatform>('android')
@@ -79,49 +157,6 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(DISMISSED_STORAGE_KEY, '1')
     } catch {
       // Ignore storage errors in private mode
-    }
-  }, [])
-
-  useEffect(() => {
-    // Auto-show once if not yet dismissed, but never on top of the analytics
-    // consent banner: wait until the visitor has answered it.
-    if (typeof window === 'undefined') return
-    let consentAlreadyAnswered = false
-    try {
-      if (window.localStorage.getItem(DISMISSED_STORAGE_KEY) === '1') {
-        return
-      }
-      consentAlreadyAnswered = window.localStorage.getItem(CONSENT_KEY) !== null
-    } catch {
-      return
-    }
-
-    let timer: number | undefined
-
-    function scheduleOpen(delayMs: number) {
-      window.clearTimeout(timer)
-      timer = window.setTimeout(() => {
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          setPlatform('ios')
-        }
-        setIsOpen(true)
-      }, delayMs)
-    }
-
-    function handleConsentAnswered() {
-      window.removeEventListener(CONSENT_EVENT, handleConsentAnswered)
-      scheduleOpen(1500)
-    }
-
-    if (consentAlreadyAnswered) {
-      scheduleOpen(2200)
-    } else {
-      window.addEventListener(CONSENT_EVENT, handleConsentAnswered)
-    }
-
-    return () => {
-      window.clearTimeout(timer)
-      window.removeEventListener(CONSENT_EVENT, handleConsentAnswered)
     }
   }, [])
 

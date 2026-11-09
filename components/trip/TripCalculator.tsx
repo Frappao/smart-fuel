@@ -20,6 +20,7 @@ import { RoadSignPrice } from '../calculation/RoadSignPrice'
 import { useResultsMap } from '../map/ResultsMapContext'
 import { StationsResultMap } from '../map/StationsResultMap'
 import ShareResultButtons from '../share/ShareResultButtons'
+import { AppBetaInlineOffer } from '../mobile-promo/AppBetaModal'
 import AddressSearchField from './AddressSearchField'
 
 type OriginMode = 'current' | 'custom'
@@ -588,6 +589,7 @@ export default function TripCalculator() {
           ))}
         </motion.ol>
       ) : null}
+      {results.length > 0 && !isLoading ? <AppBetaInlineOffer /> : null}
     </section>
   )
 }

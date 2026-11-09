@@ -103,6 +103,7 @@ describe('FuelSmartCalculator', () => {
 
   afterEach(() => {
     cleanup()
+    window.localStorage.clear()
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
@@ -694,5 +695,42 @@ describe('FuelSmartCalculator', () => {
       'Il permesso alla posizione è stato negato.',
     )
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('offers an address as starting point when the position is not available', async () => {
+    vi.mocked(getCurrentPosition).mockRejectedValue(
+      new Error('Accesso alla posizione negato.'),
+    )
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+
+    expect(await screen.findByText('Oppure parti da un indirizzo')).toBeTruthy()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    arrangeApiResponse({
+      results: [
+        { id: 'duomo', label: 'Piazza del Duomo, Milano', latitude: 45.4641, longitude: 9.1919 },
+      ],
+    })
+    fireEvent.change(screen.getByLabelText('Indirizzo o città'), {
+      target: { value: 'Duomo Milano' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Cerca' }))
+
+    arrangeRankingScenario([
+      { id: 1, name: 'Vicino al Duomo', netFuelLiters: 25, routeDistanceMeters: 800 },
+    ])
+    fireEvent.click(
+      await screen.findByRole('radio', { name: 'Piazza del Duomo, Milano' }),
+    )
+
+    expect(await findWinnerHeading('Vicino al Duomo')).toBeTruthy()
+    expect(getCurrentPosition).toHaveBeenCalledOnce()
+    const nearbyRequestUrl = String(fetchMock.mock.calls[1][0])
+    expect(nearbyRequestUrl).toContain('lat=45.4641')
+    expect(nearbyRequestUrl).toContain('lng=9.1919')
+    expect(screen.getAllByText('Piazza del Duomo, Milano').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'Usa la mia posizione' })).toBeTruthy()
   })
 })

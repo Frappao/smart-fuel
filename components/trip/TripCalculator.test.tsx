@@ -92,6 +92,7 @@ describe('TripCalculator', () => {
 
   afterEach(() => {
     cleanup()
+    window.localStorage.clear()
   })
 
   it('uses the current position and renders route-aware results', async () => {

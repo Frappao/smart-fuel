@@ -8,6 +8,7 @@ import {
   fetchNearbyStations,
   fetchRouteMatrix,
   fetchRoutePath,
+  type GeocodingResult,
 } from '../../lib/api/rifornioApiClient'
 import type { RouteLineString } from '../../lib/maps/getMapboxDirections'
 import {
@@ -30,7 +31,9 @@ import {
   type ResultsMapData,
 } from '../map/ResultsMapContext'
 import { StationsResultMap } from '../map/StationsResultMap'
+import { AppBetaInlineOffer } from '../mobile-promo/AppBetaModal'
 import ShareResultButtons from '../share/ShareResultButtons'
+import AddressSearchField from '../trip/AddressSearchField'
 import RefuelForm, { type RefuelCalculationInput } from './RefuelForm'
 import { RoadSignPrice } from './RoadSignPrice'
 
@@ -422,6 +425,10 @@ export default function FuelSmartCalculator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyStateMessage, setEmptyStateMessage] = useState<string | null>(null)
+  // Partenza scelta a mano quando la posizione non è disponibile (permesso
+  // negato, Mac senza Wi-Fi, ricerca per un'altra zona).
+  const [manualOrigin, setManualOrigin] = useState<GeocodingResult | null>(null)
+  const [isPositionUnavailable, setIsPositionUnavailable] = useState(false)
   const winnerAdvantageLiters =
     results.length >= 2 &&
     !haveEquivalentDisplayedNetFuelLiters(results[0], results[1])
@@ -510,7 +517,10 @@ export default function FuelSmartCalculator() {
     }
   }
 
-  async function handleCalculate(values: RefuelCalculationInput) {
+  async function handleCalculate(
+    values: RefuelCalculationInput,
+    origin: GeocodingResult | null = manualOrigin,
+  ) {
     if (calculationInFlight.current) return
     calculationInFlight.current = true
     setCalculationInput(values)
@@ -522,7 +532,20 @@ export default function FuelSmartCalculator() {
     setIsLoading(true)
 
     try {
-      const position = await getCurrentPosition()
+      let position: MapCoordinates
+
+      if (origin) {
+        position = { latitude: origin.latitude, longitude: origin.longitude }
+      } else {
+        try {
+          position = await getCurrentPosition()
+        } catch (positionError) {
+          setIsPositionUnavailable(true)
+          throw positionError
+        }
+        setIsPositionUnavailable(false)
+      }
+
       setOriginCoords({
         latitude: position.latitude,
         longitude: position.longitude,
@@ -650,6 +673,7 @@ export default function FuelSmartCalculator() {
           isSelf={calculationInput?.isSelf ?? true}
           refuelAmount={calculationInput?.refuelAmount ?? 50}
         />
+        <AppBetaInlineOffer />
       </motion.section>
     ) : null
 
@@ -695,6 +719,47 @@ export default function FuelSmartCalculator() {
         >
           {error}
         </p>
+      ) : null}
+
+      {isPositionUnavailable || manualOrigin ? (
+        <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4 sm:p-5">
+          {manualOrigin ? (
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+              <p className="min-w-0 text-sm text-zinc-300">
+                <span className="text-zinc-400">Partenza: </span>
+                <span className="font-semibold text-zinc-100">{manualOrigin.label}</span>
+              </p>
+              <button
+                type="button"
+                disabled={isLoading}
+                className="inline-flex min-h-10 items-center rounded-lg border border-zinc-700 px-3 text-sm font-semibold text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-800 disabled:opacity-60"
+                onClick={() => {
+                  setManualOrigin(null)
+                  setIsPositionUnavailable(false)
+                  setError(null)
+                }}
+              >
+                Usa la mia posizione
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm font-semibold text-zinc-100">
+              Oppure parti da un indirizzo
+            </p>
+          )}
+          <AddressSearchField
+            disabled={isLoading}
+            id="nearby-origin"
+            label={manualOrigin ? 'Cambia indirizzo di partenza' : 'Indirizzo o città'}
+            onSelect={(result) => {
+              if (!result) return
+              setManualOrigin(result)
+              if (calculationInput) {
+                void handleCalculate(calculationInput, result)
+              }
+            }}
+          />
+        </div>
       ) : null}
 
       {!isLoading &&

@@ -3,7 +3,13 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AppBetaButton, AppBetaProvider } from './AppBetaModal'
+import { act } from '@testing-library/react'
+
+import {
+  AppBetaButton,
+  AppBetaInlineOffer,
+  AppBetaProvider,
+} from './AppBetaModal'
 
 describe('AppBetaModal', () => {
   const fetchMock = vi.fn()
@@ -16,6 +22,8 @@ describe('AppBetaModal', () => {
 
   afterEach(() => {
     cleanup()
+    window.localStorage.clear()
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -54,5 +62,49 @@ describe('AppBetaModal', () => {
         }),
       }),
     )
+  })
+
+  it('never opens on its own, even after the analytics banner is answered', () => {
+    vi.useFakeTimers()
+    window.localStorage.clear()
+    window.localStorage.setItem('rifornio-analytics-consent', 'denied')
+
+    render(
+      <AppBetaProvider>
+        <AppBetaButton />
+      </AppBetaProvider>,
+    )
+    act(() => {
+      window.dispatchEvent(new Event('rifornio-analytics-consent-change'))
+      vi.advanceTimersByTime(10_000)
+    })
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('shows an inline offer that opens the modal or can be dismissed for good', () => {
+    window.localStorage.clear()
+
+    const { unmount } = render(
+      <AppBetaProvider>
+        <AppBetaInlineOffer />
+      </AppBetaProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: "Prova l'app" }))
+    expect(screen.getByText("È arrivata l'app Android")).toBeTruthy()
+    unmount()
+    window.localStorage.clear()
+
+    render(
+      <AppBetaProvider>
+        <AppBetaInlineOffer />
+      </AppBetaProvider>,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: "Non mostrare più la proposta dell'app" }),
+    )
+    expect(screen.queryByRole('button', { name: "Prova l'app" })).toBeNull()
+    expect(window.localStorage.getItem('rifornio_app_promo_dismissed_v1')).toBe('1')
   })
 })

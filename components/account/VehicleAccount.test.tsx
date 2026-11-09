@@ -39,7 +39,10 @@ describe('vehicle account', () => {
     mocks.signOut.mockResolvedValue({ error: null })
     mocks.from.mockImplementation(() => ({ select: () => ({ order: () => ({ order: () => ({ abortSignal: async () => ({ data: vehicles, error: null }) }) }) }) }))
   })
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    window.localStorage.clear()
+  })
 
   it('shows registration on the homepage and opens the account dialog from the header', async () => {
     render(await Home())

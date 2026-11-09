@@ -8,6 +8,7 @@ import RefuelForm from './RefuelForm'
 describe('RefuelForm', () => {
   afterEach(() => {
     cleanup()
+    window.localStorage.clear()
   })
 
   it('renders both numeric fields with Benzina Self selected by default', () => {
@@ -186,6 +187,40 @@ describe('RefuelForm', () => {
       fuelType: 'Benzina',
       isSelf: true,
     })
+  })
+
+  it('remembers fuel, consumption, service and amount on this device', () => {
+    const { unmount } = render(<RefuelForm onCalculate={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Gasolio' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Servito' }))
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: 'Consumo medio auto in L/100 km' }),
+      { target: { value: '5.8' } },
+    )
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: 'Importo rifornimento in euro' }),
+      { target: { value: '40' } },
+    )
+    unmount()
+
+    render(<RefuelForm onCalculate={vi.fn()} />)
+
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Gasolio' }).checked).toBe(true)
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Servito' }).checked).toBe(true)
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Consumo medio auto in L/100 km' }).value,
+    ).toBe('5.8')
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Importo rifornimento in euro' }).value,
+    ).toBe('40')
+  })
+
+  it('ignores corrupted saved preferences', () => {
+    window.localStorage.setItem('rifornio_refuel_preferences_v1', '{not json')
+    render(<RefuelForm onCalculate={vi.fn()} />)
+
+    expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Benzina' }).checked).toBe(true)
   })
 })
 

@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from 'react'
@@ -28,6 +29,10 @@ import {
 import ChoiceGroup from '../ui/ChoiceGroup'
 import { useVehicleAccount } from '../account/VehicleAccount'
 import { convertConsumption, toLitersPer100Km, type ConsumptionUnit } from '../../lib/vehicles/consumption'
+import {
+  loadRefuelPreferences,
+  saveRefuelPreferences,
+} from '../../lib/vehicles/refuelPreferences'
 
 export interface RefuelCalculationInput {
   refuelAmount: number
@@ -50,6 +55,10 @@ interface FormErrors {
   vehicleName?: string
   refuelAmount?: string
   consumption?: string
+}
+
+function subscribeToNothing() {
+  return () => {}
 }
 
 function parsePositiveNumber(value: string): number | null {
@@ -88,6 +97,36 @@ export default function RefuelForm({
   const [errors, setErrors] = useState<FormErrors>({})
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [show3DGarage, setShow3DGarage] = useState(false)
+  const [hasRestoredPreferences, setHasRestoredPreferences] = useState(false)
+
+  const isHydrated = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  )
+
+  // Ripristina gli ultimi valori usati su questo dispositivo, una sola volta e
+  // solo dopo l'idratazione (il server non conosce il localStorage). Un'auto
+  // salvata nell'account ha la precedenza su carburante e consumo.
+  if (isHydrated && !hasRestoredPreferences) {
+    setHasRestoredPreferences(true)
+    const stored = loadRefuelPreferences()
+    if (stored) {
+      if (!selected) {
+        if (stored.fuelType) setFuelType(stored.fuelType)
+        if (stored.unit) setUnit(stored.unit)
+        if (stored.consumption !== undefined) setConsumption(stored.consumption)
+      }
+      if (stored.isSelf !== undefined) setIsSelf(stored.isSelf)
+      if (stored.refuelAmount !== undefined) setRefuelAmount(stored.refuelAmount)
+    }
+  }
+
+  useEffect(() => {
+    if (!hasRestoredPreferences) return
+    saveRefuelPreferences({ fuelType, unit, consumption, isSelf, refuelAmount })
+  }, [hasRestoredPreferences, fuelType, unit, consumption, isSelf, refuelAmount])
+
   const submitButtonRef = useRef<HTMLButtonElement>(null)
   // Su mobile il pulsante di calcolo resta sotto la piega: mostriamo una copia
   // fissa in basso finché il pulsante vero non entra nello schermo.
