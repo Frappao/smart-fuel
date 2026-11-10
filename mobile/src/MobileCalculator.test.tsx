@@ -3,6 +3,10 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  NAVIGATION_APP_STORAGE_KEY,
+  resetNavigationAppCache,
+} from '../../components/navigation/useNavigationApp'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileCalculator from './MobileCalculator'
 import { openStationNavigation } from './navigation/openStationNavigation'
@@ -59,6 +63,8 @@ describe('MobileCalculator', () => {
       accuracy: 18,
     })
     vi.mocked(openStationNavigation).mockResolvedValue()
+    window.localStorage.clear()
+    resetNavigationAppCache()
   })
 
   afterEach(() => {
@@ -266,10 +272,10 @@ describe('MobileCalculator', () => {
     expect(navigationButtons).toHaveLength(2)
     fireEvent.click(navigationButtons[0])
 
-    expect(openStationNavigation).toHaveBeenCalledWith({
-      latitude: 41.91,
-      longitude: 12.49,
-    })
+    expect(openStationNavigation).toHaveBeenCalledWith(
+      { latitude: 41.91, longitude: 12.49 },
+      'google',
+    )
     expect(getMobileCurrentPosition).toHaveBeenCalledOnce()
     expect(fetchMock).toHaveBeenCalledTimes(requestCountBeforeNavigation)
     expect(
@@ -287,6 +293,25 @@ describe('MobileCalculator', () => {
       'Non riesco ad aprire il navigatore. Riprova.',
     )
     expect(fetchMock).toHaveBeenCalledTimes(requestCountBeforeNavigation)
+
+    const appPicker = screen.getByRole('group', { name: 'Apri con' })
+    expect(
+      Array.from(appPicker.querySelectorAll('button')).map(
+        ({ textContent }) => textContent,
+      ),
+    ).toEqual(['Google Maps', 'Waze'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Waze' }))
+    expect(
+      screen.getByRole('button', { name: 'Waze' }).getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(window.localStorage.getItem(NAVIGATION_APP_STORAGE_KEY)).toBe('waze')
+
+    fireEvent.click(navigationButtons[0])
+    expect(openStationNavigation).toHaveBeenLastCalledWith(
+      { latitude: 41.91, longitude: 12.49 },
+      'waze',
+    )
   })
 
   it('uses the newly selected fuel type on consecutive submissions', async () => {

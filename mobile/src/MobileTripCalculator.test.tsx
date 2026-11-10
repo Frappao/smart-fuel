@@ -7,6 +7,10 @@ import {
   fetchGeocodingResults,
   fetchTripStations,
 } from '../../lib/api/rifornioApiClient'
+import {
+  NAVIGATION_APP_STORAGE_KEY,
+  resetNavigationAppCache,
+} from '../../components/navigation/useNavigationApp'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileTripCalculator from './MobileTripCalculator'
 import { openTripNavigation } from './navigation/openStationNavigation'
@@ -61,6 +65,8 @@ describe('MobileTripCalculator', () => {
       accuracy: 20,
     })
     vi.mocked(openTripNavigation).mockResolvedValue()
+    window.localStorage.clear()
+    resetNavigationAppCache()
   })
 
   afterEach(() => {
@@ -111,11 +117,26 @@ describe('MobileTripCalculator', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Apri percorso con questa sosta' }),
     )
-    expect(openTripNavigation).toHaveBeenCalledWith({
+    const journey = {
       origin: { latitude: 45.5, longitude: 9.2 },
       destination: { latitude: 44.4949, longitude: 11.3426 },
       station: { latitude: 44.8015, longitude: 10.3279 },
-    })
+    }
+    expect(openTripNavigation).toHaveBeenCalledWith(journey, 'google')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Waze' }))
+    expect(window.localStorage.getItem(NAVIGATION_APP_STORAGE_KEY)).toBe('waze')
+    expect(
+      screen.getByText(/Waze non accetta soste nei link/),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Apri percorso con questa sosta' }),
+    ).toBeNull()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Portami a questo distributore' }),
+    )
+    expect(openTripNavigation).toHaveBeenLastCalledWith(journey, 'waze')
   })
 
   it('returns to nearby mode only when that option is selected', () => {

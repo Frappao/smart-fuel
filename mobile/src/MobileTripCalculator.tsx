@@ -15,7 +15,13 @@ import { RIFORNIO_API_BASE_URL } from './config'
 import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileFooter from './MobileFooter'
 import MobileSearchMode from './MobileSearchMode'
+import {
+  NAVIGATION_APP_LABELS,
+  supportsTripWaypoint,
+} from '../../lib/navigation/navigationApps'
+import MobileNavigationAppPicker from './navigation/MobileNavigationAppPicker'
 import { openTripNavigation } from './navigation/openStationNavigation'
+import { useMobileNavigationApp } from './navigation/useMobileNavigationApp'
 
 interface MobileTripCalculatorProps {
   onSelectNearby: () => void
@@ -48,6 +54,8 @@ export default function MobileTripCalculator({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
+  const navigation = useMobileNavigationApp()
+  const opensFullTrip = supportsTripWaypoint(navigation.app)
 
   function clearCalculatedJourney() {
     setResults([])
@@ -114,13 +122,16 @@ export default function MobileTripCalculator({
     if (!journey) return
 
     try {
-      await openTripNavigation({
-        ...journey,
-        station: {
-          latitude: result.station.latitude,
-          longitude: result.station.longitude,
+      await openTripNavigation(
+        {
+          ...journey,
+          station: {
+            latitude: result.station.latitude,
+            longitude: result.station.longitude,
+          },
         },
-      })
+        navigation.app,
+      )
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -228,6 +239,18 @@ export default function MobileTripCalculator({
       {results.length > 0 ? (
         <section className="results-section" aria-label="Classifica sul percorso">
           <h2>Risultati</h2>
+          <MobileNavigationAppPicker
+            app={navigation.app}
+            apps={navigation.apps}
+            onChange={navigation.setApp}
+          />
+          {opensFullTrip ? null : (
+            <p className="status-message">
+              {NAVIGATION_APP_LABELS[navigation.app]} non accetta soste nei
+              link: ti porta al distributore, poi riparti verso la
+              destinazione.
+            </p>
+          )}
           <ol className="results-list">
             {results.map((result, index) => (
               <li
@@ -259,7 +282,9 @@ export default function MobileTripCalculator({
                   type="button"
                   onClick={() => void handleNavigation(result)}
                 >
-                  Apri percorso con questa sosta
+                  {opensFullTrip
+                    ? 'Apri percorso con questa sosta'
+                    : 'Portami a questo distributore'}
                 </button>
               </li>
             ))}

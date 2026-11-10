@@ -20,7 +20,9 @@ import { getMobileCurrentPosition } from './location/getMobileCurrentPosition'
 import MobileFooter from './MobileFooter'
 import MobileSearchMode from './MobileSearchMode'
 import MobileTripCalculator from './MobileTripCalculator'
+import MobileNavigationAppPicker from './navigation/MobileNavigationAppPicker'
 import { openStationNavigation } from './navigation/openStationNavigation'
+import { useMobileNavigationApp } from './navigation/useMobileNavigationApp'
 
 const priceFormatter = new Intl.NumberFormat('it-IT', {
   minimumFractionDigits: 3,
@@ -136,6 +138,7 @@ export default function MobileCalculator() {
   const [error, setError] = useState<string | null>(null)
   const [emptyState, setEmptyState] = useState<string | null>(null)
   const [navigationError, setNavigationError] = useState<string | null>(null)
+  const navigation = useMobileNavigationApp()
   const winnerAdvantageLiters =
     results.length >= 2
       ? results[0].netFuelLiters - results[1].netFuelLiters
@@ -149,7 +152,7 @@ export default function MobileCalculator() {
     setNavigationError(null)
 
     try {
-      await openStationNavigation({ latitude, longitude })
+      await openStationNavigation({ latitude, longitude }, navigation.app)
     } catch {
       setNavigationError(navigationErrorMessage)
     }
@@ -275,6 +278,11 @@ export default function MobileCalculator() {
       {results.length > 0 ? (
         <section className="results-section" aria-label="Classifica distributori">
           <h2>Risultati</h2>
+          <MobileNavigationAppPicker
+            app={navigation.app}
+            apps={navigation.apps}
+            onChange={navigation.setApp}
+          />
           <ol className="results-list">
             {results.map((result, index) => (
               <MobileStationResult
