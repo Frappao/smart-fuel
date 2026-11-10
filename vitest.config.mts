@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -12,5 +12,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // I worktree degli agenti (.claude/worktrees/*) sono copie del repo dentro
+    // il repo: senza questa esclusione ogni test girerebbe una volta per copia,
+    // compreso l'import MIMIT locale che scrive sul database di produzione.
+    exclude: [...configDefaults.exclude, "**/.claude/**"],
   },
 });

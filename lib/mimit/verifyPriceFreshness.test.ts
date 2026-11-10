@@ -13,7 +13,7 @@ vi.mock('../supabase/server', () => ({
 describe('evaluatePriceFreshness', () => {
   const now = new Date('2026-10-26T10:30:00.000Z')
 
-  it('classifies database as fresh when updated within 26h and communicated within 48h', () => {
+  it('classifies database as fresh when updated within 26h and communicated within 72h', () => {
     const report = evaluatePriceFreshness(
       {
         totalStations: 23922,

@@ -25,8 +25,11 @@ export interface PriceFreshnessReport extends PriceFreshnessSnapshot {
 
 const FRESH_IMPORT_MAX_HOURS = 26
 const WARNING_IMPORT_MAX_HOURS = 50
-const FRESH_COMMUNICATION_MAX_HOURS = 48
-const WARNING_COMMUNICATION_MAX_HOURS = 72
+// Il CSV MIMIT del giorno contiene i prezzi delle 8 del giorno prima: la
+// comunicazione più recente ha ~25 ore dopo l'import e ~49 prima del
+// successivo. Le soglie devono stare sopra questo ritardo fisiologico.
+const FRESH_COMMUNICATION_MAX_HOURS = 72
+const WARNING_COMMUNICATION_MAX_HOURS = 96
 
 function computeHoursSince(
   isoTimestamp: string | null,
