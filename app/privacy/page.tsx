@@ -143,13 +143,25 @@ export default function PrivacyPage() {
             Se salvi un’auto, il
             database conserva il nome o modello inserito, il carburante, il
             consumo e la relativa unità, associati al tuo account. Puoi
-            modificare o eliminare le auto dal modulo di rifornimento. Per
-            richiedere la cancellazione dell’account puoi contattarci tramite
-            la pagina di supporto.
+            modificare o eliminare le auto dal modulo di rifornimento o dalla
+            sezione “Il tuo account”.
+          </p>
+          <p>
+            Se imposti delle preferenze nella sezione “Il tuo account” (auto
+            predefinita, ricerca all’apertura, servizio preferito e importo
+            abituale), Supabase Auth le conserva tra i dati del tuo profilo per
+            proporle su ogni dispositivo. Non includono posizioni né ricerche.
+          </p>
+          <p>
+            Puoi eliminare l’account in qualsiasi momento dalla sezione “Il tuo
+            account” con il comando “Elimina account”: vengono cancellati
+            l’account, le auto salvate e le preferenze. In alternativa puoi
+            richiederlo tramite la pagina di supporto.
           </p>
           <p>
             La sessione di accesso viene conservata nel localStorage del browser
-            e rimossa da questo dispositivo quando premi “Esci”. Rifornio non
+            e rimossa da questo dispositivo quando premi “Esci”; con “Esci da
+            tutti i dispositivi” vengono chiuse anche le altre sessioni. Rifornio non
             mantiene nel database applicativo una cronologia delle ricerche o
             delle posizioni utilizzate per i calcoli.
           </p>

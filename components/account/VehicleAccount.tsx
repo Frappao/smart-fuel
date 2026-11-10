@@ -1,10 +1,18 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { createSupabaseClient } from '../../lib/supabase/client'
 import type { SupportedFuelType } from '../../lib/fuels/supportedFuelTypes'
 import type { ConsumptionUnit } from '../../lib/vehicles/consumption'
+import {
+  ACCOUNT_METADATA_KEY,
+  EMPTY_ACCOUNT_PREFERENCES,
+  parseAccountPreferences,
+  serializeAccountPreferences,
+  type AccountPreferences,
+} from '../../lib/account/accountPreferences'
+import AccountPanel from './AccountPanel'
 
 export interface Vehicle {
   id: string
@@ -23,6 +31,8 @@ interface Account {
   save: (values: VehicleInput, id?: string) => Promise<boolean>
   remove: (id: string) => Promise<void>
   busy: boolean
+  /** Preferenze dell'account; vuote senza accesso. */
+  preferences: AccountPreferences
 }
 const AccountContext = createContext<Account | null>(null)
 export const useVehicleAccount = () => useContext(AccountContext)
@@ -79,6 +89,14 @@ export default function VehicleAccount({ children }: { children: ReactNode }) {
   const [token, setToken] = useState('')
   const [sent, setSent] = useState(false)
   const [message, setMessage] = useState('')
+  const preferences = useMemo(
+    () => (user ? parseAccountPreferences(user.user_metadata) : EMPTY_ACCOUNT_PREFERENCES),
+    [user],
+  )
+  // Ultime preferenze lette dal caricamento delle auto senza farlo ripartire
+  // a ogni modifica delle preferenze.
+  const preferencesRef = useRef(preferences)
+  useEffect(() => { preferencesRef.current = preferences }, [preferences])
 
   useEffect(() => {
     let active = true
@@ -110,7 +128,8 @@ export default function VehicleAccount({ children }: { children: ReactNode }) {
         if (!active || generation.current !== version) return
         if (error) throw error
         setVehicles(data ?? [])
-        select(data?.[0]?.id ?? '')
+        const defaultId = preferencesRef.current.defaultVehicleId
+        select(data?.find(vehicle => vehicle.id === defaultId)?.id ?? data?.[0]?.id ?? '')
       } catch {
         if (active) setMessage('Impossibile caricare le auto. Riprova effettuando nuovamente l’accesso.')
       } finally { if (active) setBusy(false) }
@@ -170,27 +189,74 @@ export default function VehicleAccount({ children }: { children: ReactNode }) {
     })
   }
 
-  return <AccountContext.Provider value={{ openAccount: () => { dialogRef.current?.showModal(); setAccountOpen(true) }, user, vehicles, selected: vehicles.find(v => v.id === selectedId), select, save, remove, busy }}>
+  async function savePreferences(next: Partial<AccountPreferences>) {
+    return run(async () => {
+      if (!client.current || !user) throw new Error('No session')
+      const merged = { ...preferences, ...next }
+      const { data, error } = await client.current.auth.updateUser({
+        data: { [ACCOUNT_METADATA_KEY]: serializeAccountPreferences(merged) },
+      })
+      if (error) throw error
+      if (data?.user) setUser(data.user)
+      if (next.defaultVehicleId) select(next.defaultVehicleId)
+      setMessage('Preferenze salvate.')
+    })
+  }
+
+  function clearSession() {
+    setUser(null); setVehicles([]); select(''); setToken(''); setSent(false)
+  }
+
+  async function signOut(scope: 'local' | 'global') {
+    await run(async () => {
+      const { error } = await client.current!.auth.signOut({ scope })
+      if (error) throw error
+      clearSession()
+      if (scope === 'global') setMessage('Sei uscito da tutti i dispositivi.')
+    })
+  }
+
+  async function deleteAccount() {
+    await run(async () => {
+      if (!client.current) throw new Error('Unavailable')
+      const { data } = await client.current.auth.getSession()
+      const accessToken = data?.session?.access_token
+      if (!accessToken) throw new Error('No session')
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (!response.ok) throw new Error('Delete failed')
+      // L'utente non esiste più: basta togliere la sessione da questo browser.
+      await client.current.auth.signOut({ scope: 'local' }).catch(() => undefined)
+      clearSession()
+      setMessage('Account eliminato insieme alle auto salvate.')
+    })
+  }
+
+  return <AccountContext.Provider value={{ openAccount: () => { dialogRef.current?.showModal(); setAccountOpen(true) }, user, vehicles, selected: vehicles.find(v => v.id === selectedId), select, save, remove, busy, preferences }}>
     {children}
-    <dialog ref={dialogRef} onClose={() => setAccountOpen(false)} aria-labelledby="account-dialog-title" className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 transition-all duration-200" onClick={event => {
+    <dialog ref={dialogRef} onClose={() => setAccountOpen(false)} aria-labelledby="account-dialog-title" className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-3xl border border-b-0 border-zinc-800 bg-zinc-950 p-0 pb-[env(safe-area-inset-bottom)] text-zinc-100 shadow-2xl backdrop:bg-black/60 transition-[translate] duration-300 ease-out starting:open:translate-y-full motion-reduce:transition-none sm:inset-y-0 sm:right-0 sm:left-auto sm:h-dvh sm:max-h-none sm:w-[420px] sm:rounded-none sm:rounded-l-3xl sm:border-r-0 sm:border-b sm:starting:open:translate-x-full sm:starting:open:translate-y-0" onClick={event => {
       if (event.target === event.currentTarget) dialogRef.current?.close()
     }}>
       <div className="p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
+        <div className="sticky top-0 z-10 -mx-5 -mt-5 flex items-center justify-between gap-3 border-b border-zinc-800/80 bg-zinc-950 px-5 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
           <h2 id="account-dialog-title" className="text-xl font-semibold">{user ? 'Il tuo account' : 'Accedi o registrati'}</h2>
           <button type="button" aria-label="Chiudi account" className="flex size-11 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:hover:bg-zinc-800" onClick={() => dialogRef.current?.close()}>
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 6 12 12M6 18 18 6" /></svg>
           </button>
         </div>
-      {user ? <div className="mt-3 space-y-3">
-        <p>{user.email}</p>
-        <p>Seleziona un’auto nel modulo oppure aggiungine una nuova. Al prossimo accesso troverai selezionata la prima auto salvata.</p>
-        <button type="button" disabled={busy} className={buttonClass} onClick={() => void run(async () => {
-          const { error } = await client.current!.auth.signOut({ scope: 'local' })
-          if (error) throw error
-          setUser(null); setVehicles([]); select(''); setToken(''); setSent(false)
-        })}>Esci</button>
-      </div> : <form className="mt-3 space-y-3" onSubmit={event => {
+      {user ? <AccountPanel
+        user={user}
+        vehicles={vehicles}
+        preferences={preferences}
+        busy={busy}
+        onSaveVehicle={save}
+        onRemoveVehicle={remove}
+        onSavePreferences={savePreferences}
+        onSignOut={signOut}
+        onDeleteAccount={deleteAccount}
+      /> : <form className="mt-3 space-y-3" onSubmit={event => {
         event.preventDefault()
         void run(async () => {
           if (!client.current) throw new Error('Unavailable')

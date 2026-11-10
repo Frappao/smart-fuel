@@ -8,6 +8,7 @@ import RefuelForm from '../calculation/RefuelForm'
 const mocks = vi.hoisted(() => ({
   authChange: undefined as undefined | ((event: string, session: unknown) => void),
   oauth: vi.fn(), otp: vi.fn(), verify: vi.fn(), signOut: vi.fn(), from: vi.fn(), unsubscribe: vi.fn(),
+  updateUser: vi.fn(), getSession: vi.fn(),
 }))
 vi.mock('../../lib/supabase/client', () => ({ createSupabaseClient: () => ({
   auth: {
@@ -16,6 +17,7 @@ vi.mock('../../lib/supabase/client', () => ({ createSupabaseClient: () => ({
       return { data: { subscription: { unsubscribe: mocks.unsubscribe } } }
     },
     signInWithOAuth: mocks.oauth, signInWithOtp: mocks.otp, verifyOtp: mocks.verify, signOut: mocks.signOut,
+    updateUser: mocks.updateUser, getSession: mocks.getSession,
   }, from: mocks.from,
 }) }))
 vi.mock('../../lib/mimit/getLatestPriceUpdate', () => ({
@@ -179,5 +181,103 @@ describe('vehicle account', () => {
     login()
     await screen.findByText(/Impossibile caricare le auto/)
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Calcola convenienza' }).disabled).toBe(false)
+  })
+
+  describe('account panel', () => {
+    function loginWith(metadata: Record<string, unknown> = {}) {
+      act(() => mocks.authChange?.('SIGNED_IN', {
+        user: { id: 'owner', email: 'owner@example.com', user_metadata: metadata, app_metadata: { provider: 'google' } },
+      }))
+    }
+    function openPanel() {
+      fireEvent.click(screen.getByRole('button', { name: 'Il tuo account' }))
+      return screen.getByRole('dialog', { name: 'Il tuo account' })
+    }
+
+    it('shows profile, saved cars and selects the default car from the preferences', async () => {
+      render(<VehicleAccount><AccountButton /><RefuelForm onCalculate={vi.fn()} /></VehicleAccount>)
+      loginWith({ full_name: 'Mario Rossi', rifornio: { default_vehicle_id: 'b' } })
+      await waitFor(() => expect(screen.getByLabelText<HTMLInputElement>('Nome e modello auto').value).toBe('Golf'))
+      const panel = openPanel()
+      expect(within(panel).getByText('Mario Rossi')).toBeTruthy()
+      expect(within(panel).getByText('Accesso con Google')).toBeTruthy()
+      const cars = within(panel).getByRole('region', { name: 'Le mie auto (2)' })
+      expect(within(cars).getByText('Panda')).toBeTruthy()
+      expect(within(cars).getByText('Predefinita')).toBeTruthy()
+      expect(within(cars).getByRole('button', { name: "Rendi Panda l'auto predefinita" })).toBeTruthy()
+      expect(within(cars).queryByRole('button', { name: "Rendi Golf l'auto predefinita" })).toBeNull()
+    })
+
+    it('saves preferences in the user metadata and applies them to the form', async () => {
+      mocks.updateUser.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+        data: { user: { id: 'owner', email: 'owner@example.com', user_metadata: data, app_metadata: {} } },
+        error: null,
+      }))
+      render(<VehicleAccount><AccountButton /><RefuelForm onCalculate={vi.fn()} /></VehicleAccount>)
+      loginWith()
+      await screen.findByRole('radio', { name: 'Panda' })
+      const panel = openPanel()
+      fireEvent.click(within(panel).getByRole('button', { name: 'Servito' }))
+      await within(panel).findByText('Preferenze salvate.')
+      expect(mocks.updateUser).toHaveBeenLastCalledWith({
+        data: { rifornio: { default_vehicle_id: null, is_self: false, refuel_amount: null, search_mode: null } },
+      })
+      fireEvent.click(within(panel).getByRole('button', { name: '20 €' }))
+      await waitFor(() => expect(mocks.updateUser).toHaveBeenLastCalledWith({
+        data: { rifornio: { default_vehicle_id: null, is_self: false, refuel_amount: 20, search_mode: null } },
+      }))
+      fireEvent.click(within(panel).getByRole('button', { name: 'Chiudi account' }))
+      expect(screen.getByRole<HTMLInputElement>('radio', { name: 'Servito' }).checked).toBe(true)
+      expect(screen.getByLabelText<HTMLInputElement>('Importo rifornimento in euro').value).toBe('20')
+    })
+
+    it('asks a named confirmation before removing a saved car', async () => {
+      render(<VehicleAccount><AccountButton /><RefuelForm onCalculate={vi.fn()} /></VehicleAccount>)
+      loginWith()
+      await screen.findByRole('radio', { name: 'Panda' })
+      const panel = openPanel()
+      const query = { eq: vi.fn(), abortSignal: vi.fn().mockResolvedValue({ error: null }) }
+      query.eq.mockReturnValue(query)
+      const del = vi.fn(() => query)
+      mocks.from.mockReturnValue({ delete: del })
+      fireEvent.click(within(panel).getByRole('button', { name: 'Elimina Golf dalle auto salvate' }))
+      expect(del).not.toHaveBeenCalled()
+      fireEvent.click(within(panel).getByRole('button', { name: 'Elimina Golf' }))
+      await within(panel).findByText('Auto eliminata.')
+      expect(query.eq).toHaveBeenCalledWith('id', 'b')
+      expect(query.eq).toHaveBeenCalledWith('user_id', 'owner')
+      expect(within(panel).getByRole('region', { name: 'Le mie auto (1)' })).toBeTruthy()
+    })
+
+    it('signs out from every device', async () => {
+      render(<VehicleAccount><AccountButton /><RefuelForm onCalculate={vi.fn()} /></VehicleAccount>)
+      loginWith()
+      await screen.findByRole('radio', { name: 'Panda' })
+      const panel = openPanel()
+      fireEvent.click(within(panel).getByRole('button', { name: 'Esci da tutti i dispositivi' }))
+      await waitFor(() => expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'global' }))
+      expect(await screen.findByRole('dialog', { name: 'Accedi o registrati' })).toBeTruthy()
+    })
+
+    it('deletes the account through the server with the session token after confirmation', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) })
+      vi.stubGlobal('fetch', fetchMock)
+      mocks.getSession.mockResolvedValue({ data: { session: { access_token: 'token-123' } }, error: null })
+      render(<VehicleAccount><AccountButton /><RefuelForm onCalculate={vi.fn()} /></VehicleAccount>)
+      loginWith()
+      await screen.findByRole('radio', { name: 'Panda' })
+      const panel = openPanel()
+      fireEvent.click(within(panel).getByRole('button', { name: 'Elimina account…' }))
+      expect(within(panel).getByText(/le 2 auto salvate/)).toBeTruthy()
+      expect(fetchMock).not.toHaveBeenCalled()
+      fireEvent.click(within(panel).getByRole('button', { name: 'Elimina account e dati' }))
+      await screen.findByText('Account eliminato insieme alle auto salvate.')
+      expect(fetchMock).toHaveBeenCalledWith('/api/account/delete', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer token-123' },
+      })
+      expect(screen.getByRole('button', { name: 'Accedi / Registrati' })).toBeTruthy()
+      vi.unstubAllGlobals()
+    })
   })
 })

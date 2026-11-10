@@ -145,6 +145,21 @@ export default function RefuelForm({
     return () => observer.disconnect()
   }, [])
 
+  // Servizio e importo abituale scelti nell'account. La chiave è il valore,
+  // non l'oggetto, così un rinnovo della sessione non sovrascrive il form.
+  const accountPreferences = account?.preferences
+  const preferenceKey = accountPreferences
+    ? `${accountPreferences.isSelf}|${accountPreferences.refuelAmount}`
+    : ''
+  const [lastPreferenceKey, setLastPreferenceKey] = useState('')
+  if (isHydrated && preferenceKey !== lastPreferenceKey) {
+    setLastPreferenceKey(preferenceKey)
+    if (accountPreferences?.isSelf != null) setIsSelf(accountPreferences.isSelf)
+    if (accountPreferences?.refuelAmount != null) {
+      setRefuelAmount(String(accountPreferences.refuelAmount))
+    }
+  }
+
   if (selected !== lastSelected) {
     setLastSelected(selected)
     setVehicleName(selected?.name ?? '')
