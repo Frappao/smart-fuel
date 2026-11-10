@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { motion } from 'motion/react'
+import { motion, type Variants } from 'motion/react'
 
 import {
   fetchNearbyStations,
@@ -24,6 +24,7 @@ import {
 } from '../../lib/stations/formatStationText'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
+import { useRankingVariants } from '../motion/rankingMotion'
 import {
   NEARBY_RESULTS_SLOT_ID,
   useResultsMap,
@@ -245,10 +246,12 @@ function AlternativeResultRow({
   result,
   index,
   winnerNetFuelLiters,
+  variants,
 }: {
   result: RankedStationResult
   index: number
   winnerNetFuelLiters: number
+  variants: Variants
 }) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
@@ -262,7 +265,10 @@ function AlternativeResultRow({
   )
 
   return (
-    <li className="min-w-0 border-t border-zinc-800/80 py-3 first:border-t-0">
+    <motion.li
+      variants={variants}
+      className="min-w-0 border-t border-zinc-800/80 py-3 first:border-t-0"
+    >
       <div className="flex min-w-0 items-start gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold text-zinc-100">
@@ -303,7 +309,7 @@ function AlternativeResultRow({
         result={result}
         travelDistanceKm={travelDistanceKm}
       />
-    </li>
+    </motion.li>
   )
 }
 
@@ -322,6 +328,9 @@ function WinnerCard({
     result.station.latitude,
     result.station.longitude,
   )
+  const rankingVariants = useRankingVariants()
+  // Le righe entrano a cascata ogni volta che la classifica viene aperta.
+  const [isRankingOpen, setIsRankingOpen] = useState(false)
 
   return (
     <article
@@ -385,17 +394,23 @@ function WinnerCard({
       <CalculationDetails result={result} travelDistanceKm={travelDistanceKm} />
 
       {alternatives.length > 0 ? (
-        <details className="group mt-2 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-xs">
+        <details
+          className="group mt-2 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-xs"
+          onToggle={event => setIsRankingOpen(event.currentTarget.open)}
+        >
           <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-zinc-300 select-none hover:text-zinc-100">
             <span>
               Vedi {alternatives.length === 1 ? "l'altro distributore" : `gli altri ${alternatives.length}`} in classifica
             </span>
             <span aria-hidden="true" className="text-[10px] text-zinc-400 transition-transform group-open:rotate-180">▾</span>
           </summary>
-          <ol
+          <motion.ol
             aria-label="Altri distributori in classifica"
             className="mt-2 border-t border-zinc-800 pt-1"
             start={2}
+            variants={rankingVariants.list}
+            initial="hidden"
+            animate={isRankingOpen ? 'visible' : 'hidden'}
           >
             {alternatives.map((alternative, index) => (
               <AlternativeResultRow
@@ -403,9 +418,10 @@ function WinnerCard({
                 key={alternative.station.id}
                 result={alternative}
                 winnerNetFuelLiters={result.netFuelLiters}
+                variants={rankingVariants.item}
               />
             ))}
-          </ol>
+          </motion.ol>
         </details>
       ) : null}
     </article>

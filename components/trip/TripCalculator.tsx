@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'motion/react'
+import { motion, type Variants } from 'motion/react'
 
 import {
   fetchTripStations,
@@ -13,6 +13,7 @@ import type { RankedRouteStationResult } from '../../lib/calculation/rankStation
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
+import { useRankingVariants } from '../motion/rankingMotion'
 import RefuelForm, {
   type RefuelCalculationInput,
 } from '../calculation/RefuelForm'
@@ -72,6 +73,7 @@ interface TripResultCardProps {
   mobileMap?: React.ReactNode
   showAllToggle?: React.ReactNode
   isMobileHidden?: boolean
+  variants?: Variants
 }
 
 function TripResultCard({
@@ -87,6 +89,7 @@ function TripResultCard({
   mobileMap,
   showAllToggle,
   isMobileHidden = false,
+  variants,
 }: TripResultCardProps) {
   const isWinner = index === 0
   const stationName = getStationDisplayName(result.station)
@@ -104,141 +107,148 @@ function TripResultCard({
       : 'min-w-0 break-words rounded-2xl border border-zinc-800/80 bg-zinc-900/50 md:backdrop-blur-md p-4 sm:p-5 transition-all duration-150 hover:border-zinc-700 hover:bg-zinc-900/70 active:scale-[0.99] cursor-pointer'
 
   return (
-    <li
-      onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
-      className={isMobileHidden ? `${cardClasses} hidden lg:block` : cardClasses}
+    // L'ingresso animato sta sul <li>; la card interna conserva le sue
+    // transizioni CSS (hover/active) senza contendersi il transform.
+    <motion.li
+      variants={variants}
+      className={isMobileHidden ? 'min-w-0 hidden lg:block' : 'min-w-0'}
     >
-      {isWinner ? (
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Migliore lungo questo percorso
-          </span>
-        </div>
-      ) : null}
-      <h3 className={isWinner ? 'mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50' : 'font-semibold text-zinc-100 text-base'}>
-        {index + 1}. {stationName}
-      </h3>
+      <div
+        onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
+        className={cardClasses}
+      >
+        {isWinner ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Migliore lungo questo percorso
+            </span>
+          </div>
+        ) : null}
+        <h3 className={isWinner ? 'mt-2.5 text-xl sm:text-2xl font-bold tracking-tight text-zinc-50' : 'font-semibold text-zinc-100 text-base'}>
+          {index + 1}. {stationName}
+        </h3>
 
-      {/* Unified clean 3-stat hero grid */}
-      <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Prezzo</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
-            <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-400">€/L</span>
-          </p>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
-          <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Deviazione</p>
-          <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
-            +{distanceFormatter.format(result.detourDistanceMeters / 1_000)} <span className="text-[11px] sm:text-xs font-normal text-zinc-400">km</span>
-          </p>
-        </div>
-        <div
-          className={
-            isWinner
-              ? 'rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10'
-              : 'rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner'
-          }
-        >
-          <p
+        {/* Unified clean 3-stat hero grid */}
+        <div className="mt-3.5 grid grid-cols-3 gap-2 sm:gap-3 text-left">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
+            <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Prezzo</p>
+            <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
+              <RoadSignPrice price={result.station.fuelPrice} /> <span className="text-[11px] sm:text-xs font-normal text-zinc-400">€/L</span>
+            </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner">
+            <p className="text-[11px] sm:text-xs font-medium text-zinc-400">Deviazione</p>
+            <p className="mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums">
+              +{distanceFormatter.format(result.detourDistanceMeters / 1_000)} <span className="text-[11px] sm:text-xs font-normal text-zinc-400">km</span>
+            </p>
+          </div>
+          <div
             className={
               isWinner
-                ? 'text-[11px] sm:text-xs font-bold text-emerald-300'
-                : 'text-[11px] sm:text-xs font-medium text-zinc-400'
+                ? 'rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-2.5 sm:p-3 shadow-sm shadow-emerald-500/10'
+                : 'rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2.5 sm:p-3 shadow-inner'
             }
           >
-            Litri netti
-          </p>
-          <p
-            className={
-              isWinner
-                ? 'mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums'
-                : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums'
-            }
-          >
-            {litersFormatter.format(result.netFuelLiters)}{' '}
-            <span
+            <p
               className={
                 isWinner
-                  ? 'text-[11px] sm:text-xs font-normal text-emerald-300/80'
-                  : 'text-[11px] sm:text-xs font-normal text-zinc-400'
+                  ? 'text-[11px] sm:text-xs font-bold text-emerald-300'
+                  : 'text-[11px] sm:text-xs font-medium text-zinc-400'
               }
             >
-              L
-            </span>
-          </p>
+              Litri netti
+            </p>
+            <p
+              className={
+                isWinner
+                  ? 'mt-0.5 text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums'
+                  : 'mt-0.5 text-sm sm:text-base font-bold text-zinc-100 tabular-nums'
+              }
+            >
+              {litersFormatter.format(result.netFuelLiters)}{' '}
+              <span
+                className={
+                  isWinner
+                    ? 'text-[11px] sm:text-xs font-normal text-emerald-300/80'
+                    : 'text-[11px] sm:text-xs font-normal text-zinc-400'
+                }
+              >
+                L
+              </span>
+            </p>
+          </div>
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          <a
+            className={
+              isWinner
+                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
+                : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
+            }
+            href={navigationUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Apri percorso con questa sosta
+          </a>
+        </div>
+
+        {/* Mappa in primo piano subito dopo l'azione principale */}
+        {isWinner && mobileMap ? (
+          <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
+            {mobileMap}
+          </div>
+        ) : null}
+
+        {/* Dettagli tecnici secondari ordinati in disclosure discreta */}
+        <details className="group mt-3 rounded-lg border border-zinc-200/60 bg-white/60 p-2.5 text-xs text-zinc-600 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-400">
+          <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
+            <span>Dettagli del calcolo</span>
+            <span className="text-[10px] text-zinc-400 group-open:rotate-180 transition-transform">▾</span>
+          </summary>
+          <div className="mt-2 space-y-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <p className="tabular-nums">
+              Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
+            </p>
+            <p className="tabular-nums">
+              Deviazione aggiuntiva:{' '}
+              {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
+            </p>
+            <p className="tabular-nums">
+              Carburante per la deviazione:{' '}
+              {litersFormatter.format(result.detourFuelLiters)} L
+            </p>
+            <p className="tabular-nums">
+              Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
+            </p>
+            <p className="font-semibold tabular-nums">
+              Litri netti: {litersFormatter.format(result.netFuelLiters)} L
+            </p>
+          </div>
+        </details>
+
+        {isWinner ? (
+          <ShareResultButtons
+            stationName={stationName}
+            brand={result.station.brand}
+            city={result.station.city}
+            fuelPrice={result.station.fuelPrice}
+            netFuelLiters={result.netFuelLiters}
+            fuelType={fuelType}
+            isSelf={isSelf}
+            refuelAmount={refuelAmount}
+          />
+        ) : null}
+
+        {isWinner && showAllToggle ? (
+          <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
+            {showAllToggle}
+          </div>
+        ) : null}
       </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2.5">
-        <a
-          className={
-            isWinner
-              ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
-              : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
-          }
-          href={navigationUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          Apri percorso con questa sosta
-        </a>
-      </div>
-
-      {/* Mappa in primo piano subito dopo l'azione principale */}
-      {isWinner && mobileMap ? (
-        <div className="mt-4 pt-3 border-t border-emerald-200/80 dark:border-emerald-800/80 lg:hidden" onClick={(e) => e.stopPropagation()}>
-          {mobileMap}
-        </div>
-      ) : null}
-
-      {/* Dettagli tecnici secondari ordinati in disclosure discreta */}
-      <details className="group mt-3 rounded-lg border border-zinc-200/60 bg-white/60 p-2.5 text-xs text-zinc-600 dark:border-zinc-800/60 dark:bg-zinc-900/40 dark:text-zinc-400">
-        <summary className="flex cursor-pointer list-none items-center justify-between font-medium select-none text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
-          <span>Dettagli del calcolo</span>
-          <span className="text-[10px] text-zinc-400 group-open:rotate-180 transition-transform">▾</span>
-        </summary>
-        <div className="mt-2 space-y-1 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-          <p className="tabular-nums">
-            Prezzo: <RoadSignPrice price={result.station.fuelPrice} /> €/L
-          </p>
-          <p className="tabular-nums">
-            Deviazione aggiuntiva:{' '}
-            {distanceFormatter.format(result.detourDistanceMeters / 1_000)} km
-          </p>
-          <p className="tabular-nums">
-            Carburante per la deviazione:{' '}
-            {litersFormatter.format(result.detourFuelLiters)} L
-          </p>
-          <p className="tabular-nums">
-            Litri acquistati: {litersFormatter.format(result.litersPurchased)} L
-          </p>
-          <p className="font-semibold tabular-nums">
-            Litri netti: {litersFormatter.format(result.netFuelLiters)} L
-          </p>
-        </div>
-      </details>
-
-      {isWinner ? (
-        <ShareResultButtons
-          stationName={stationName}
-          brand={result.station.brand}
-          city={result.station.city}
-          fuelPrice={result.station.fuelPrice}
-          netFuelLiters={result.netFuelLiters}
-          fuelType={fuelType}
-          isSelf={isSelf}
-          refuelAmount={refuelAmount}
-        />
-      ) : null}
-
-      {isWinner && showAllToggle ? (
-        <div className="mt-3 lg:hidden" onClick={(e) => e.stopPropagation()}>
-          {showAllToggle}
-        </div>
-      ) : null}
-    </li>
+    </motion.li>
   )
 }
 
@@ -246,6 +256,7 @@ export default function TripCalculator() {
   const calculationInFlight = useRef(false)
   const resultsRef = useRef<HTMLOListElement>(null)
   const resultsMap = useResultsMap()
+  const rankingVariants = useRankingVariants()
   const [originMode, setOriginMode] = useState<OriginMode>('current')
   const [customOrigin, setCustomOrigin] = useState<GeocodingResult | null>(null)
   const [destination, setDestination] = useState<GeocodingResult | null>(null)
@@ -519,9 +530,9 @@ export default function TripCalculator() {
       {results.length > 0 && journeyCoordinates ? (
         <motion.ol
           ref={resultsRef}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+          variants={rankingVariants.list}
+          initial="hidden"
+          animate="visible"
           className="grid gap-4 scroll-mt-6"
         >
           {results.map((result, index) => (
@@ -543,6 +554,7 @@ export default function TripCalculator() {
               refuelAmount={lastCalculationInput?.refuelAmount ?? 50}
               result={result}
               isMobileHidden={index > 0 && !showAllMobileResults}
+              variants={rankingVariants.item}
               mobileMap={
                 index === 0 && resultsMap?.mapData ? (
                   <div className="space-y-3">
