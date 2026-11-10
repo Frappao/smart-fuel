@@ -8,12 +8,18 @@ vi.mock('../../../../lib/mimit/recordImportRun', () => ({
   recordImportRun: vi.fn(),
 }))
 
+vi.mock('../../../../lib/mimit/snapshotCityPrices', () => ({
+  snapshotCityPrices: vi.fn(),
+}))
+
 import { importMimitData } from '../../../../lib/mimit/importMimitData'
 import { recordImportRun } from '../../../../lib/mimit/recordImportRun'
+import { snapshotCityPrices } from '../../../../lib/mimit/snapshotCityPrices'
 import { GET } from './route'
 
 const mockedImportMimitData = vi.mocked(importMimitData)
 const mockedRecordImportRun = vi.mocked(recordImportRun)
+const mockedSnapshotCityPrices = vi.mocked(snapshotCityPrices)
 
 describe('GET /api/cron/import-mimit', () => {
   const originalCronSecret = process.env.CRON_SECRET
@@ -126,6 +132,44 @@ describe('GET /api/cron/import-mimit', () => {
     )
   })
 
+  test('saves the city price snapshot only after a successful import', async () => {
+    process.env.CRON_SECRET = 'test-secret'
+    mockedImportMimitData.mockResolvedValue({
+      stations: { totalParsed: 10, totalImported: 10 },
+      fuelPrices: { totalParsed: 30, totalImported: 30, totalSkipped: 0 },
+    })
+    mockedSnapshotCityPrices.mockResolvedValue(381)
+
+    const response = await GET(
+      new Request('https://rifornio.it/api/cron/import-mimit', {
+        headers: { authorization: 'Bearer test-secret' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockedSnapshotCityPrices).toHaveBeenCalledOnce()
+  })
+
+  test('keeps the run successful when the city snapshot is not saved', async () => {
+    process.env.CRON_SECRET = 'test-secret'
+    mockedImportMimitData.mockResolvedValue({
+      stations: { totalParsed: 10, totalImported: 10 },
+      fuelPrices: { totalParsed: 30, totalImported: 30, totalSkipped: 0 },
+    })
+    mockedSnapshotCityPrices.mockResolvedValue(null)
+
+    const response = await GET(
+      new Request('https://rifornio.it/api/cron/import-mimit', {
+        headers: { authorization: 'Bearer test-secret' },
+      }),
+    )
+
+    expect(response.status).toBe(200)
+    expect(mockedRecordImportRun).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'success' }),
+    )
+  })
+
   test('returns 500 and records the error when the import fails', async () => {
     process.env.CRON_SECRET = 'test-secret'
     mockedImportMimitData.mockRejectedValue(
@@ -148,5 +192,6 @@ describe('GET /api/cron/import-mimit', () => {
         errorMessage: 'Download CSV failed after 3 attempts: fetch failed',
       }),
     )
+    expect(mockedSnapshotCityPrices).not.toHaveBeenCalled()
   })
 })

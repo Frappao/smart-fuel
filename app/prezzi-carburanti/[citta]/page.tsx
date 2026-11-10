@@ -4,6 +4,8 @@ import { notFound, redirect } from 'next/navigation'
 import { formatCityFromSlug, POPULAR_CITIES } from '../../../lib/cities/popularCities'
 import { getCityStations } from '../../../lib/stations/getCityStations'
 import { RoadSignPrice } from '../../../components/calculation/RoadSignPrice'
+import { CityPriceInsights } from '../../../components/cities/CityPriceInsights'
+import { getCityPriceHistory } from '../../../lib/stations/getCityPriceHistory'
 
 interface PageProps {
   params: Promise<{ citta: string }>
@@ -52,7 +54,10 @@ export default async function CityFuelPage({ params }: PageProps) {
   }
 
   const cityName = formatCityFromSlug(cleanSlug)
-  const cityData = await getCityStations(cityName)
+  const [cityData, priceHistory] = await Promise.all([
+    getCityStations(cityName),
+    getCityPriceHistory(cityName),
+  ])
   const popularCityInfo = POPULAR_CITIES.find((c) => c.slug === cleanSlug)
   const provinceLabel = cityData.province || popularCityInfo?.province || ''
 
@@ -230,6 +235,8 @@ export default async function CityFuelPage({ params }: PageProps) {
             )}
           </div>
         </section>
+
+        <CityPriceInsights cityName={cityName} stats={cityData.stats} history={priceHistory} />
 
         {/* Banner di Conversione / Claim Rifornio */}
         <section

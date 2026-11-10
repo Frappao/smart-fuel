@@ -1,5 +1,6 @@
 import { importMimitData } from '../../../../lib/mimit/importMimitData'
 import { recordImportRun } from '../../../../lib/mimit/recordImportRun'
+import { snapshotCityPrices } from '../../../../lib/mimit/snapshotCityPrices'
 
 // La regione (fra1) è fissata in vercel.json: `preferredRegion` è deprecato
 // in Next 16 e su Vercel accetta solo 'auto' | 'global' | 'home'.
@@ -44,6 +45,9 @@ export async function GET(request: Request): Promise<Response> {
         `${result.stations.totalImported} impianti, ${result.fuelPrices.totalImported} prezzi, ` +
         `${result.fuelPrices.totalSkipped} prezzi scartati`,
     )
+
+    const citySnapshotRows = await snapshotCityPrices()
+    console.info(`[mimit] storico città: ${citySnapshotRows ?? 'non salvato'} righe`)
 
     await recordImportRun({
       startedAt,

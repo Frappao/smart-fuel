@@ -304,6 +304,7 @@ Schema definitions and migrations are stored in:
   - `202610210001_user_vehicles.sql`: creates `public.user_vehicles` table with user-scoped RLS policies.
   - `202610230001_app_waitlist.sql`: creates `public.app_waitlist` table with RLS enabled and direct access revoked.
   - `202611080001_import_runs.sql`: creates `public.import_runs` (MIMIT cron run history) with RLS enabled and direct access revoked; written by `/api/cron/import-mimit`.
+  - `202611100001_city_fuel_price_daily.sql`: creates `public.city_fuel_price_daily` (daily average prices per popular city, shown as a trend on `/prezzi-carburanti/[citta]`) and the `public.snapshot_city_fuel_prices` RPC, called by `/api/cron/import-mimit` after a successful import. RLS enabled, direct access revoked.
 
 ### How to apply migrations
 
@@ -316,7 +317,7 @@ Migrations are applied manually:
 5. Alternatively, if Supabase CLI is linked to the project:
    `npx supabase migration up` or `npx supabase db push`.
 
-Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`, `import_runs`) are currently pending execution on the production database.
+Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`, `import_runs`, `city_fuel_price_daily`) are currently pending execution on the production database.
 
 ### Supabase security and Row Level Security (RLS)
 
