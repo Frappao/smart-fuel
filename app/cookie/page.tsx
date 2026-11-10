@@ -183,13 +183,22 @@ export default function CookiePage() {
           </p>
 
           <p>
+            L&apos;app scelta per la navigazione (Google Maps, Apple Maps o
+            Waze) viene ricordata con la chiave{" "}
+            <code>rifornio_navigation_app_v1</code>, così il pulsante per
+            raggiungere il distributore apre sempre la stessa app. Il valore
+            resta solo sul dispositivo e non viene inviato ai server di
+            Rifornio.
+          </p>
+
+          <p>
             Se la proposta dell&apos;app viene chiusa, la chiave{" "}
             <code>rifornio_app_promo_dismissed_v1</code> ricorda questa scelta
             per non mostrarla di nuovo.
           </p>
 
           <p>
-            Entrambi i valori si possono eliminare cancellando i dati del sito
+            Tutti questi valori si possono eliminare cancellando i dati del sito
             relativi a Rifornio dalle impostazioni del browser.
           </p>
 

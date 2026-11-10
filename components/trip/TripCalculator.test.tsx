@@ -8,6 +8,7 @@ import {
   fetchTripStations,
 } from '../../lib/api/rifornioApiClient'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
+import { resetNavigationAppCache } from '../navigation/useNavigationApp'
 import TripCalculator from './TripCalculator'
 
 vi.mock('../../lib/api/rifornioApiClient', () => ({
@@ -93,6 +94,7 @@ describe('TripCalculator', () => {
   afterEach(() => {
     cleanup()
     window.localStorage.clear()
+    resetNavigationAppCache()
   })
 
   it('uses the current position and renders route-aware results', async () => {
@@ -135,6 +137,38 @@ describe('TripCalculator', () => {
     )
     expect(navigationUrl.searchParams.get('waypoints')).toBe(
       '44.8015,10.3279',
+    )
+  })
+
+  it('opens the stop in Waze and remembers the chosen app', async () => {
+    vi.mocked(fetchGeocodingResults).mockResolvedValue({ results: [bologna] })
+    vi.mocked(fetchTripStations).mockResolvedValue({
+      baseRouteDistanceMeters: 214_000,
+      results: [tripResult()],
+    })
+    render(<TripCalculator />)
+
+    searchAndSelect('Destinazione', bologna.label)
+    fireEvent.click(await screen.findByLabelText(bologna.label))
+    fillRefuelData()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Trova distributore sul percorso' }),
+    )
+    await screen.findByText('1. Stazione percorso')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Waze' }))
+
+    const wazeUrl = new URL(
+      screen
+        .getByRole('link', { name: 'Vai a questa sosta' })
+        .getAttribute('href') ?? '',
+    )
+    expect(wazeUrl.origin).toBe('https://www.waze.com')
+    expect(wazeUrl.searchParams.get('ll')).toBe('44.8015,10.3279')
+    expect(wazeUrl.searchParams.get('navigate')).toBe('yes')
+    expect(screen.getByText(/Waze non accetta soste nei link/)).toBeTruthy()
+    expect(window.localStorage.getItem('rifornio_navigation_app_v1')).toBe(
+      'waze',
     )
   })
 

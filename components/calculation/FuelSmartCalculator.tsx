@@ -25,6 +25,9 @@ import {
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import { useRankingVariants } from '../motion/rankingMotion'
+import NavigationAppPicker from '../navigation/NavigationAppPicker'
+import { useNavigationApp } from '../navigation/useNavigationApp'
+import { buildStationNavigationUrl } from '../../lib/navigation/navigationApps'
 import {
   NEARBY_RESULTS_SLOT_ID,
   useResultsMap,
@@ -123,32 +126,6 @@ function formatPriceCommunicatedAt(value: string | null): string | null {
   return Number.isNaN(date.getTime())
     ? null
     : priceCommunicatedAtFormatter.format(date)
-}
-
-function getGoogleMapsNavigationUrl(
-  latitude: number,
-  longitude: number,
-): string | null {
-  if (
-    typeof latitude !== 'number' ||
-    !Number.isFinite(latitude) ||
-    latitude < -90 ||
-    latitude > 90 ||
-    typeof longitude !== 'number' ||
-    !Number.isFinite(longitude) ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    return null
-  }
-
-  const navigationUrl = new URL('https://www.google.com/maps/dir/')
-  navigationUrl.searchParams.set('api', '1')
-  navigationUrl.searchParams.set('destination', `${latitude},${longitude}`)
-  navigationUrl.searchParams.set('travelmode', 'driving')
-  navigationUrl.searchParams.set('dir_action', 'navigate')
-
-  return navigationUrl.toString()
 }
 
 function StationIdentity({
@@ -259,10 +236,8 @@ function AlternativeResultRow({
     0,
     winnerNetFuelLiters - result.netFuelLiters,
   )
-  const navigationUrl = getGoogleMapsNavigationUrl(
-    result.station.latitude,
-    result.station.longitude,
-  )
+  const navigationApp = useNavigationApp()
+  const navigationUrl = buildStationNavigationUrl(navigationApp, result.station)
 
   return (
     <motion.li
@@ -324,10 +299,8 @@ function WinnerCard({
 }) {
   const stationName = getStationDisplayName(result.station)
   const travelDistanceKm = (result.routeDistanceMeters / 1_000) * 2
-  const navigationUrl = getGoogleMapsNavigationUrl(
-    result.station.latitude,
-    result.station.longitude,
-  )
+  const navigationApp = useNavigationApp()
+  const navigationUrl = buildStationNavigationUrl(navigationApp, result.station)
   const rankingVariants = useRankingVariants()
   // Le righe entrano a cascata ogni volta che la classifica viene aperta.
   const [isRankingOpen, setIsRankingOpen] = useState(false)
@@ -377,9 +350,11 @@ function WinnerCard({
         </p>
       ) : null}
 
+      <NavigationAppPicker className="mt-4" />
+
       {navigationUrl ? (
         <a
-          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+          className="mt-2 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
           href={navigationUrl}
           rel="noopener noreferrer"
           target="_blank"
@@ -432,6 +407,7 @@ export default function FuelSmartCalculator() {
   const calculationInFlight = useRef(false)
   const resultsRef = useRef<HTMLElement>(null)
   const resultsMap = useResultsMap()
+  const navigationApp = useNavigationApp()
   const [calculationInput, setCalculationInput] =
     useState<RefuelCalculationInput | null>(null)
   const [originCoords, setOriginCoords] = useState<MapCoordinates | null>(null)
@@ -478,16 +454,16 @@ export default function FuelSmartCalculator() {
           netFuelLiters: result.netFuelLiters,
           travelDistanceKm: travelKm,
           travelFuelLiters: result.travelFuelLiters,
-          navigationHref: getGoogleMapsNavigationUrl(
-            result.station.latitude,
-            result.station.longitude,
+          navigationHref: buildStationNavigationUrl(
+            navigationApp,
+            result.station,
           ),
           navigationLabel: 'Apri nel navigatore',
           distanceSummary: `Distanza A/R: ${distanceFormatter.format(travelKm)} km`,
         }
       }),
     }
-  }, [results, originCoords, calculationInput])
+  }, [results, originCoords, calculationInput, navigationApp])
 
   useEffect(() => {
     setMapData?.(mapData)

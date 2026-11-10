@@ -14,6 +14,14 @@ import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
 import AdSlot from '../ads/AdSlot'
 import { useRankingVariants } from '../motion/rankingMotion'
+import NavigationAppPicker from '../navigation/NavigationAppPicker'
+import { useNavigationApp } from '../navigation/useNavigationApp'
+import {
+  buildTripNavigationUrl,
+  NAVIGATION_APP_LABELS,
+  supportsTripWaypoint,
+  type NavigationApp,
+} from '../../lib/navigation/navigationApps'
 import RefuelForm, {
   type RefuelCalculationInput,
 } from '../calculation/RefuelForm'
@@ -42,22 +50,11 @@ function toCoordinates(location: GeocodingResult): Coordinates {
   }
 }
 
-function getTripNavigationUrl(
-  origin: Coordinates,
-  destination: Coordinates,
-  station: Coordinates,
-): string {
-  const url = new URL('https://www.google.com/maps/dir/')
-  url.searchParams.set('api', '1')
-  url.searchParams.set('origin', `${origin.latitude},${origin.longitude}`)
-  url.searchParams.set(
-    'destination',
-    `${destination.latitude},${destination.longitude}`,
-  )
-  url.searchParams.set('waypoints', `${station.latitude},${station.longitude}`)
-  url.searchParams.set('travelmode', 'driving')
-
-  return url.toString()
+// Apple Maps e Waze non accettano soste nei link: portano al distributore.
+function getTripNavigationLabel(app: NavigationApp): string {
+  return supportsTripWaypoint(app)
+    ? 'Apri percorso con questa sosta'
+    : 'Vai a questa sosta'
 }
 
 interface TripResultCardProps {
@@ -93,9 +90,11 @@ function TripResultCard({
 }: TripResultCardProps) {
   const isWinner = index === 0
   const stationName = getStationDisplayName(result.station)
-  const navigationUrl = getTripNavigationUrl(origin, destination, {
-    latitude: result.station.latitude,
-    longitude: result.station.longitude,
+  const navigationApp = useNavigationApp()
+  const navigationUrl = buildTripNavigationUrl(navigationApp, {
+    origin,
+    destination,
+    station: result.station,
   })
 
   const cardClasses = isWinner
@@ -180,20 +179,37 @@ function TripResultCard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2.5">
-          <a
-            className={
-              isWinner
-                ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
-                : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
-            }
-            href={navigationUrl}
-            rel="noopener noreferrer"
-            target="_blank"
+        {isWinner ? (
+          <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+            <NavigationAppPicker />
+            {!supportsTripWaypoint(navigationApp) ? (
+              <p className="mt-1.5 text-[11px] text-zinc-400">
+                {NAVIGATION_APP_LABELS[navigationApp]} non accetta soste nei
+                link: ti porta al distributore, poi riparti verso la
+                destinazione.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {navigationUrl ? (
+          <div
+            className={`${isWinner ? 'mt-2.5' : 'mt-4'} flex flex-wrap items-center gap-2.5`}
           >
-            Apri percorso con questa sosta
-          </a>
-        </div>
+            <a
+              className={
+                isWinner
+                  ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 px-5 py-2.5 text-sm font-bold text-zinc-950 shadow-md shadow-emerald-500/20 transition active:scale-[0.98] sm:w-auto'
+                  : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white active:scale-[0.98] sm:w-auto'
+              }
+              href={navigationUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {getTripNavigationLabel(navigationApp)}
+            </a>
+          </div>
+        ) : null}
 
         {/* Mappa in primo piano subito dopo l'azione principale */}
         {isWinner && mobileMap ? (
@@ -257,6 +273,7 @@ export default function TripCalculator() {
   const resultsRef = useRef<HTMLOListElement>(null)
   const resultsMap = useResultsMap()
   const rankingVariants = useRankingVariants()
+  const navigationApp = useNavigationApp()
   const [originMode, setOriginMode] = useState<OriginMode>('current')
   const [customOrigin, setCustomOrigin] = useState<GeocodingResult | null>(null)
   const [destination, setDestination] = useState<GeocodingResult | null>(null)
@@ -308,20 +325,23 @@ export default function TripCalculator() {
           netFuelLiters: result.netFuelLiters,
           travelDistanceKm: detourKm,
           travelFuelLiters: result.detourFuelLiters,
-          navigationHref: getTripNavigationUrl(
-            journeyCoordinates.origin,
-            journeyCoordinates.destination,
-            {
-              latitude: result.station.latitude,
-              longitude: result.station.longitude,
-            },
-          ),
-          navigationLabel: 'Apri percorso con questa sosta',
+          navigationHref: buildTripNavigationUrl(navigationApp, {
+            origin: journeyCoordinates.origin,
+            destination: journeyCoordinates.destination,
+            station: result.station,
+          }),
+          navigationLabel: getTripNavigationLabel(navigationApp),
           distanceSummary: `Deviazione: ${distanceFormatter.format(detourKm)} km`,
         }
       }),
     })
-  }, [results, journeyCoordinates, lastCalculationInput, setMapData])
+  }, [
+    results,
+    journeyCoordinates,
+    lastCalculationInput,
+    setMapData,
+    navigationApp,
+  ])
 
   useEffect(() => {
     return () => {

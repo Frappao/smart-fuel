@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SupportedFuelType } from '../../lib/fuels/supportedFuelTypes'
 import { getCurrentPosition } from '../../lib/location/getCurrentPosition'
+import { resetNavigationAppCache } from '../navigation/useNavigationApp'
 import FuelSmartCalculator from './FuelSmartCalculator'
 
 vi.mock('../../lib/location/getCurrentPosition', () => ({
@@ -104,6 +105,7 @@ describe('FuelSmartCalculator', () => {
   afterEach(() => {
     cleanup()
     window.localStorage.clear()
+    resetNavigationAppCache()
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
   })
@@ -628,6 +630,54 @@ describe('FuelSmartCalculator', () => {
     expect(
       screen.queryByText(/netti in più rispetto al secondo classificato/),
     ).toBeNull()
+  })
+
+  it('opens the winner in the navigation app chosen by the user', async () => {
+    arrangeApiResponse({
+      stations: [
+        {
+          id: 1,
+          name: 'Only Station',
+          brand: 'Brand A',
+          address: 'Via A',
+          city: 'Milano',
+          latitude: 45.47,
+          longitude: 9.18,
+          distanceMeters: 1_000,
+          fuelPrice: 1.6,
+        },
+      ],
+    })
+    arrangeApiResponse({
+      routes: [
+        {
+          destinationIndex: 0,
+          distanceMeters: 1_000,
+          durationSeconds: 300,
+        },
+      ],
+    })
+    render(<FuelSmartCalculator />)
+
+    submitForm()
+    await findWinnerHeading('Only Station')
+
+    expect(
+      (screen.getByRole('radio', { name: 'Google Maps' }) as HTMLInputElement)
+        .checked,
+    ).toBe(true)
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Apple Maps' }))
+
+    const appleUrl = new URL(
+      screen.getByRole('link', { name: 'Portami qui' }).getAttribute('href') ??
+        '',
+    )
+    expect(appleUrl.origin).toBe('https://maps.apple.com')
+    expect(appleUrl.searchParams.get('daddr')).toBe('45.47,9.18')
+    expect(window.localStorage.getItem('rifornio_navigation_app_v1')).toBe(
+      'apple',
+    )
   })
 
   it.each([
