@@ -2,10 +2,12 @@
 
 # Note specifiche per Claude
 
-Le istruzioni in AGENTS.md valgono integralmente anche per Claude: dove dice
-"Codex" intende qualsiasi agente. In particolare la sezione
-"Operational rules for Codex" e le "Git rules" (niente commit/push senza
-richiesta esplicita: un push su `main` va in produzione su rifornio.it).
+Le istruzioni in AGENTS.md valgono integralmente anche per Claude, in
+particolare "Working rules for agents" (niente commit/push senza richiesta
+esplicita: un push su `main` va in produzione su rifornio.it).
+
+Se noti che AGENTS.md non corrisponde più al codice o al database (rotte,
+migrazioni, flussi), aggiornalo nella stessa modifica.
 
 ## Lingua
 
@@ -17,6 +19,12 @@ richiesta esplicita: un push su `main` va in produzione su rifornio.it).
 
 - Il progetto vive sul Mac di Francesco (`~/Documents/smart-fuel`). I
   `node_modules` sono installati per macOS arm64.
+- Dev server: usa il preview `web` di `.claude/launch.json` (porta 3000),
+  non avviarlo da Bash.
+- I worktree di Claude stanno in `.claude/worktrees/` (esclusi da Vitest).
+- Connettori Supabase e Vercel: usali liberamente in sola lettura (tabelle,
+  log, deploy) per verificare lo stato reale. Migrazioni, scritture sul
+  database, variabili d'ambiente e deploy solo su richiesta esplicita.
 - Se lavori da una sessione cloud/VM Linux collegata alla cartella:
   - NON eseguire `npm install`/`npm ci` né cancellare `node_modules`:
     sostituiresti i binari macOS e romperesti l'ambiente sul Mac.

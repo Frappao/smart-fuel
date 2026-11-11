@@ -1,4 +1,3 @@
-```md
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
@@ -11,668 +10,319 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Rifornio — Agent Instructions
 
+Last reviewed: 2026-11-11. When something here disagrees with the code or the
+database, trust the code/database and update this file.
+
 ## Project identity
 
-Public product name: Rifornio
-
-Public domain:
-
-https://rifornio.it
-
-Technical names may still use the old Fuel Smart / smart-fuel naming:
-
-- local repository folder: fuel-smart
-- package name: fuel-smart
-- GitHub repository: Frappao/smart-fuel
-- Vercel project: smart-fuel
-- main branch: main
-
-Do not rename technical identifiers only for branding consistency unless there is a concrete technical reason.
-
-Public claim:
-
-“Fai rifornimento dove conviene davvero.”
-
-## Product goal
-
-Rifornio determines which fuel station is actually worth reaching.
-
-The ranking must consider both:
-
-- fuel price;
-- fuel consumed to reach the station.
-
-The core calculation is:
-
-litersPurchased = refuelAmount / pricePerLiter
-
-travelFuelLiters =
-  travelDistanceKm * consumptionLitersPer100Km / 100
-
-netFuelLiters =
-  litersPurchased - travelFuelLiters
-
-The station with the highest netFuelLiters wins.
-
-Do not replace this ranking with sorting by price, geographic distance, or nominal cost.
-
-## Supported product behavior
-
-Current product supports:
-
-- Benzina
-- Gasolio
-- GPL
-- Self
-- Servito
-
-Backend MIMIT fuel values must remain:
-
-- Benzina
-- Gasolio
-- GPL
-
-Do not use “Diesel” as a backend fuel value.
-
-Self maps to:
-
-isSelf = true
-
-Servito maps to:
-
-isSelf = false
-
-## Core architecture
-
-WEB:
-
-Next.js App Router
-→ browser geolocation
-→ Rifornio APIs
-→ Supabase/PostGIS
-→ Mapbox routing server-side
-→ shared ranking
-→ web results
-
-MOBILE:
-
-React + Vite under mobile/
-→ Capacitor
-→ native geolocation
-→ HTTPS API at https://rifornio.it
-→ existing web backend
-→ shared ranking
-→ mobile results
-→ external Maps navigation
-
-The Next.js application remains both the website and backend.
-
-The mobile app must not contain backend secrets.
-
-## Current stack
-
-Do not replace the stack unless strictly necessary.
-
-- Node.js (v20+ LTS recommended, v24 supported)
-- Next.js App Router
-- TypeScript
-- React
-- Tailwind CSS
-- Supabase
-- PostgreSQL
-- PostGIS
-- Vitest
-- Testing Library
-- jsdom
-- Mapbox Geocoding, Directions, and Matrix APIs
-- Capacitor
-- Vite
-- Git
-- Vercel
-
-## Data pipeline
-
-Official station and fuel-price data comes from MIMIT Open Data.
-
-Relevant implementation lives under:
-
-lib/mimit/
-
-The existing pipeline already:
-
-- downloads official CSV files;
-- parses stations and fuel prices;
-- imports stations first;
-- imports fuel prices second;
-- works in batches;
-- upserts records;
-- removes obsolete records only after successful imports.
-
-Do not rebuild this pipeline without a verified bug.
-
-## Daily MIMIT import
-
-The daily import is now automated.
-
-Relevant files:
-
-- app/api/cron/import-mimit/route.ts
-- app/api/cron/import-mimit/route.test.ts
-- vercel.json
-
-The Vercel Cron schedule is:
-
-0 8 * * *
-
-The route is:
-
-GET /api/cron/import-mimit
-
-The route is protected using the server-side environment variable:
-
-CRON_SECRET
-
-Vercel sends:
-
-Authorization: Bearer <CRON_SECRET>
-
-Never commit CRON_SECRET.
-
-The production Vercel project currently has a Function Max Duration of 300 seconds.
-
-A real complete MIMIT import was tested successfully and took about 76 seconds.
-
-Latest verified real import totals were approximately:
-
-- 23,961 stations
-- 93,108 fuel-price records
-- 0 skipped fuel prices
-
-Do not manually change database fuel prices.
-
-## Geographic filtering and routing
-
-PostGIS is only a geographic pre-filter.
-
-Required architecture:
-
-all stations
-→ PostGIS nearby pre-filter
-→ maximum 20 candidates
-→ Mapbox Matrix
-→ ranking
-
-Do not use PostGIS straight-line distance as the final travel distance.
-
-Route Matrix mapping must preserve candidate order and associate results using destinationIndex.
-
-Do not associate route results using names or coordinates.
-
-For the current nearby-station calculation:
-
-travelDistanceKm =
-  (distanceMeters / 1000) * 2
-
-Current MVP assumption:
-
-return trip ≈ outbound trip
-
-## Shared ranking
-
-Relevant file:
-
-lib/calculation/rankNearbyStations.ts
-
-Responsibilities include:
-
-- candidate validation;
-- destination order preservation;
-- destinationIndex mapping;
-- exclusion of individual missing routes;
-- round-trip distance;
-- calculateConvenience();
-- descending netFuelLiters ordering;
-- station display names.
-
-Do not duplicate this logic unnecessarily in web or mobile components.
-
-## Mapbox routing
-
-Mapbox Geocoding, Directions, and Matrix requests are server-side only.
-
-MAPBOX_ACCESS_TOKEN must never be exposed to:
-
-- browser code;
-- mobile bundle;
-- Git;
-- screenshots;
-- client-side environment variables.
-
-Current route:
-
-POST /api/route-matrix
-
-Maximum destinations:
-
-20
-
-The production endpoint is protected by a Vercel WAF rate limit.
-
-Do not remove or bypass that protection without an explicit task.
-
-The nearby results view draws the real road route to the winning station
-(display only, never used for ranking) through:
-
-- POST /api/route-path (single origin → destination, max 50 km straight-line)
-
-Route planning additionally uses:
-
-- POST /api/geocode
-- POST /api/trip-stations
-- public.stations_along_route
-
-The user can use the current position or select a different origin. Route
-ranking subtracts only fuel consumed for the additional road detour compared
-with the base origin-to-destination route.
+- Public product name: **Rifornio** — https://rifornio.it
+- Claim: “Fai rifornimento dove conviene davvero.”
+- Technical names still use the old Fuel Smart / smart-fuel naming: package
+  `fuel-smart`, GitHub `Frappao/smart-fuel`, Vercel project `smart-fuel`,
+  Supabase project `fuel-smart`, branch `main`.
+- Do not rename technical identifiers only for branding.
+
+## Product goal and core ranking
+
+Rifornio finds the station that is actually worth reaching, considering both
+the fuel price and the fuel burned to get there.
+
+```
+litersPurchased  = refuelAmount / pricePerLiter
+travelFuelLiters = travelDistanceKm * consumptionLitersPer100Km / 100
+netFuelLiters    = litersPurchased - travelFuelLiters
+```
+
+The station with the highest `netFuelLiters` wins (on ties, the nearer one).
+Never replace this with sorting by price, geographic distance or nominal cost.
+
+- Nearby search: `travelDistanceKm = (distanceMeters / 1000) * 2`
+  (MVP assumption: return trip ≈ outbound trip).
+- Route search: subtract only the fuel for the extra road detour compared with
+  the base origin → destination route.
+
+Shared logic (do not duplicate in web or mobile components):
+
+- `lib/calculation/calculateConvenience.ts`
+- `lib/calculation/rankNearbyStations.ts` — candidate validation, order
+  preservation, `destinationIndex` mapping, per-candidate missing routes,
+  round trip, descending `netFuelLiters`, display names.
+- `lib/calculation/rankStationsAlongRoute.ts` — route/detour ranking.
+
+## Fuels and service
+
+- UI: Benzina, Gasolio, GPL; Self / Servito.
+- Backend MIMIT values must stay `Benzina`, `Gasolio`, `GPL` (never `Diesel`).
+- Self → `isSelf = true`; Servito → `isSelf = false`.
+- See `lib/fuels/supportedFuelTypes.ts`.
+
+## Stack
+
+Node.js ≥ 20 (24 supported), npm, Next.js 16 App Router, React 19, TypeScript,
+Tailwind CSS 4, `motion` (animations), Three.js (3D simulator), Supabase
+(Postgres 17 + PostGIS, Auth), Mapbox (Geocoding, Directions, Matrix),
+Vitest + Testing Library + jsdom, Capacitor 8 + Vite 8 (mobile), Vercel
+(region `fra1`), `@vercel/analytics`.
+
+Do not replace the stack or add dependencies without a concrete reason.
+
+## Architecture
+
+```
+WEB     Next.js App Router → browser geolocation (or typed address)
+        → Rifornio API routes → Supabase/PostGIS pre-filter (≤ 20 candidates)
+        → Mapbox Matrix (server-side) → shared ranking → results
+
+MOBILE  React + Vite in mobile/ → Capacitor → native geolocation
+        → HTTPS API at https://rifornio.it → same backend and ranking
+        → external navigation app
+```
+
+The Next.js app is both website and backend. The mobile app must never contain
+backend secrets.
+
+### Repository map
+
+- `app/` — pages and API routes (`app/api/*/route.ts`).
+- `components/` — web UI, grouped by area: `calculation` (main calculator,
+  refuel form), `trip` (route search), `map` (results map), `account`
+  (Supabase Auth, saved vehicles, account panel), `navigation` (“Apri con”
+  picker), `cities`, `hero`, `3d`, `ads`, `analytics`, `share`,
+  `mobile-promo`, `location`, `motion`, `ui`.
+- `lib/` — logic: `calculation`, `mimit`, `maps` (Mapbox), `stations`,
+  `supabase`, `vehicles`, `account`, `navigation`, `cities`, `fuels`,
+  `location`, `api`.
+- `mobile/src/` — Capacitor app (calculator, trip, navigation, footer).
+- `android/`, `ios/` — Capacitor native projects (focus is Android).
+- `supabase/` — `schema.sql` and `migrations/`.
+- `scripts/` — local MIMIT import and launchd installer.
+- `docs/` — `google-play-release.md`, `vehicle-accounts.md`.
+- `reviews/` — local review notes (untracked).
+
+## Pages
+
+- `/` — calculator (“Vicino a me” / “Lungo un percorso”), results with
+  full-width map and the winning station.
+- `/prezzi-carburanti` and `/prezzi-carburanti/[citta]` — local SEO city pages
+  (popular cities in `lib/cities/popularCities.ts`), with savings and daily
+  price trend from `city_fuel_price_daily`.
+- `/come-funziona`, `/il-progetto`, `/guide/distributore-piu-lontano`,
+  `/guide/consumo-auto-convenienza`, `/esperienza-3d`.
+- `/privacy`, `/cookie`, `/supporto`.
+- SEO: metadata, canonical URLs, `app/sitemap.ts`, `app/robots.ts`,
+  `app/opengraph-image.tsx`.
+
+Support contact: the address shown on `/supporto`. Do not change contact
+details without Francesco confirming the new address.
+
+## API routes
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/nearby-stations` | PostGIS pre-filter (`nearby_stations` RPC) |
+| `POST /api/route-matrix` | Mapbox Matrix, max 20 destinations |
+| `POST /api/route-path` | Road route to the winner, display only, max 50 km straight-line |
+| `POST /api/geocode` | Address search (Mapbox Geocoding) |
+| `POST /api/trip-stations` | Stations along a route (`stations_along_route` RPC) |
+| `GET /api/latest-price-update` | Fresh “Prezzi aggiornati al …” date (read in the browser, the homepage is ISR) |
+| `GET /api/price-freshness` | Freshness check (72/96 h thresholds) |
+| `GET /api/cron/import-mimit` | Daily MIMIT import (Vercel Cron) |
+| `POST /api/app-waitlist` | App beta email signup |
+| `POST /api/account/delete` | Deletes the user identified by their Supabase access token |
+
+Rules:
+
+- Route Matrix results are associated by `destinationIndex`, never by name or
+  coordinates. PostGIS straight-line distance is never the final travel
+  distance.
+- Mapbox calls are server-side only. The production endpoints are protected by
+  a Vercel WAF rate limit: do not remove or bypass it without an explicit task.
+- `lib/maps/getRouteMatrix.ts` (Google Routes, `GOOGLE_MAPS_API_KEY`) is
+  legacy, used only by integration/comparison tests. Production uses Mapbox.
+
+## MIMIT data pipeline
+
+Official data from MIMIT Open Data, code in `lib/mimit/`: download CSVs (30 s
+timeout, 3 retries), parse, import stations then prices in batches, upsert,
+remove obsolete rows only after a successful import. Do not rebuild it without
+a verified bug. Never edit fuel prices in the database by hand.
+
+Two import paths, both recorded in `public.import_runs`:
+
+1. **Vercel Cron** — `GET /api/cron/import-mimit`, schedule `0 8 * * *` (UTC),
+   protected by `CRON_SECRET` (`Authorization: Bearer …`), region `fra1`,
+   max duration 300 s, `source = 'mimit'`. MIMIT often refuses cloud
+   datacenter IPs, so this run fails on some days. When it succeeds it also
+   calls `snapshot_city_fuel_prices` for the city trend.
+2. **Mac launchd agent** — `scripts/install-mimit-launchd.sh` installs
+   `it.rifornio.import-mimit`, which runs `npm run import:mimit:local` every
+   30 minutes and at login. It imports only when the MIMIT CSV `Last-Modified`
+   is newer than the last successful import (`lib/mimit/localImportSchedule.ts`);
+   `FORCE_MIMIT_IMPORT=1` forces it. `source = 'mimit-mac'`, log in
+   `~/Library/Logs/rifornio-import-mimit.log`. It does **not** take the city
+   price snapshot.
+
+MIMIT publishes prices as of 8:00 of the previous day, so the “stale prices”
+warning starts at 72 hours. Typical import: ~24k stations, ~93k prices,
+~76 s.
+
+Vitest excludes `.claude/**`, otherwise worktrees run the local import once per
+copy.
 
 ## Supabase
 
-Server access is implemented through:
+- Server: `lib/supabase/server.ts` (`NEXT_PUBLIC_SUPABASE_URL` +
+  `SUPABASE_SECRET_KEY`, server-only, bypasses RLS).
+- Browser: `lib/supabase/client.ts` (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`),
+  used for Auth and the user's own `user_vehicles`.
+- Calculation preferences of logged-in users live in auth user metadata
+  (`lib/account/accountPreferences.ts`); anonymous users keep form values only
+  in `localStorage` (`lib/vehicles/refuelPreferences.ts`).
 
-lib/supabase/server.ts
+### Schema and migrations
 
-It uses:
+`supabase/schema.sql` is the idempotent bootstrap. Incremental files in
+`supabase/migrations/`:
 
-- NEXT_PUBLIC_SUPABASE_URL
-- SUPABASE_SECRET_KEY
+| Migration | Production (checked 2026-11-11) |
+| --- | --- |
+| `20260930_add_stations_along_route.sql` | applied |
+| `202610210001_user_vehicles.sql` | applied |
+| `202610230001_app_waitlist.sql` | applied (2026-11-11) |
+| `202611080001_import_runs.sql` | applied |
+| `202611100001_city_fuel_price_daily.sql` | applied |
 
-SUPABASE_SECRET_KEY is server-only.
+Migrations are applied manually (Supabase SQL Editor, in chronological order)
+or with a linked Supabase CLI. Agents must not apply migrations or write to the
+production database without an explicit request.
 
-Never expose it to client code or mobile code.
+### RLS rules
 
-PostGIS and the nearby_stations RPC are already implemented and working.
+- RLS enabled on every table.
+- Server-only tables (`app_waitlist`, `import_runs`, `city_fuel_price_daily`):
+  `revoke all … from public, anon, authenticated`; access only through API
+  routes.
+- User-owned tables (`user_vehicles`): policies on
+  `(select auth.uid()) = user_id`.
+- Reference tables (`stations`, `fuel_prices`): no writes from anon or
+  authenticated, ever.
 
-Do not redesign them without a verified reason.
+## Navigation
 
-### Migrations and schema files
-
-Schema definitions and migrations are stored in:
-
-- `supabase/schema.sql`: idempotent bootstrap schema for the entire database (stations, fuel_prices, nearby_stations RPC, etc.).
-- `supabase/migrations/`: incremental migration files:
-  - `20260930_add_stations_along_route.sql`: adds `public.stations_along_route` RPC for corridor searches along driving routes.
-  - `202610210001_user_vehicles.sql`: creates `public.user_vehicles` table with user-scoped RLS policies.
-  - `202610230001_app_waitlist.sql`: creates `public.app_waitlist` table with RLS enabled and direct access revoked.
-  - `202611080001_import_runs.sql`: creates `public.import_runs` (MIMIT cron run history) with RLS enabled and direct access revoked; written by `/api/cron/import-mimit`.
-  - `202611100001_city_fuel_price_daily.sql`: creates `public.city_fuel_price_daily` (daily average prices per popular city, shown as a trend on `/prezzi-carburanti/[citta]`) and the `public.snapshot_city_fuel_prices` RPC, called by `/api/cron/import-mimit` after a successful import. RLS enabled, direct access revoked.
-
-### How to apply migrations
-
-Migrations are applied manually:
-
-1. Open the Supabase Dashboard for the project.
-2. Navigate to the SQL Editor.
-3. For a fresh database, run `supabase/schema.sql`.
-4. For updating an existing database, run the pending files in `supabase/migrations/` in chronological order.
-5. Alternatively, if Supabase CLI is linked to the project:
-   `npx supabase migration up` or `npx supabase db push`.
-
-Note: The migrations in `supabase/migrations/` (`stations_along_route`, `user_vehicles`, `app_waitlist`, `import_runs`, `city_fuel_price_daily`) are currently pending execution on the production database.
-
-### Supabase security and Row Level Security (RLS)
-
-Security rule for all Supabase tables:
-
-- **RLS MUST BE ENABLED ON EVERY TABLE**:
-  `alter table public.<table_name> enable row level security;`
-- **Server secret key bypasses RLS**:
-  Next.js Server Components and API routes connect with `SUPABASE_SECRET_KEY` (service_role), which automatically bypasses RLS.
-- **Hardening against public and anon keys**:
-  Because the server bypasses RLS, RLS acts as the frontline shield preventing public or authenticated client-side requests from accessing or modifying data directly:
-  - **Internal / Server-only tables** (e.g. `app_waitlist`):
-    Explicitly revoke all permissions from public, anon, and authenticated roles:
-    `revoke all on public.<table_name> from public, anon, authenticated;`
-    All operations must go through validated server-side API routes.
-  - **User-owned tables** (e.g. `user_vehicles`):
-    Enforce strict RLS policies bound to `(select auth.uid()) = user_id`.
-  - **Public reference tables** (e.g. `stations`, `fuel_prices`):
-    Never allow anon or authenticated roles to insert, update, or delete records. Writes are restricted exclusively to the backend service role.
-
-## Web state
-
-The production website is functional at:
-
-https://rifornio.it
-
-Existing public pages include:
-
-- /
-- /come-funziona
-- /privacy
-- /cookie
-- /supporto
-
-SEO currently includes:
-
-- metadata;
-- canonical URLs;
-- sitemap;
-- robots.txt.
-
-Relevant files:
-
-- app/sitemap.ts
-- app/robots.ts
-
-The support page currently uses a temporary public support email.
-
-Do not silently replace contact details without checking the current requested address.
+Users choose the navigation app with the “Apri con” picker
+(`lib/navigation/navigationApps.ts`, `components/navigation/`), stored in
+`localStorage` key `rifornio_navigation_app_v1` (same key in the app). Web:
+Google Maps, Apple Maps, Waze (default Apple Maps on Apple devices, Google Maps
+elsewhere). App: Google Maps and Waze, Apple Maps only on iOS. On trips only
+Google Maps keeps the stop; Apple Maps and Waze go straight to the station.
+External navigation is intentional: no native map SDK.
 
 ## Advertising
 
-The website uses one Adsterra 300x250 banner after the station ranking when:
-
-NEXT_PUBLIC_ADS_ENABLED=true
-
-Do not add Native Banner, Popunder, Social Bar, Smartlink, or ads between
-ranking results without an explicit product request.
-
-ads.txt exists at:
-
-https://rifornio.it/ads.txt
-
-Relevant file:
-
-public/ads.txt
-
-The official Adsterra ads.txt record has not been added because it must come
-from the Adsterra dashboard. Do not invent one.
-
-Do not change advertising code without checking:
-
-- consent requirements;
-- privacy/cookie disclosures;
-- actual runtime behavior.
-
-Advertising must never affect organic station ranking.
+- One Adsterra 300×250 banner (`components/ads/AdSlot.tsx`), shown only when
+  `NEXT_PUBLIC_ADS_ENABLED=true`, placed above the refuel form in
+  `FuelSmartCalculator`.
+- No other formats (Native, Popunder, Social Bar, Smartlink) and nothing
+  between ranking results without an explicit product request.
+- `public/ads.txt` exists; the official Adsterra record must come from the
+  Adsterra dashboard — never invent it.
+- Ads must never affect the ranking. Before touching ad code, check consent,
+  privacy/cookie disclosures and runtime behavior.
 
 ## Analytics
 
-Google Analytics 4 is integrated on the website using consent.
-
-Relevant file:
-
-components/analytics/AnalyticsConsent.tsx
-
-Do not move, rename, or recreate this file without reason.
-
-Important:
-
-The correct folder is exactly:
-
-components/analytics/
-
-Do not create a folder named:
-
-components/analytics /
-
-with a trailing space.
-
-The GA4 implementation was manually verified in production.
-
-Do not rewrite the gtag wrapper unless there is a verified bug.
+- Google Analytics 4 with consent banner:
+  `components/analytics/AnalyticsConsent.tsx` (folder name exactly
+  `components/analytics/`, no trailing space). Do not rewrite the gtag wrapper
+  without a verified bug.
+- Vercel Web Analytics, cookieless:
+  `components/analytics/VercelWebAnalytics.tsx`. `beforeSend` keeps only the
+  path plus `condividi` and `utm_*` parameters. The consent banner governs
+  only GA4.
+- Any new browser storage or tracking must be reflected in `/privacy` and
+  `/cookie`.
 
 ## Android app
 
-Android application ID:
+- Application ID `it.rifornio.app`, name “Rifornio”.
+- Supports native geolocation, nearby and trip ranking, custom origin,
+  external navigation with app choice, privacy/support links.
+- Location only on submit: no `watchPosition`, no background location, no
+  location history.
+- Permissions: `INTERNET`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`
+  (plus `<queries>` for navigation apps). No background location without an
+  explicit product requirement.
+- Release steps and store texts: `docs/google-play-release.md`.
 
-it.rifornio.app
+### Google Play status
 
-App name:
+Focus is Google Play, not the App Store (do not start iOS release work unless
+asked). Developer account exists; no release uploaded yet. Pending: physical
+device verification, Data Safety, Android privacy review, store screenshots,
+release signing, App Bundle, closed testing, production access.
 
-Rifornio
+Data Safety working classification: approximate and precise location collected
+and shared, purpose app functionality. Verify current Google Play wording and
+provider behavior before submitting; do not finalize from assumptions.
 
-The Android debug app currently supports:
+## Not in scope unless explicitly requested
 
-- native geolocation;
-- real nearby-station calculation;
-- Mapbox route-based ranking;
-- trip planning with current or custom origin;
-- external Maps navigation.
-
-Native position behavior:
-
-- requested only when the user submits;
-- no watchPosition;
-- no background location;
-- no application-level location history.
-
-Android permissions currently include:
-
-- INTERNET
-- ACCESS_COARSE_LOCATION
-- ACCESS_FINE_LOCATION
-
-Do not add background location without an explicit product requirement.
-
-## Google Play status
-
-Current focus is Google Play Store, not App Store.
-
-The Play developer account exists.
-
-The current blocker is physical Android-device verification.
-
-No Play Store release has been uploaded yet.
-
-Still pending include:
-
-- device verification;
-- final Data Safety submission;
-- final privacy review for Android;
-- final icon/splash;
-- store screenshots;
-- release signing;
-- Android App Bundle;
-- closed testing;
-- production access.
-
-Do not start iOS release work unless explicitly requested.
-
-## Data Safety working conclusions
-
-The Android app uses approximate and precise location for app functionality.
-
-The position leaves the device to perform the requested service.
-
-Current working Data Safety classification:
-
-Approximate location:
-- collected: yes
-- shared: yes
-- purpose: app functionality
-
-Precise location:
-- collected: yes
-- shared: yes
-- purpose: app functionality
-
-Do not finalize policy declarations purely from assumptions.
-
-Always verify current Google Play wording and provider behavior before submission.
-
-## Features not to implement yet
-
-Do not implement these unless explicitly requested:
-
-- complex user profile or social features (basic Supabase Auth + saved vehicles already implemented);
-- native maps SDK inside the app (external Maps navigation is intentional);
-- history or favorites;
+- social or complex profile features (basic Auth, saved vehicles and account
+  panel exist);
+- native map SDK in the app;
+- search history or favorites;
 - push notifications;
-- background location tracking;
-- additional monetization features or ad formats;
+- background location;
+- new monetization or ad formats;
 - unrelated architectural refactors.
 
-## Git rules
+## Development
 
-Before any code change:
-
-1. run git status;
-2. inspect the actual relevant files;
-3. make the smallest reasonable change.
-
-Do not assume the working tree is clean.
-
-Do not commit or push automatically unless explicitly requested.
-
-Main branch:
-
-main
-
-Production deploys automatically from pushes to main.
-
-## Development workflow
-
-### Node version and environment
-
-- Node.js version: `>= 20.x` (v20 LTS recommended, v24 supported).
-- Package manager: `npm`.
-
-### Basic development commands
-
-Web local development server:
-
-npm run dev
-
-(Runs Next.js App Router at http://localhost:3000)
-
-Production build:
-
+```
+npm run dev                 # http://localhost:3000
 npm run build
-
-Type check:
-
 npx tsc --noEmit
-
-Unit and component tests:
-
-npm test
-npx vitest run <relevant-test-file>
-
-Targeted ESLint:
-
+npm test                    # or: npx vitest run <file>
 npx eslint <changed-files>
-
-Diff validation:
-
 git diff --check
+npm run mobile:build | mobile:sync | mobile:open:android
+```
 
-Mobile development and build:
-
-npm run mobile:build
-npm run mobile:sync
-npm run mobile:open:android
-npm run mobile:open:ios
-
-### Workflow guidelines
-
-Work one micro-task at a time.
-
-Before editing:
-
-- understand the current implementation;
-- inspect existing code;
-- avoid rewriting working code;
-- avoid introducing new dependencies unless necessary.
-
-After meaningful changes run the relevant checks (type check, targeted tests, git diff --check).
-
-Do not consider a task complete merely because it compiles.
-
-## Integration tests
-
-Some real integration tests are guarded by environment variables.
-
-Examples:
-
-RUN_SUPABASE_INTEGRATION
-RUN_GOOGLE_ROUTES_INTEGRATION
-RUN_MIMIT_INTEGRATION
-RUN_FULL_MIMIT_IMPORT
-
-A full real MIMIT import can be executed with:
-
-RUN_FULL_MIMIT_IMPORT=1 npx vitest run lib/mimit/importMimitData.integration.test.ts
-
-This writes to the configured Supabase database and performs cleanup.
-
-Do not run it casually or against an unknown environment.
+Integration tests run only with env flags: `RUN_SUPABASE_INTEGRATION`,
+`RUN_GOOGLE_ROUTES_INTEGRATION`, `RUN_ROUTE_PROVIDERS_COMPARISON`,
+`RUN_ROUTE_TRIP_INTEGRATION`, `RUN_ROUTE_TRIP_AUDIT`,
+`RUN_MIMIT_INTEGRATION`, `RUN_FULL_MIMIT_IMPORT`, `RUN_LOCAL_MIMIT_IMPORT`.
+`RUN_FULL_MIMIT_IMPORT` and `RUN_LOCAL_MIMIT_IMPORT` write to the configured
+Supabase database: never run them casually or against an unknown environment.
 
 ## Secrets
 
-Never commit or expose:
+Never commit, print or expose: `SUPABASE_SECRET_KEY`, `MAPBOX_ACCESS_TOKEN`,
+`GOOGLE_MAPS_API_KEY`, `CRON_SECRET`, `.env.local`, `.env.test`, `.vercel/`,
+Android keystores and `keystore.properties`. Use `.env.example` to know which
+variables exist. Public IDs (GA4, ad placements) are not secrets but avoid
+duplicating them.
 
-- SUPABASE_SECRET_KEY
-- GOOGLE_MAPS_API_KEY
-- MAPBOX_ACCESS_TOKEN
-- CRON_SECRET
-- private tokens
-- .env.local
-- .env.test
+## Working rules for agents
 
-Public identifiers such as GA4 Measurement IDs and advertising placement IDs are not secrets, but still avoid unnecessary duplication.
+1. `git status` first; never assume a clean tree.
+2. Read the relevant files before changing them.
+3. Make the smallest reasonable change; preserve behavior unless the task
+   changes it.
+4. Run targeted tests, `tsc`, ESLint on changed files, `git diff --check`.
+   Compiling is not done.
+5. Summarize exactly what changed.
+6. Commit or push only when asked. A push to `main` deploys to production.
 
-## Operational rules for Codex
+Do not replace working architecture, rename identifiers for aesthetics, add
+speculative refactors, silently change ranking behavior, or make legal/privacy
+claims without verified support.
 
-Act as a careful implementation agent, not as a greenfield architect.
+## Current priorities
 
-When receiving a task:
+1. Android physical device verification for the Google Play account.
+2. Make the city price snapshot run also after a successful Mac import (today
+   only the Vercel cron takes it, which MIMIT sometimes blocks).
 
-1. inspect git status;
-2. inspect the relevant files;
-3. explain the smallest change required;
-4. modify as few files as possible;
-5. preserve existing behavior unless the task explicitly changes it;
-6. run targeted tests;
-7. run TypeScript and lint when relevant;
-8. run git diff --check;
-9. summarize exactly what changed;
-10. do not commit or push unless explicitly requested.
-
-Do not:
-
-- replace working architecture;
-- rename technical identifiers for aesthetics;
-- expose secrets;
-- add dependencies without justification;
-- perform speculative refactors;
-- silently change ranking behavior;
-- make legal/privacy claims without verified support.
-
-## Current project checkpoint
-
-Current production state:
-
-- website deployed and functional at https://rifornio.it;
-- vehicle selector positioned at top with collapsible management and distinct refuel calculator;
-- programmatic local SEO city pages active (/prezzi-carburante/[slug]);
-- app beta waitlist modal and email signup active;
-- interactive results map and pump vs travel savings breakdown active;
-- homepage indexed, sitemap active, robots.txt active;
-- ads.txt present but awaiting the official Adsterra record;
-- GA4 active with consent;
-- one Adsterra 300x250 result banner enabled through environment configuration;
-- support page exists;
-- Android debug app functional with privacy policy and support links;
-- Mapbox routing integration functional;
-- route planning, vehicle profiles, and waitlist migrations created under `supabase/migrations/` and awaiting Supabase schema deployment in production;
-- MIMIT daily import automated through Vercel Cron and hardened against WAF HTML responses / malformed CSV rows;
-- no Google Play release uploaded yet (awaiting physical device verification).
-
-Immediate priorities:
-
-1. Deploy pending Supabase migrations (`supabase/migrations/`) to the production database;
-2. Complete Android physical device verification for the Google Play developer account.
-
-Until then, prefer small reliability, data-quality, documentation, and release-readiness tasks over new product scope.
-```
+Otherwise prefer small reliability, data-quality, documentation and
+release-readiness tasks over new product scope.
