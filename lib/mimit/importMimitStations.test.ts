@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createSupabaseServerClient } from '../supabase/server'
-import { MIMIT_STATIONS_CSV_URL } from './constants'
-import { downloadCsv } from './downloadCsv'
+import { downloadMimitCsv } from './downloadMimitCsv'
 import { importMimitStations } from './importMimitStations'
 import { parseStationsCsv } from './parseStationsCsv'
 import type { MimitStationRow } from './types'
@@ -10,7 +9,7 @@ import type { MimitStationRow } from './types'
 vi.mock('../supabase/server', () => ({
   createSupabaseServerClient: vi.fn(),
 }))
-vi.mock('./downloadCsv', () => ({ downloadCsv: vi.fn() }))
+vi.mock('./downloadMimitCsv', () => ({ downloadMimitCsv: vi.fn() }))
 vi.mock('./parseStationsCsv', () => ({ parseStationsCsv: vi.fn() }))
 
 interface MockDatabaseError {
@@ -61,7 +60,7 @@ describe('importMimitStations', () => {
     vi.resetAllMocks()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-10T08:30:00.000Z'))
-    vi.mocked(downloadCsv).mockResolvedValue('stations csv')
+    vi.mocked(downloadMimitCsv).mockResolvedValue('stations csv')
   })
 
   afterEach(() => {
@@ -80,7 +79,7 @@ describe('importMimitStations', () => {
       totalImported: 501,
     })
 
-    expect(downloadCsv).toHaveBeenCalledWith(MIMIT_STATIONS_CSV_URL)
+    expect(downloadMimitCsv).toHaveBeenCalledWith('stations')
     expect(parseStationsCsv).toHaveBeenCalledWith('stations csv')
     expect(upsert).toHaveBeenCalledTimes(2)
     expect(upsert.mock.calls[0][0]).toHaveLength(500)

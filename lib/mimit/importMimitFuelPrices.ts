@@ -1,8 +1,7 @@
 import 'server-only'
 
 import { createSupabaseServerClient } from '../supabase/server'
-import { MIMIT_FUEL_PRICES_CSV_URL } from './constants'
-import { downloadCsv } from './downloadCsv'
+import { downloadMimitCsv } from './downloadMimitCsv'
 import { mapFuelPriceToDatabaseRow } from './mapFuelPriceToDatabaseRow'
 import { parseFuelPricesCsv } from './parseFuelPricesCsv'
 
@@ -22,7 +21,7 @@ export interface ImportMimitFuelPricesResult {
 
 export async function importMimitFuelPrices(): Promise<ImportMimitFuelPricesResult> {
   const importStartedAt = new Date().toISOString()
-  const csv = await downloadCsv(MIMIT_FUEL_PRICES_CSV_URL)
+  const csv = await downloadMimitCsv('fuel_prices')
   const prices = parseFuelPricesCsv(csv)
   const supabase = createSupabaseServerClient()
   const stations: StationLookupRow[] = []

@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createSupabaseServerClient } from '../supabase/server'
-import { MIMIT_FUEL_PRICES_CSV_URL } from './constants'
-import { downloadCsv } from './downloadCsv'
+import { downloadMimitCsv } from './downloadMimitCsv'
 import { importMimitFuelPrices } from './importMimitFuelPrices'
 import { parseFuelPricesCsv } from './parseFuelPricesCsv'
 import type { MimitFuelPriceRow } from './types'
@@ -10,7 +9,7 @@ import type { MimitFuelPriceRow } from './types'
 vi.mock('../supabase/server', () => ({
   createSupabaseServerClient: vi.fn(),
 }))
-vi.mock('./downloadCsv', () => ({ downloadCsv: vi.fn() }))
+vi.mock('./downloadMimitCsv', () => ({ downloadMimitCsv: vi.fn() }))
 vi.mock('./parseFuelPricesCsv', () => ({ parseFuelPricesCsv: vi.fn() }))
 
 interface MockDatabaseError {
@@ -81,7 +80,7 @@ describe('importMimitFuelPrices', () => {
     vi.resetAllMocks()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-08-10T08:30:00.000Z'))
-    vi.mocked(downloadCsv).mockResolvedValue('fuel prices csv')
+    vi.mocked(downloadMimitCsv).mockResolvedValue('fuel prices csv')
   })
 
   afterEach(() => {
@@ -112,7 +111,7 @@ describe('importMimitFuelPrices', () => {
       totalSkipped: 1,
     })
 
-    expect(downloadCsv).toHaveBeenCalledWith(MIMIT_FUEL_PRICES_CSV_URL)
+    expect(downloadMimitCsv).toHaveBeenCalledWith('fuel_prices')
     expect(parseFuelPricesCsv).toHaveBeenCalledWith('fuel prices csv')
     expect(range).toHaveBeenNthCalledWith(1, 0, 999)
     expect(range).toHaveBeenNthCalledWith(2, 1_000, 1_999)

@@ -151,10 +151,15 @@ Two import paths, both recorded in `public.import_runs`:
 
 1. **Vercel Cron** — `GET /api/cron/import-mimit`, schedule `0 8 * * *` (UTC),
    protected by `CRON_SECRET` (`Authorization: Bearer …`), region `fra1`,
-   max duration 300 s, `source = 'mimit'`. MIMIT often refuses cloud
-   datacenter IPs, so this run fails on some days. When it succeeds it also
-   calls `snapshot_city_fuel_prices` for the city trend.
-2. **Mac launchd agent** — `scripts/install-mimit-launchd.sh` installs
+   max duration 300 s, `source = 'mimit'`. MIMIT drops TCP connections from
+   Vercel functions (even in `fra1`) and from non-European IPs, but answers
+   the Supabase database server (AWS eu-central-1). So
+   `lib/mimit/downloadMimitCsv.ts` tries the direct download once and then
+   falls back to the `public.fetch_mimit_csv(dataset)` RPC, which downloads
+   the CSV from the database through the `http` extension. Do not remove this
+   fallback: without it the cron cannot download. When the import succeeds it
+   also calls `snapshot_city_fuel_prices` for the city trend.
+2. **Mac launchd agent** (secondary fallback) — `scripts/install-mimit-launchd.sh` installs
    `it.rifornio.import-mimit`, which runs `npm run import:mimit:local` every
    30 minutes and at login. It imports only when the MIMIT CSV `Last-Modified`
    is newer than the last successful import (`lib/mimit/localImportSchedule.ts`);
@@ -191,6 +196,7 @@ copy.
 | `202610230001_app_waitlist.sql` | applied (2026-11-11) |
 | `202611080001_import_runs.sql` | applied |
 | `202611100001_city_fuel_price_daily.sql` | applied |
+| `202611110001_mimit_csv_relay.sql` | applied (2026-11-11) |
 
 Migrations are applied manually (Supabase SQL Editor, in chronological order)
 or with a linked Supabase CLI. Agents must not apply migrations or write to the
@@ -322,7 +328,8 @@ claims without verified support.
 
 1. Android physical device verification for the Google Play account.
 2. Make the city price snapshot run also after a successful Mac import (today
-   only the Vercel cron takes it, which MIMIT sometimes blocks).
+   only the Vercel cron takes it; since 2026-11-11 it downloads through the
+   database, so this matters only on days when the cron fails).
 
 Otherwise prefer small reliability, data-quality, documentation and
 release-readiness tasks over new product scope.

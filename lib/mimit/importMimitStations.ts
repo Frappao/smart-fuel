@@ -1,8 +1,7 @@
 import 'server-only'
 
 import { createSupabaseServerClient } from '../supabase/server'
-import { MIMIT_STATIONS_CSV_URL } from './constants'
-import { downloadCsv } from './downloadCsv'
+import { downloadMimitCsv } from './downloadMimitCsv'
 import { mapStationToDatabaseRow } from './mapStationToDatabaseRow'
 import { parseStationsCsv } from './parseStationsCsv'
 
@@ -15,7 +14,7 @@ export interface ImportMimitStationsResult {
 
 export async function importMimitStations(): Promise<ImportMimitStationsResult> {
   const importStartedAt = new Date().toISOString()
-  const csv = await downloadCsv(MIMIT_STATIONS_CSV_URL)
+  const csv = await downloadMimitCsv('stations')
   const stations = parseStationsCsv(csv)
 
   if (stations.length === 0) {
