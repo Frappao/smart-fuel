@@ -44,6 +44,14 @@ export async function POST(request: Request) {
     )
   }
 
+  // Se la mail non viene salvata l'utente deve saperlo: rispondere "ok" qui
+  // significa perdere l'iscrizione senza che nessuno se ne accorga.
+  const saveFailed = () =>
+    NextResponse.json(
+      { error: 'Non riesco a registrare la richiesta ora. Riprova tra poco.' },
+      { status: 503 },
+    )
+
   try {
     const supabase = createSupabaseServerClient()
     const { error } = await supabase.from('app_waitlist').insert({
@@ -51,12 +59,18 @@ export async function POST(request: Request) {
       platform: rawPlatform,
     })
 
-    // 23505 = unique_violation (email already registered for this platform)
+    // 23505 = unique_violation: la mail è già iscritta per questa piattaforma,
+    // per l'utente è comunque un'iscrizione riuscita.
     if (error && error.code !== '23505') {
-      console.warn('[app-waitlist] Database insert notice:', error.message)
+      console.error('[app-waitlist] Insert failed:', error.code, error.message)
+      return saveFailed()
     }
-  } catch {
-    // Graceful fallback if Supabase env or table is not yet deployed
+  } catch (error) {
+    console.error(
+      '[app-waitlist] Insert failed:',
+      error instanceof Error ? error.message : 'unknown error',
+    )
+    return saveFailed()
   }
 
   return NextResponse.json({ ok: true })
