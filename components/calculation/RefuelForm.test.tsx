@@ -72,6 +72,45 @@ describe('RefuelForm', () => {
     expect(onCalculate).toHaveBeenCalledWith({ refuelAmount: 20, consumptionLitersPer100Km: 6, fuelType: 'Benzina', isSelf: true })
   })
 
+  it('tracks vehicle_set only when the consumption is new or changed', () => {
+    const gtag = vi.fn()
+    window.gtag = gtag
+    window.localStorage.setItem('rifornio-analytics-consent', 'granted')
+    const vehicleEvents = () =>
+      gtag.mock.calls.filter(([, name]) => name === 'vehicle_set')
+
+    render(<RefuelForm onCalculate={vi.fn()} />)
+    const consumption = screen.getByLabelText('Consumo medio auto in L/100 km')
+    const submit = screen.getByRole('button', { name: 'Calcola convenienza' })
+
+    fireEvent.click(screen.getByRole('button', { name: '50 €' }))
+    fireEvent.change(consumption, { target: { value: '6.5' } })
+    fireEvent.click(submit)
+    fireEvent.click(submit)
+
+    expect(vehicleEvents()).toEqual([
+      ['event', 'vehicle_set', {
+        vehicle_source: 'manual',
+        fuel_type: 'Benzina',
+        consumption_unit: 'L/100 km',
+        consumption_band: '5-7',
+      }],
+    ])
+
+    fireEvent.change(consumption, { target: { value: '9.5' } })
+    fireEvent.click(submit)
+    expect(vehicleEvents()).toHaveLength(2)
+    expect(vehicleEvents()[1][2]).toMatchObject({ consumption_band: '9-12' })
+
+    // Valore ricordato sul dispositivo: alla visita dopo non è un nuovo consumo.
+    cleanup()
+    render(<RefuelForm onCalculate={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Calcola convenienza' }))
+    expect(vehicleEvents()).toHaveLength(2)
+
+    delete window.gtag
+  })
+
   it('rejects zero and negative values', () => {
     const onCalculate = vi.fn()
     render(<RefuelForm onCalculate={onCalculate} />)

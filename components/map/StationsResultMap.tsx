@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { RoadSignPrice, splitRoadSignPrice } from '../calculation/RoadSignPrice'
 import {
   useResultsMap,
   type MapStationItem,
   type ResultsMapData,
 } from './ResultsMapContext'
+import { trackEvent } from '../../lib/analytics/trackEvent'
 import { formatStationLocation } from '../../lib/stations/formatStationText'
+import { useNavigationApp } from '../navigation/useNavigationApp'
 import type { RouteLineString } from '../../lib/maps/getMapboxDirections'
 
 interface MapLibreBoundsLike {
@@ -368,6 +370,35 @@ export function StationsResultMap({
     ? formatStationLocation(activeStation.address, activeStation.city)
     : null
 
+  const navigationApp = useNavigationApp()
+
+  // Conta come "distributore visto" solo il passaggio a un distributore
+  // diverso da quello già aperto. Il riferimento evita di ricreare i
+  // marcatori della mappa a ogni selezione.
+  const trackSelectionRef = useRef<(stationId: number) => void>(() => {})
+  useEffect(() => {
+    trackSelectionRef.current = (stationId) => {
+      if (stationId === activeStation?.id) return
+      const station = data.stations.find((item) => item.id === stationId)
+      if (!station) return
+      trackEvent('station_viewed', {
+        search_mode: data.mode,
+        view_source: 'map',
+        rank: station.rank,
+        city: station.city,
+        brand: station.brand,
+      })
+    }
+  })
+
+  const handleSelectStation = useCallback(
+    (stationId: number) => {
+      trackSelectionRef.current(stationId)
+      onSelectStation(stationId)
+    },
+    [onSelectStation],
+  )
+
   // La mappa può nascere in un contenitore nascosto o ridimensionato
   // (rotazione del tablet, cambio di layout): MapLibre va avvisato.
   useEffect(() => {
@@ -592,7 +623,7 @@ export function StationsResultMap({
           btn.appendChild(priceRow)
           if (!isFocus) {
             btn.addEventListener('click', () => {
-              onSelectStation(station.id)
+              handleSelectStation(station.id)
             })
           }
 
@@ -649,7 +680,7 @@ export function StationsResultMap({
     return () => {
       cancelled = true
     }
-  }, [data, onSelectStation, isFocus])
+  }, [data, handleSelectStation, isFocus])
 
   // Percorso stradale del vincente: disegnato quando lo stile è pronto e
   // quando arriva (o sparisce) la geometria; l'inquadratura lo include.
@@ -870,7 +901,7 @@ export function StationsResultMap({
                     <button
                       key={station.id}
                       type="button"
-                      onClick={() => onSelectStation(station.id)}
+                      onClick={() => handleSelectStation(station.id)}
                       style={{
                         left: `${x}%`,
                         top: `${y}%`,
@@ -917,7 +948,7 @@ export function StationsResultMap({
             <button
               key={station.id}
               type="button"
-              onClick={() => onSelectStation(station.id)}
+              onClick={() => handleSelectStation(station.id)}
               className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition active:scale-[0.97] cursor-pointer tabular-nums ${
                 isSelected
                   ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm dark:border-emerald-400 dark:bg-emerald-500 dark:text-zinc-950'
@@ -993,6 +1024,15 @@ export function StationsResultMap({
               href={activeStation.navigationHref}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackEvent('navigation_started', {
+                  search_mode: data.mode,
+                  navigation_app: navigationApp,
+                  rank: activeStation.rank,
+                  city: activeStation.city,
+                  brand: activeStation.brand,
+                })
+              }
               className="mt-3 flex min-h-10 w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-center text-xs font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300"
             >
               {activeStation.navigationLabel}

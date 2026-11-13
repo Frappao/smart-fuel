@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { trackEvent } from '../../lib/analytics/trackEvent'
+
 interface ShareResultButtonsProps {
   stationName: string
   brand: string | null
@@ -105,19 +107,19 @@ export default function ShareResultButtons({
     netFuelLiters,
     fuelType,
     refuelAmount,
-    shareUrl: `${shareUrl}&utm_source=whatsapp_share`,
+    // Canale "condivisione su WhatsApp" secondo docs/utm.md: GA4 lo
+    // classifica come social grazie a utm_medium=social.
+    shareUrl: `${shareUrl}&utm_source=whatsapp&utm_medium=social&utm_campaign=condivisione_risultato`,
   })
 
   const whatsAppHref = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsAppText)}`
 
   function trackShare(method: 'whatsapp' | 'copy_link') {
-    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'share_calculation', {
-        method,
-        fuel_type: fuelType,
-        station_name: stationName,
-      })
-    }
+    trackEvent('share_calculation', {
+      method,
+      fuel_type: fuelType,
+      station_name: stationName,
+    })
   }
 
   async function handleCopy() {

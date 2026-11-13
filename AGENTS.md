@@ -91,12 +91,13 @@ backend secrets.
   `mobile-promo`, `location`, `motion`, `ui`.
 - `lib/` — logic: `calculation`, `mimit`, `maps` (Mapbox), `stations`,
   `supabase`, `vehicles`, `account`, `navigation`, `cities`, `fuels`,
-  `location`, `api`.
+  `location`, `api`, `analytics` (consent, UTM campaign, product events).
 - `mobile/src/` — Capacitor app (calculator, trip, navigation, footer).
 - `android/`, `ios/` — Capacitor native projects (focus is Android).
 - `supabase/` — `schema.sql` and `migrations/`.
 - `scripts/` — local MIMIT import and launchd installer.
-- `docs/` — `google-play-release.md`, `vehicle-accounts.md`.
+- `docs/` — `google-play-release.md`, `vehicle-accounts.md`, `utm.md`
+  (campaign link convention and event list).
 - `reviews/` — local review notes (untracked).
 
 ## Pages
@@ -240,11 +241,31 @@ External navigation is intentional: no native map SDK.
 - Google Analytics 4 with consent banner:
   `components/analytics/AnalyticsConsent.tsx` (folder name exactly
   `components/analytics/`, no trailing space). Do not rewrite the gtag wrapper
-  without a verified bug.
+  without a verified bug. GA4 loads only after "Accetta Analytics" (basic
+  Consent Mode v2: ad signals always denied, Google Signals off).
+- Consent store: `lib/analytics/consent.ts` (localStorage
+  `rifornio-analytics-consent`). "Preferenze cookie"
+  (`components/analytics/CookiePreferencesButton.tsx`, in the home footer,
+  `/cookie` and `/privacy`) reopens the banner; revoking sets
+  `ga-disable-<id>`, updates consent to denied and deletes `_ga*` cookies.
+- Product events go only through `trackEvent` in
+  `lib/analytics/trackEvent.ts` (typed params, no coordinates, addresses,
+  email or exact consumption): `search_performed`, `station_viewed`,
+  `navigation_started`, `vehicle_set`, `app_download_click`,
+  `app_waitlist_signup`, `share_calculation`. Never call `window.gtag`
+  directly. Event list and UTM convention: `docs/utm.md`.
+- Campaign: `lib/analytics/campaign.ts` keeps the first `utm_*` of the visit
+  in memory (sessionStorage `rifornio_campaign_v1` only after consent) and
+  passes it to GA4 as `page_location` when consent comes after a page change.
+  `buildPlayStoreUrl()` adds the campaign as Google Play `referrer`.
 - Vercel Web Analytics, cookieless:
   `components/analytics/VercelWebAnalytics.tsx`. `beforeSend` keeps only the
   path plus `condividi` and `utm_*` parameters. The consent banner governs
-  only GA4.
+  only GA4. The current Vercel plan has no custom events and no UTM
+  breakdown, so events are sent to GA4 only.
+- The Android app has no analytics yet (`trackEvent` is a no-op there).
+  Planned: Firebase Analytics with an in-app consent screen, before the first
+  Google Play upload (update Data Safety accordingly).
 - Any new browser storage or tracking must be reflected in `/privacy` and
   `/cookie`.
 

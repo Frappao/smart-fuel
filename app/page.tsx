@@ -2,6 +2,7 @@ import Link from "next/link";
 import FuelSearchCalculator from "../components/calculation/FuelSearchCalculator";
 import { NEARBY_RESULTS_SLOT_ID, ResultsMapProvider } from "../components/map/ResultsMapContext";
 import { HomepageRightColumn } from "../components/map/StationsResultMap";
+import CookiePreferencesButton from "../components/analytics/CookiePreferencesButton";
 import { AppBetaButton, AppBetaProvider } from "../components/mobile-promo/AppBetaModal";
 import SharedStationBanner from "../components/share/SharedStationBanner";
 import HeroBrandBadge from "../components/hero/HeroBrandBadge";
@@ -382,6 +383,8 @@ export default async function Home() {
             >
               Cookie
             </Link>
+
+            <CookiePreferencesButton className="cursor-pointer font-medium text-zinc-400 underline decoration-zinc-700 underline-offset-4 hover:text-emerald-400" />
           </nav>
         </div>
       </footer>

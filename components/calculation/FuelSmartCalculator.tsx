@@ -27,6 +27,7 @@ import AdSlot from '../ads/AdSlot'
 import { useRankingVariants } from '../motion/rankingMotion'
 import NavigationAppPicker from '../navigation/NavigationAppPicker'
 import { useNavigationApp } from '../navigation/useNavigationApp'
+import { trackEvent } from '../../lib/analytics/trackEvent'
 import { buildStationNavigationUrl } from '../../lib/navigation/navigationApps'
 import {
   NEARBY_RESULTS_SLOT_ID,
@@ -162,10 +163,12 @@ function StationIdentity({
 
 function CalculationDetails({
   result,
+  rank,
   travelDistanceKm,
   compact = false,
 }: {
   result: RankedStationResult
+  rank: number
   travelDistanceKm: number
   compact?: boolean
 }) {
@@ -181,6 +184,16 @@ function CalculationDetails({
           : 'group mt-3 rounded-xl border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-xs text-zinc-300'
       }
       onClick={(event) => event.stopPropagation()}
+      onToggle={(event) => {
+        if (!event.currentTarget.open) return
+        trackEvent('station_viewed', {
+          search_mode: 'nearby',
+          view_source: 'calculation_details',
+          rank,
+          city: result.station.city,
+          brand: result.station.brand,
+        })
+      }}
     >
       <summary
         className={
@@ -273,6 +286,15 @@ function AlternativeResultRow({
             href={navigationUrl}
             rel="noopener noreferrer"
             target="_blank"
+            onClick={() =>
+              trackEvent('navigation_started', {
+                search_mode: 'nearby',
+                navigation_app: navigationApp,
+                rank: index + 1,
+                city: result.station.city,
+                brand: result.station.brand,
+              })
+            }
           >
             Apri nel navigatore
           </a>
@@ -281,6 +303,7 @@ function AlternativeResultRow({
 
       <CalculationDetails
         compact
+        rank={index + 1}
         result={result}
         travelDistanceKm={travelDistanceKm}
       />
@@ -358,6 +381,15 @@ function WinnerCard({
           href={navigationUrl}
           rel="noopener noreferrer"
           target="_blank"
+          onClick={() =>
+            trackEvent('navigation_started', {
+              search_mode: 'nearby',
+              navigation_app: navigationApp,
+              rank: 1,
+              city: result.station.city,
+              brand: result.station.brand,
+            })
+          }
         >
           <svg aria-hidden="true" className="size-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z" />
@@ -366,7 +398,7 @@ function WinnerCard({
         </a>
       ) : null}
 
-      <CalculationDetails result={result} travelDistanceKm={travelDistanceKm} />
+      <CalculationDetails rank={1} result={result} travelDistanceKm={travelDistanceKm} />
 
       {alternatives.length > 0 ? (
         <details
@@ -602,6 +634,13 @@ export default function FuelSmartCalculator() {
       }
 
       setResults(rankedResults)
+      trackEvent('search_performed', {
+        search_mode: 'nearby',
+        fuel_type: values.fuelType,
+        service: values.isSelf ? 'self' : 'servito',
+        results_count: rankedResults.length,
+        city: rankedResults[0]?.station.city ?? null,
+      })
 
       const winner = rankedResults[0]
       if (winner) {

@@ -8,6 +8,7 @@ import {
   type Coordinates,
   type GeocodingResult,
 } from '../../lib/api/rifornioApiClient'
+import { trackEvent } from '../../lib/analytics/trackEvent'
 import { getStationDisplayName } from '../../lib/calculation/rankNearbyStations'
 import type { RankedRouteStationResult } from '../../lib/calculation/rankStationsAlongRoute'
 import { SUPPORTED_FUEL_TYPE_LABELS } from '../../lib/fuels/supportedFuelTypes'
@@ -113,7 +114,22 @@ function TripResultCard({
       className={isMobileHidden ? 'min-w-0 hidden lg:block' : 'min-w-0'}
     >
       <div
-        onClick={onSelectOnMap ? () => onSelectOnMap(result.station.id) : undefined}
+        onClick={
+          onSelectOnMap
+            ? () => {
+                if (!isSelectedOnMap) {
+                  trackEvent('station_viewed', {
+                    search_mode: 'trip',
+                    view_source: 'list',
+                    rank: index + 1,
+                    city: result.station.city,
+                    brand: result.station.brand,
+                  })
+                }
+                onSelectOnMap(result.station.id)
+              }
+            : undefined
+        }
         className={cardClasses}
       >
         {isWinner ? (
@@ -205,6 +221,15 @@ function TripResultCard({
               href={navigationUrl}
               rel="noopener noreferrer"
               target="_blank"
+              onClick={() =>
+                trackEvent('navigation_started', {
+                  search_mode: 'trip',
+                  navigation_app: navigationApp,
+                  rank: index + 1,
+                  city: result.station.city,
+                  brand: result.station.brand,
+                })
+              }
             >
               {getTripNavigationLabel(navigationApp)}
             </a>
@@ -416,6 +441,13 @@ export default function TripCalculator() {
       setJourneyCoordinates({ origin, destination: destinationCoordinates })
       setBaseRouteDistanceMeters(response.baseRouteDistanceMeters)
       setResults(response.results)
+      trackEvent('search_performed', {
+        search_mode: 'trip',
+        fuel_type: values.fuelType,
+        service: values.isSelf ? 'self' : 'servito',
+        results_count: response.results.length,
+        city: response.results[0]?.station.city ?? null,
+      })
 
       if (response.results.length === 0) {
         setEmptyState(

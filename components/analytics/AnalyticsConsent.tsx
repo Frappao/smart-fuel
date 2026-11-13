@@ -1,44 +1,30 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 
-export const CONSENT_KEY = "rifornio-analytics-consent";
-export const CONSENT_EVENT = "rifornio-analytics-consent-change";
+import {
+  captureCampaign,
+  forgetStoredCampaign,
+  persistCampaign,
+  withCampaign,
+} from "../../lib/analytics/campaign";
+import {
+  deleteGoogleAnalyticsCookies,
+  getStoredConsent,
+  saveConsent,
+  subscribeToConsent,
+} from "../../lib/analytics/consent";
+
+export { CONSENT_EVENT, CONSENT_KEY } from "../../lib/analytics/consent";
 
 const GA_MEASUREMENT_ID = "G-0323M57ZQP";
 const GA_SCRIPT_ID = "rifornio-ga4";
+// Interruttore ufficiale di gtag.js per fermare la raccolta su questa pagina.
+const GA_DISABLE_FLAG = `ga-disable-${GA_MEASUREMENT_ID}`;
 
-type ConsentValue = "granted" | "denied";
-
-declare global {
-  interface Window {
-    dataLayer: unknown[];
-    gtag?: (...args: unknown[]) => void;
-  }
-}
-
-function getStoredConsent(): ConsentValue | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const value = window.localStorage.getItem(CONSENT_KEY);
-
-  if (value === "granted" || value === "denied") {
-    return value;
-  }
-
-  return null;
-}
-
-function subscribeToConsent(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener(CONSENT_EVENT, callback);
-
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(CONSENT_EVENT, callback);
-  };
+function setGoogleAnalyticsDisabled(disabled: boolean) {
+  (window as unknown as Record<string, unknown>)[GA_DISABLE_FLAG] = disabled;
 }
 
 function loadGoogleAnalytics() {
@@ -46,7 +32,11 @@ function loadGoogleAnalytics() {
     return;
   }
 
+  setGoogleAnalyticsDisabled(false);
+
   if (document.getElementById(GA_SCRIPT_ID)) {
+    // Già caricato in questa pagina e poi revocato: riprende la raccolta.
+    window.gtag?.("consent", "update", { analytics_storage: "granted" });
     return;
   }
 
@@ -70,6 +60,10 @@ function loadGoogleAnalytics() {
   window.gtag("config", GA_MEASUREMENT_ID, {
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
+    // Se il consenso arriva dopo un cambio di pagina, l'URL non ha più gli
+    // utm_* del link di arrivo: li rimettiamo perché GA4 attribuisca la
+    // sessione al canale giusto.
+    page_location: withCampaign(window.location.href),
   });
 
   const script = document.createElement("script");
@@ -81,9 +75,10 @@ function loadGoogleAnalytics() {
   document.head.appendChild(script);
 }
 
-function saveConsent(value: ConsentValue) {
-  window.localStorage.setItem(CONSENT_KEY, value);
-  window.dispatchEvent(new Event(CONSENT_EVENT));
+function stopGoogleAnalytics() {
+  setGoogleAnalyticsDisabled(true);
+  window.gtag?.("consent", "update", { analytics_storage: "denied" });
+  deleteGoogleAnalyticsCookies();
 }
 
 export default function AnalyticsConsent() {
@@ -92,11 +87,28 @@ export default function AnalyticsConsent() {
     getStoredConsent,
     () => null,
   );
+  const acceptButtonRef = useRef<HTMLButtonElement>(null);
+  const previousConsentRef = useRef(consent);
+
+  // Canale della visita, letto subito dall'URL di arrivo.
+  useEffect(() => {
+    captureCampaign(window.location.href, getStoredConsent() === "granted");
+  }, []);
 
   useEffect(() => {
     if (consent === "granted") {
+      persistCampaign();
       loadGoogleAnalytics();
+    } else {
+      stopGoogleAnalytics();
+      if (consent === "denied") forgetStoredCampaign();
     }
+
+    // Banner riaperto da "Preferenze cookie": il focus va sulla scelta.
+    if (consent === null && previousConsentRef.current !== null) {
+      acceptButtonRef.current?.focus();
+    }
+    previousConsentRef.current = consent;
   }, [consent]);
 
   if (consent !== null) {
@@ -115,12 +127,21 @@ export default function AnalyticsConsent() {
 
       <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
         Vorremmo usare Google Analytics per capire quante persone utilizzano
-        Rifornio e migliorare il servizio. Puoi accettare o continuare senza
-        Analytics.
+        Rifornio, da dove arrivano e migliorare il servizio. Puoi accettare o
+        continuare senza Analytics, e cambiare idea quando vuoi da
+        &ldquo;Preferenze cookie&rdquo;. Dettagli nella{" "}
+        <Link
+          className="font-medium underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300"
+          href="/cookie"
+        >
+          cookie policy
+        </Link>
+        .
       </p>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
+          ref={acceptButtonRef}
           type="button"
           onClick={() => saveConsent("granted")}
           className="min-h-12 flex-1 rounded-xl bg-emerald-600 px-4 py-3 font-medium text-white shadow-sm transition active:scale-[0.98] hover:bg-emerald-700"

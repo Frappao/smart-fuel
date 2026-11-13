@@ -33,6 +33,7 @@ import {
   loadRefuelPreferences,
   saveRefuelPreferences,
 } from '../../lib/vehicles/refuelPreferences'
+import { getConsumptionBand, trackEvent } from '../../lib/analytics/trackEvent'
 
 export interface RefuelCalculationInput {
   refuelAmount: number
@@ -59,6 +60,14 @@ interface FormErrors {
 
 function subscribeToNothing() {
   return () => {}
+}
+
+// Consumo e unità come chiave: l'evento "vehicle_set" parte solo quando
+// l'utente imposta un consumo diverso da quello già noto.
+function getVehicleKey(consumption: string, unit: ConsumptionUnit): string {
+  return toLitersPer100Km(Number(consumption), unit) === null
+    ? ''
+    : `${Number(consumption)}|${unit}`
 }
 
 function parsePositiveNumber(value: string): number | null {
@@ -98,6 +107,9 @@ export default function RefuelForm({
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [show3DGarage, setShow3DGarage] = useState(false)
   const [hasRestoredPreferences, setHasRestoredPreferences] = useState(false)
+  const [knownVehicleKey, setKnownVehicleKey] = useState(
+    selected ? getVehicleKey(String(selected.consumption), selected.consumption_unit) : '',
+  )
 
   const isHydrated = useSyncExternalStore(
     subscribeToNothing,
@@ -115,7 +127,10 @@ export default function RefuelForm({
       if (!selected) {
         if (stored.fuelType) setFuelType(stored.fuelType)
         if (stored.unit) setUnit(stored.unit)
-        if (stored.consumption !== undefined) setConsumption(stored.consumption)
+        if (stored.consumption !== undefined) {
+          setConsumption(stored.consumption)
+          setKnownVehicleKey(getVehicleKey(stored.consumption, stored.unit ?? unit))
+        }
       }
       if (stored.isSelf !== undefined) setIsSelf(stored.isSelf)
       if (stored.refuelAmount !== undefined) setRefuelAmount(stored.refuelAmount)
@@ -166,8 +181,22 @@ export default function RefuelForm({
     setConsumption(selected ? String(selected.consumption) : '')
     setUnit(selected?.consumption_unit ?? 'L/100 km')
     setFuelType(selected?.fuel_type ?? 'Benzina')
+    setKnownVehicleKey(
+      selected ? getVehicleKey(String(selected.consumption), selected.consumption_unit) : '',
+    )
     setErrors({})
     setIsManageOpen(!selected)
+  }
+
+  function trackSavedVehicle() {
+    trackEvent('vehicle_set', {
+      vehicle_source: 'saved_vehicle',
+      fuel_type: fuelType,
+      consumption_unit: unit,
+      consumption_band: getConsumptionBand(
+        toLitersPer100Km(Number(consumption), unit) ?? Number.NaN,
+      ),
+    })
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -193,6 +222,17 @@ export default function RefuelForm({
       if (parsedRefuelAmount === null) amountRef.current?.focus()
       else consumptionRef.current?.focus()
       return
+    }
+
+    const vehicleKey = getVehicleKey(consumption, unit)
+    if (vehicleKey !== knownVehicleKey) {
+      setKnownVehicleKey(vehicleKey)
+      trackEvent('vehicle_set', {
+        vehicle_source: 'manual',
+        fuel_type: fuelType,
+        consumption_unit: unit,
+        consumption_band: getConsumptionBand(parsedConsumption),
+      })
     }
 
     onCalculate({
@@ -389,6 +429,7 @@ export default function RefuelForm({
                         return
                       }
                       const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType }, selected?.id)
+                      if (saved) trackSavedVehicle()
                       setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
                     }}
                   >
@@ -544,6 +585,7 @@ export default function RefuelForm({
                       return
                     }
                     const saved = await account.save({ name: vehicleName.trim(), consumption: Number(consumption), consumption_unit: unit, fuel_type: fuelType })
+                    if (saved) trackSavedVehicle()
                     setSaveFeedback(saved ? 'Profilo auto salvato.' : 'Auto non salvata. Riprova tra poco.')
                   }}
                 >

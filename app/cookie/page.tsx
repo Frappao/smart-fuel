@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import CookiePreferencesButton from "@/components/analytics/CookiePreferencesButton";
+
 export const metadata: Metadata = {
   title: "Cookie | Rifornio",
   description:
@@ -59,9 +61,9 @@ export default function CookiePage() {
           </p>
 
           <p>
-            Rifornio non utilizza attualmente strumenti di session replay,
-            sistemi di autenticazione o strumenti di pagamento. Il banner
-            pubblicitario Adsterra è descritto nella sezione dedicata.
+            Rifornio non utilizza strumenti di session replay né strumenti di
+            pagamento. L&apos;account facoltativo e il banner pubblicitario
+            Adsterra sono descritti nelle sezioni dedicate.
           </p>
         </section>
 
@@ -85,6 +87,25 @@ export default function CookiePage() {
             Quando è consentita la memorizzazione per finalità analytics, Google
             Analytics può utilizzare cookie proprietari, tra cui{" "}
             <code>_ga</code>, per distinguere utenti e sessioni.
+          </p>
+
+          <p>
+            Oltre alle pagine visitate, Rifornio invia a Google Analytics alcuni
+            eventi sull&apos;uso del servizio: ricerca effettuata (modalità,
+            carburante, self o servito, numero di risultati e comune del
+            distributore consigliato), distributore aperto e avvio della
+            navigazione (posizione in classifica, comune, marchio e app di
+            navigazione scelta), consumo impostato (solo una fascia, non il
+            valore esatto), interesse per l&apos;app e iscrizione alla lista
+            d&apos;attesa (solo la piattaforma) e condivisione di un risultato.
+            Non vengono inviati coordinate, indirizzi, percorsi cercati, email
+            o nomi delle auto.
+          </p>
+
+          <p>
+            Se la visita arriva da un link con parametri <code>utm_*</code>{" "}
+            (per esempio da un post sui social o da una newsletter), Google
+            Analytics associa la visita a quel canale.
           </p>
         </section>
 
@@ -136,6 +157,15 @@ export default function CookiePage() {
 
           <p>
             In caso di rifiuto, Google Analytics non viene caricato.
+          </p>
+
+          <p>
+            Puoi cambiare scelta in qualsiasi momento con il pulsante{" "}
+            <CookiePreferencesButton className="cursor-pointer font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300" />
+            , presente anche in fondo alla pagina principale: il banner ricompare
+            e puoi accettare o rifiutare. Se revochi il consenso, Google
+            Analytics smette di raccogliere dati da quel momento e i cookie{" "}
+            <code>_ga</code> vengono cancellati da questo dispositivo.
           </p>
         </section>
 
@@ -203,8 +233,13 @@ export default function CookiePage() {
           </p>
 
           <p>
-            Rifornio non utilizza sessionStorage per conservare preferenze o
-            dati dell&apos;utente.
+            Solo dopo il consenso ad Analytics, se la visita arriva da un link
+            con parametri <code>utm_*</code>, Rifornio salva quei parametri nel
+            sessionStorage del browser con la chiave{" "}
+            <code>rifornio_campaign_v1</code>, per attribuire la visita al
+            canale corretto anche dopo un ricaricamento della pagina. Il valore
+            viene cancellato alla chiusura della scheda o con la revoca del
+            consenso.
           </p>
 
           <p>
@@ -267,14 +302,15 @@ export default function CookiePage() {
           <h2 className={headingClassName}>Come cambiare la preferenza</h2>
 
           <p>
-            Attualmente la scelta Analytics viene memorizzata nel localStorage
-            del browser. È possibile eliminarla tramite le impostazioni del
-            browser o cancellando i dati del sito relativi a Rifornio.
+            La scelta Analytics viene memorizzata nel localStorage del browser.
+            Puoi modificarla con il pulsante &ldquo;Preferenze cookie&rdquo;
+            oppure eliminarla tramite le impostazioni del browser, cancellando
+            i dati del sito relativi a Rifornio.
           </p>
 
           <p>
-            Dopo la cancellazione della preferenza, alla visita successiva
-            Rifornio mostrerà nuovamente la richiesta di scelta Analytics.
+            Dopo la cancellazione della preferenza, Rifornio mostrerà
+            nuovamente la richiesta di scelta Analytics.
             Questa operazione non modifica il caricamento della pubblicità
             Adsterra.
           </p>

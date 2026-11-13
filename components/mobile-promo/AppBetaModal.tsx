@@ -13,6 +13,8 @@ import {
 } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 
+import { trackEvent } from '../../lib/analytics/trackEvent'
+
 type AppPlatform = 'android' | 'ios'
 
 const DISMISSED_STORAGE_KEY = 'rifornio_app_promo_dismissed_v1'
@@ -34,7 +36,13 @@ export function AppBetaButton() {
   return (
     <button
       type="button"
-      onClick={() => modal.openAppModal()}
+      onClick={() => {
+        trackEvent('app_download_click', {
+          placement: 'header',
+          destination: 'beta_waitlist',
+        })
+        modal.openAppModal()
+      }}
       aria-haspopup="dialog"
       className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 hover:border-emerald-500/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 sm:px-3.5 sm:text-sm active:scale-[0.97]"
     >
@@ -102,7 +110,13 @@ export function AppBetaInlineOffer() {
       </div>
       <button
         type="button"
-        onClick={() => modal.openAppModal()}
+        onClick={() => {
+          trackEvent('app_download_click', {
+            placement: 'inline_offer',
+            destination: 'beta_waitlist',
+          })
+          modal.openAppModal()
+        }}
         aria-haspopup="dialog"
         className="inline-flex min-h-10 shrink-0 items-center rounded-xl bg-emerald-500 px-3.5 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
       >
@@ -193,6 +207,7 @@ export function AppBetaProvider({ children }: { children: ReactNode }) {
       }
 
       setSubmittedPlatform(platform)
+      trackEvent('app_waitlist_signup', { platform })
       setEmail('')
       try {
         window.localStorage.setItem(DISMISSED_STORAGE_KEY, '1')

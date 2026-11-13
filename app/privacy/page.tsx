@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import CookiePreferencesButton from "@/components/analytics/CookiePreferencesButton";
+
 export const metadata: Metadata = {
   title: "Privacy | Rifornio",
   description:
@@ -214,6 +216,22 @@ export default function PrivacyPage() {
           </p>
 
           <p>
+            Con il consenso, Rifornio invia a Google Analytics anche alcuni
+            eventi sull&apos;uso del servizio, per capire quali canali portano
+            utenti che usano davvero Rifornio: ricerca effettuata (modalità,
+            carburante, self o servito, numero di risultati e comune del
+            distributore consigliato), distributore aperto e avvio della
+            navigazione (posizione in classifica, comune, marchio e app di
+            navigazione scelta), consumo impostato (solo una fascia, non il
+            valore esatto), interesse per l&apos;app e iscrizione alla lista
+            d&apos;attesa (solo la piattaforma) e condivisione di un risultato.
+            Il canale di provenienza viene ricavato dai parametri{" "}
+            <code>utm_*</code> del link di arrivo, se presenti. Non vengono
+            inviati coordinate, indirizzi, percorsi cercati, email o nomi delle
+            auto.
+          </p>
+
+          <p>
             Quando Analytics viene attivato, Google può utilizzare cookie
             proprietari come <code>_ga</code> per distinguere utenti e sessioni.
             Google Analytics utilizza inoltre l&apos;indirizzo IP durante la
@@ -270,6 +288,14 @@ export default function PrivacyPage() {
             <code>rifornio-analytics-consent</code>. Questo valore viene usato
             esclusivamente per ricordare se l&apos;utente ha accettato o rifiutato
             Analytics e per evitare di mostrare il banner a ogni visita.
+          </p>
+
+          <p>
+            Puoi cambiare scelta in qualsiasi momento con il pulsante{" "}
+            <CookiePreferencesButton className="cursor-pointer font-medium underline decoration-zinc-400 underline-offset-4 hover:text-emerald-700 dark:hover:text-emerald-300" />
+            : la revoca ferma Google Analytics da quel momento e cancella i
+            cookie <code>_ga</code> da questo dispositivo. I dettagli sono nella{" "}
+            <Link href="/cookie">Cookie Policy</Link>.
           </p>
         </section>
 
